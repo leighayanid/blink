@@ -1,0 +1,30 @@
+{
+  "name": "local-share-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "generate": "nuxt generate",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@pinia/nuxt": "^0.11.2",
+    "@types/node": "^24.9.2",
+    "@vueuse/core": "^14.0.0",
+    "@vueuse/nuxt": "^14.0.0",
+    "nuxt": "^4.2.0",
+    "peerjs": "^1.5.5",
+    "pinia": "^3.0.3",
+    "qrcode.vue": "^3.6.0",
+    "socket.io-client": "^4.8.1",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.1.2"
+  }
+}
