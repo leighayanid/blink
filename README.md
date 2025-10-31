@@ -1,4 +1,4 @@
-# Local Share App - Nuxt 4 Implementation
+# Hatid - Nuxt 4 Implementation
 
 A local file sharing web application built with Nuxt 4, WebRTC, and WebSockets for peer-to-peer file transfers on a local network.
 
@@ -21,7 +21,7 @@ A local file sharing web application built with Nuxt 4, WebRTC, and WebSockets f
 
 1. Clone or navigate to the project directory:
 ```bash
-cd local-share-app
+cd hatid
 ```
 
 2. Install dependencies:
@@ -70,7 +70,7 @@ npm run preview
 ## Project Structure
 
 ```
-local-share-app/
+hatid/
 ├── app/
 │   ├── components/         # Vue components
 │   │   ├── DeviceList.vue

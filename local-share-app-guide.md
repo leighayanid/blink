@@ -1,4 +1,4 @@
-# Local Sharing Web App - Nuxt 4 Implementation Guide
+# Hatid - Nuxt 4 Implementation Guide
 
 ## Project Overview
 Build a local file sharing web application similar to LocalSend using Nuxt 4, WebRTC, and WebSockets for peer-to-peer file transfers on a local network.
@@ -21,8 +21,8 @@ Build a local file sharing web application similar to LocalSend using Nuxt 4, We
 
 ### Initialize Nuxt 4 Project
 ```bash
-npx nuxi@latest init local-share-app
-cd local-share-app
+npx nuxi@latest init hatid
+cd hatid
 npm install
 ```
 
@@ -57,7 +57,7 @@ npm install @nuxtjs/tailwindcss
 ## Project Structure
 
 ```
-local-share-app/
+hatid/
 ├── app/
 │   ├── components/
 │   │   ├── DeviceList.vue           # Display available devices

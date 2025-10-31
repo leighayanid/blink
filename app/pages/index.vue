@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <header class="app-header">
-      <h1>🚀 Local Share</h1>
+      <h1>🚀 Hatid</h1>
       <p class="subtitle">Share files instantly on your local network</p>
     </header>
 
