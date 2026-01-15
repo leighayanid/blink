@@ -21,7 +21,10 @@ None
 **Depends on**: Nothing (first phase)
 **Requirements**: CORE-01, CORE-02
 **Research**: Unlikely (testing existing code)
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 01-01: Verify file transfer flow
 
 ### Phase 2: Connection & Transfer UX
 **Goal**: Clear visual feedback for all connection states and transfer progress
@@ -41,6 +44,6 @@ None
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Verify & Fix Core | 0/? | Not started | - |
+| 1. Verify & Fix Core | 0/1 | In progress | - |
 | 2. Connection & Transfer UX | 0/? | Not started | - |
 | 3. Visual Polish | 0/? | Not started | - |
