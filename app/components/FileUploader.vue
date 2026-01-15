@@ -19,8 +19,8 @@
 
       <div class="drop-zone-content">
         <div class="icon">📁</div>
-        <p class="primary">{{ disabled ? 'Select a device first' : 'Click or drag files here' }}</p>
-        <p class="secondary">{{ disabled ? '' : 'Multiple files supported' }}</p>
+        <p class="primary">{{ getDropZoneText }}</p>
+        <p class="secondary">{{ getDropZoneSubtext }}</p>
       </div>
     </div>
 
@@ -48,10 +48,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   disabled?: boolean
+  connectedCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -61,6 +62,16 @@ const emit = defineEmits<{
 const fileInput = ref<HTMLInputElement>()
 const selectedFiles = ref<File[]>([])
 const isDragging = ref(false)
+
+const getDropZoneText = computed(() => {
+  if (props.disabled) return 'Connect to a device first'
+  return 'Click or drag files here'
+})
+
+const getDropZoneSubtext = computed(() => {
+  if (props.disabled) return ''
+  return `Multiple files supported • ${props.connectedCount || 0} device(s) connected`
+})
 
 const handleDrop = (e: DragEvent) => {
   isDragging.value = false

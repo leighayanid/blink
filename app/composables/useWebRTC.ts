@@ -49,27 +49,49 @@ export const useWebRTC = () => {
   const connectToPeer = (peerId: string): Promise<any> => {
     return new Promise((resolve, reject) => {
       if (!peer.value) {
+        console.error('[WebRTC] Peer not initialized')
         reject(new Error('Peer not initialized'))
         return
       }
 
-      console.log('[WebRTC] Connecting to peer:', peerId)
+      console.log('[WebRTC] Attempting to connect to peer:', peerId)
+      console.log('[WebRTC] Local peer ID:', peer.value.id)
 
-      const conn = peer.value.connect(peerId, {
-        reliable: true,
-        serialization: 'binary'
-      })
+      try {
+        const conn = peer.value.connect(peerId, {
+          reliable: true,
+          serialization: 'binary'
+        })
 
-      conn.on('open', () => {
-        console.log('[WebRTC] Connection opened with', conn.peer)
-        handleConnection(conn)
-        resolve(conn)
-      })
+        console.log('[WebRTC] Connection object created, waiting for open event...')
 
-      conn.on('error', (error) => {
-        console.error('[WebRTC] Connection error:', error)
+        // Set timeout for connection
+        const timeout = setTimeout(() => {
+          console.error('[WebRTC] Connection timeout after 10 seconds')
+          reject(new Error('Connection timeout - peer may be offline or unreachable'))
+        }, 10000)
+
+        conn.on('open', () => {
+          clearTimeout(timeout)
+          console.log('[WebRTC] Connection OPENED with peer:', conn.peer)
+          handleConnection(conn)
+          resolve(conn)
+        })
+
+        conn.on('error', (error) => {
+          clearTimeout(timeout)
+          console.error('[WebRTC] Connection error:', error, typeof error)
+          reject(error)
+        })
+
+        conn.on('close', () => {
+          clearTimeout(timeout)
+          console.log('[WebRTC] Connection closed before it opened')
+        })
+      } catch (error) {
+        console.error('[WebRTC] Error creating connection:', error)
         reject(error)
-      })
+      }
     })
   }
 

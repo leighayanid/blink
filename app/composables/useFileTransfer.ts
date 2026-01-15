@@ -60,7 +60,12 @@ export const useFileTransfer = () => {
         connection.send(arrayBuffer)
 
         chunkIndex++
-        transfer.progress = (offset / file.size) * 100
+
+        // Update progress through reactive reference
+        const activeTransfer = transfers.value.find(t => t.id === transferId)
+        if (activeTransfer) {
+          activeTransfer.progress = ((offset + CHUNK_SIZE) / file.size) * 100
+        }
 
         // Small delay to prevent overwhelming the connection
         await new Promise(resolve => setTimeout(resolve, 10))
@@ -72,16 +77,24 @@ export const useFileTransfer = () => {
         transferId
       }))
 
-      transfer.status = 'completed'
-      transfer.endTime = Date.now()
-      transfer.progress = 100
+      // Update transfer status through reactive reference
+      const completedTransfer = transfers.value.find(t => t.id === transferId)
+      if (completedTransfer) {
+        completedTransfer.status = 'completed'
+        completedTransfer.endTime = Date.now()
+        completedTransfer.progress = 100
+      }
 
       console.log(`[FileTransfer] File sent successfully: ${file.name}`)
 
       return transferId
     } catch (error) {
       console.error('[FileTransfer] Error sending file:', error)
-      transfer.status = 'failed'
+      // Update failed status through reactive reference
+      const failedTransfer = transfers.value.find(t => t.id === transferId)
+      if (failedTransfer) {
+        failedTransfer.status = 'failed'
+      }
       throw error
     }
   }

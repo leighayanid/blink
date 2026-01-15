@@ -26,5 +26,8 @@
     "socket.io-client": "^4.8.1",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.1.2"
+  },
+  "dependencies": {
+    "@nuxtjs/color-mode": "^3.5.2"
   }
 }

@@ -5,8 +5,23 @@ export default defineNuxtConfig({
   modules: [
     '@pinia/nuxt',
     '@vueuse/nuxt',
-    '@nuxtjs/tailwindcss'
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/color-mode'
   ],
+
+  colorMode: {
+    classSuffix: '',
+    fallback: 'light',
+    hid: 'nuxt-color-mode-script',
+    storageKey: 'hatid-theme',
+    classPrefix: '',
+    classSuffixDark: 'dark'
+  },
+
+  tailwindcss: {
+    configPath: 'tailwind.config.ts',
+    exposeConfig: true
+  },
 
   nitro: {
     experimental: {

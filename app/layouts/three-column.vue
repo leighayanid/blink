@@ -1,8 +1,13 @@
 <template>
   <div class="layout">
     <header class="app-header">
-      <h1>🚀 Hatid</h1>
-      <p class="subtitle">Share files instantly on your local network</p>
+      <div class="header-content">
+        <h1>☀️ Hatid</h1>
+        <p class="subtitle">Share files instantly on your local network</p>
+      </div>
+      <button class="theme-toggle" @click="toggleColorMode" :title="colorMode.value === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+        {{ colorMode.value === 'dark' ? '☀️' : '🌙' }}
+      </button>
     </header>
 
     <div class="content-wrapper">
@@ -33,14 +38,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 
+const colorMode = useColorMode()
 const containerRef = ref<HTMLElement | null>(null)
 const columnHeights = ref({
   left: 0,
   center: 0,
   right: 0
 })
+
+const toggleColorMode = () => {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
 
 const updateColumnHeights = () => {
   if (!containerRef.value) return
@@ -79,25 +89,70 @@ onMounted(() => {
 <style scoped>
 .layout {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
   padding: 2rem;
+  transition: background 0.3s ease;
 }
 
 .app-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 2rem;
   max-width: 100%;
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.05) 0%, rgba(255, 215, 0, 0.05) 100%);
+  padding: 2rem;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--color-primary-lighter);
+  box-shadow: var(--shadow-lg);
+}
+
+.header-content {
+  text-align: center;
+  flex: 1;
 }
 
 .app-header h1 {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: var(--color-primary);
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .subtitle {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.theme-toggle {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border: none;
+  border-radius: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  transform: scale(1);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  height: 52px;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
 }
 
 .content-wrapper {
@@ -120,12 +175,10 @@ onMounted(() => {
 
 .left-column,
 .right-column {
-  /* Auto-resize to fit content */
   align-content: start;
 }
 
 .center-column {
-  /* Takes up more space in the center */
   align-content: start;
 }
 
@@ -153,6 +206,12 @@ onMounted(() => {
 @media (max-width: 768px) {
   .layout {
     padding: 1rem;
+  }
+
+  .app-header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
   }
 
   .app-header h1 {
@@ -183,10 +242,16 @@ onMounted(() => {
 
   .app-header {
     margin-bottom: 1.5rem;
+    padding: 1rem;
   }
 
   .content-wrapper {
     gap: 1rem;
+  }
+
+  .theme-toggle {
+    padding: 0.5rem 0.75rem;
+    font-size: 1.2rem;
   }
 }
 </style>

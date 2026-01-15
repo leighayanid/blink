@@ -1,6 +1,7 @@
 /// <reference types="@pinia/nuxt" />
-/// <reference types="@nuxtjs/tailwindcss" />
 /// <reference types="@vueuse/nuxt" />
+/// <reference types="@nuxtjs/tailwindcss" />
+/// <reference types="@nuxtjs/color-mode" />
 /// <reference types="@nuxt/telemetry" />
 /// <reference types="@nuxt/devtools" />
 /// <reference path="types/builder-env.d.ts" />
@@ -19,6 +20,7 @@
 /// <reference path="imports.d.ts" />
 /// <reference path="types/imports.d.ts" />
 /// <reference path="schema/nuxt.schema.d.ts" />
+/// <reference path="types/tailwind.config.d.ts" />
 /// <reference path="types/nitro.d.ts" />
 
 export {}

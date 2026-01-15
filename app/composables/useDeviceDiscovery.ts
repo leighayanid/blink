@@ -47,10 +47,13 @@ export const useDeviceDiscovery = () => {
   }
 
   const connect = () => {
-    const config = useRuntimeConfig()
-    const wsUrl = config.public.wsUrl.replace('http', 'ws')
+    // Dynamically build WebSocket URL from current window location
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const host = window.location.host // This includes the IP and port
+    const wsUrl = `${protocol}//${host}/ws`
 
-    socket.value = new WebSocket(`${wsUrl}/ws`)
+    console.log('[Discovery] Connecting to WebSocket:', wsUrl)
+    socket.value = new WebSocket(wsUrl)
 
     socket.value.onopen = () => {
       console.log('[Discovery] Connected to signaling server')
@@ -61,23 +64,27 @@ export const useDeviceDiscovery = () => {
     socket.value.onmessage = (event) => {
       try {
         const data: SignalingMessage = JSON.parse(event.data)
+        console.log('[Discovery] Message received:', data.type, data)
 
         switch (data.type) {
           case 'init':
-            if (localDevice.value) {
-              localDevice.value.peerId = data.peerId
-            }
+            // Note: The 'init' message from server is no longer used to set peerId
+            // The peerId is now set from PeerJS before connecting to WebSocket
+            console.log('[Discovery] Init received, local peerId already set:', localDevice.value?.peerId)
             break
 
           case 'peer-joined':
+            console.log('[Discovery] Peer joined:', data.deviceInfo)
             if (data.deviceInfo && data.deviceInfo.id !== localDevice.value?.id) {
               addDevice(data.deviceInfo)
+              console.log('[Discovery] Added device:', data.deviceInfo.name)
             }
             break
 
           case 'peer-left':
             if (data.peerId) {
               removeDevice(data.peerId)
+              console.log('[Discovery] Removed device with peerId:', data.peerId)
             }
             break
         }
@@ -101,6 +108,12 @@ export const useDeviceDiscovery = () => {
           connect()
         }
       }, 5000)
+    }
+  }
+
+  const setLocalPeerId = (peerId: string) => {
+    if (localDevice.value) {
+      localDevice.value.peerId = peerId
     }
   }
 
@@ -141,6 +154,7 @@ export const useDeviceDiscovery = () => {
     connect,
     disconnect,
     initDevice,
+    setLocalPeerId,
     announce
   }
 }

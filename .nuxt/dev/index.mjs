@@ -1341,7 +1341,7 @@ async function errorHandler(error, event) {
   // H3 will handle fallback
 }
 
-const script = `
+const script$1 = `
 if (!window.__NUXT_DEVTOOLS_TIME_METRIC__) {
   Object.defineProperty(window, '__NUXT_DEVTOOLS_TIME_METRIC__', {
     value: {},
@@ -1354,7 +1354,7 @@ window.__NUXT_DEVTOOLS_TIME_METRIC__.appInit = Date.now()
 
 const _hSltrB0UwI__inuLlnZhAJ6zfYHmn7qrsgWonxDEzo8 = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
-    htmlContext.head.push(`<script>${script}<\/script>`);
+    htmlContext.head.push(`<script>${script$1}<\/script>`);
   });
 });
 
@@ -1450,9 +1450,18 @@ function onConsoleLog(callback) {
   consola$1.wrapConsole();
 }
 
+const script = "\"use strict\";(()=>{const t=window,e=document.documentElement,c=[\"dark\",\"light\"],n=getStorageValue(\"localStorage\",\"hatid-theme\")||\"system\";let i=n===\"system\"?u():n;const r=e.getAttribute(\"data-color-mode-forced\");r&&(i=r),l(i),t[\"__NUXT_COLOR_MODE__\"]={preference:n,value:i,getColorScheme:u,addColorScheme:l,removeColorScheme:d};function l(o){const s=\"\"+o+\"\",a=\"\";e.classList?e.classList.add(s):e.className+=\" \"+s,a&&e.setAttribute(\"data-\"+a,o)}function d(o){const s=\"\"+o+\"\",a=\"\";e.classList?e.classList.remove(s):e.className=e.className.replace(new RegExp(s,\"g\"),\"\"),a&&e.removeAttribute(\"data-\"+a)}function f(o){return t.matchMedia(\"(prefers-color-scheme\"+o+\")\")}function u(){if(t.matchMedia&&f(\"\").media!==\"not all\"){for(const o of c)if(f(\":\"+o).matches)return o}return\"light\"}})();function getStorageValue(t,e){switch(t){case\"localStorage\":return window.localStorage.getItem(e);case\"sessionStorage\":return window.sessionStorage.getItem(e);case\"cookie\":return getCookie(e);default:return null}}function getCookie(t){const c=(\"; \"+window.document.cookie).split(\"; \"+t+\"=\");if(c.length===2)return c.pop()?.split(\";\").shift()}";
+
+const _PCRuoDeUcwCgTbZBHVm8XrkDJr_b9jNUQv4FzzNNM = (function(nitro) {
+  nitro.hooks.hook("render:html", (htmlContext) => {
+    htmlContext.head.push(`<script>${script}<\/script>`);
+  });
+});
+
 const plugins = [
   _hSltrB0UwI__inuLlnZhAJ6zfYHmn7qrsgWonxDEzo8,
-_PQxzK4XRlMSqincs51u6bW_u1029gZa5cyu2kcq7As
+_PQxzK4XRlMSqincs51u6bW_u1029gZa5cyu2kcq7As,
+_PCRuoDeUcwCgTbZBHVm8XrkDJr_b9jNUQv4FzzNNM
 ];
 
 const assets = {};
@@ -2208,6 +2217,7 @@ const styles$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   default: styles
 }, Symbol.toStringTag, { value: 'Module' }));
 
+const announcedDevices = /* @__PURE__ */ new Map();
 const ws = defineWebSocketHandler({
   open(peer) {
     console.log("[WebSocket] Client connected:", peer.id);
@@ -2216,6 +2226,12 @@ const ws = defineWebSocketHandler({
       type: "init",
       peerId: peer.id
     }));
+    for (const [peerId, deviceInfo] of announcedDevices.entries()) {
+      peer.send(JSON.stringify({
+        type: "peer-joined",
+        deviceInfo
+      }));
+    }
   },
   message(peer, message) {
     try {
@@ -2224,13 +2240,20 @@ const ws = defineWebSocketHandler({
       console.log("[WebSocket] Message received:", parsed.type);
       switch (parsed.type) {
         case "announce":
-          peer.publish("discovery", JSON.stringify({
+          console.log("[WebSocket] Device announced:", parsed.deviceInfo.name, "with peerId:", parsed.deviceInfo.peerId);
+          const deviceWithWsId = {
+            ...parsed.deviceInfo,
+            wsId: peer.id
+            // Track WebSocket connection separately
+          };
+          announcedDevices.set(peer.id, deviceWithWsId);
+          const peerJoinedMsg = JSON.stringify({
             type: "peer-joined",
-            deviceInfo: {
-              ...parsed.deviceInfo,
-              peerId: peer.id
-            }
-          }));
+            deviceInfo: parsed.deviceInfo
+            // Use the original deviceInfo with PeerJS peerId
+          });
+          peer.send(peerJoinedMsg);
+          peer.publish("discovery", peerJoinedMsg);
           break;
         case "signal":
           if (parsed.targetPeer) {
@@ -2253,10 +2276,15 @@ const ws = defineWebSocketHandler({
   },
   close(peer, event) {
     console.log("[WebSocket] Client disconnected:", peer.id);
-    peer.publish("discovery", JSON.stringify({
-      type: "peer-left",
-      peerId: peer.id
-    }));
+    const deviceInfo = announcedDevices.get(peer.id);
+    const peerJsPeerId = deviceInfo == null ? void 0 : deviceInfo.peerId;
+    announcedDevices.delete(peer.id);
+    if (peerJsPeerId) {
+      peer.publish("discovery", JSON.stringify({
+        type: "peer-left",
+        peerId: peerJsPeerId
+      }));
+    }
   },
   error(peer, error) {
     console.error("[WebSocket] Error:", error);

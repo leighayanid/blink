@@ -1,5 +1,8 @@
 import type { SignalingMessage, Device } from '../app/types'
 
+// Store announced devices by peerId to notify new connections
+const announcedDevices = new Map<string, any>()
+
 export default defineWebSocketHandler({
   open(peer) {
     console.log('[WebSocket] Client connected:', peer.id)
@@ -10,6 +13,14 @@ export default defineWebSocketHandler({
       type: 'init',
       peerId: peer.id
     }))
+
+    // Send all previously announced devices to the new peer
+    for (const [peerId, deviceInfo] of announcedDevices.entries()) {
+      peer.send(JSON.stringify({
+        type: 'peer-joined',
+        deviceInfo
+      }))
+    }
   },
 
   message(peer, message) {
@@ -21,14 +32,25 @@ export default defineWebSocketHandler({
 
       switch (parsed.type) {
         case 'announce':
-          // Broadcast new device to all peers
-          peer.publish('discovery', JSON.stringify({
+          console.log('[WebSocket] Device announced:', parsed.deviceInfo.name, 'with peerId:', parsed.deviceInfo.peerId)
+          // Store the announced device - use the peerId from the client (PeerJS ID)
+          // Also store the WebSocket peer.id for tracking disconnections
+          const deviceWithWsId = {
+            ...parsed.deviceInfo,
+            wsId: peer.id  // Track WebSocket connection separately
+          }
+          announcedDevices.set(peer.id, deviceWithWsId)
+
+          // Broadcast new device to ALL peers including this one
+          // The peerId is the PeerJS ID which is what other peers need to connect
+          const peerJoinedMsg = JSON.stringify({
             type: 'peer-joined',
-            deviceInfo: {
-              ...parsed.deviceInfo,
-              peerId: peer.id
-            }
-          }))
+            deviceInfo: parsed.deviceInfo  // Use the original deviceInfo with PeerJS peerId
+          })
+          // Send to this peer
+          peer.send(peerJoinedMsg)
+          // Also broadcast to all other connected peers
+          peer.publish('discovery', peerJoinedMsg)
           break
 
         case 'signal':
@@ -57,11 +79,20 @@ export default defineWebSocketHandler({
   close(peer, event) {
     console.log('[WebSocket] Client disconnected:', peer.id)
 
-    // Notify other peers
-    peer.publish('discovery', JSON.stringify({
-      type: 'peer-left',
-      peerId: peer.id
-    }))
+    // Get the device info before removing (we need the PeerJS peerId)
+    const deviceInfo = announcedDevices.get(peer.id)
+    const peerJsPeerId = deviceInfo?.peerId
+
+    // Remove from announced devices
+    announcedDevices.delete(peer.id)
+
+    // Notify other peers with the PeerJS peerId (not WebSocket peer.id)
+    if (peerJsPeerId) {
+      peer.publish('discovery', JSON.stringify({
+        type: 'peer-left',
+        peerId: peerJsPeerId
+      }))
+    }
   },
 
   error(peer, error) {
