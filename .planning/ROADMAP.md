@@ -31,7 +31,11 @@ Plans:
 **Depends on**: Phase 1
 **Requirements**: UI-03, UI-04, UI-05
 **Research**: Unlikely (internal UI patterns)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01: Toast notifications + connection state tracking (Wave 1)
+- [ ] 02-02: Integrate UI feedback, replace alerts, verify (Wave 2)
 
 ### Phase 3: Visual Polish
 **Goal**: Bold, vibrant UI refresh with responsive design
