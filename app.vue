@@ -27,7 +27,9 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
   @apply bg-light-primary text-light-primary dark:bg-dark-primary dark:text-dark-primary transition-colors duration-300;
 }
 

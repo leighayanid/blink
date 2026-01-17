@@ -2,6 +2,8 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
 
+  css: ['~/app/assets/css/design-system.css'],
+
   modules: [
     '@pinia/nuxt',
     '@vueuse/nuxt',
@@ -30,7 +32,7 @@ export default defineNuxtConfig({
   },
 
   alias: {
-    '~': '<rootDir>'
+    '~': './'
   },
 
   vite: {
