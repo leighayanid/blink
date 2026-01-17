@@ -8,120 +8,126 @@
     </header>
 
     <div class="main-content">
-      <!-- Local Device Info -->
-      <section class="section local-device-section">
-        <h2 class="section-header">
-          <span class="section-title">Your Device</span>
-        </h2>
-        <div v-if="localDevice" class="local-device-card">
-          <div class="device-badge">
-            <span class="device-icon">{{ getPlatformIcon(localDevice.platform) }}</span>
-            <div class="device-details">
-              <div class="device-name">{{ localDevice.name }}</div>
-              <div class="device-platform">{{ localDevice.platform }}</div>
+      <!-- Left Column: Your Device + Available Devices -->
+      <div class="grid-left">
+        <!-- Local Device Info -->
+        <section class="section local-device-section animate-section" style="--animation-order: 0">
+          <h2 class="section-header">
+            <span class="section-title">Your Device</span>
+          </h2>
+          <div v-if="localDevice" class="local-device-card">
+            <div class="device-badge">
+              <span class="device-icon">{{ getPlatformIcon(localDevice.platform) }}</span>
+              <div class="device-details">
+                <div class="device-name">{{ localDevice.name }}</div>
+                <div class="device-platform">{{ localDevice.platform }}</div>
+              </div>
+            </div>
+            <div v-if="isConnected" class="status-pill connected">
+              <span class="status-dot" />
+              Connected
+            </div>
+            <div v-else class="status-pill disconnected">
+              <span class="status-dot" />
+              Disconnected
             </div>
           </div>
-          <div v-if="isConnected" class="status-pill connected">
-            <span class="status-dot" />
-            Connected
-          </div>
-          <div v-else class="status-pill disconnected">
-            <span class="status-dot" />
-            Disconnected
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Connected Devices -->
-      <section v-if="connectedPeers.size > 0 || hasConnectingDevices" class="section">
-        <h2 class="section-header">
-          <span class="section-title">Connected Devices</span>
-          <span class="section-badge">{{ connectedPeers.size }}</span>
-        </h2>
-        <div class="connected-devices">
-          <!-- Show connecting devices -->
-          <div
-            v-for="device in connectingDevices"
-            :key="'connecting-' + device.id"
-            class="connected-device connecting"
-          >
-            <div class="device-header">
-              <span class="icon">{{ getPlatformIcon(device.platform) }}</span>
-              <div class="device-info">
-                <div class="device-name">{{ device.name }}</div>
-                <div class="device-platform">{{ device.platform }}</div>
-              </div>
-              <div class="status connecting-status">
-                <span class="spinner" />
-                Connecting...
-              </div>
-            </div>
-          </div>
-          <!-- Show connected devices -->
-          <div
-            v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))"
-            :key="device.id"
-            class="connected-device"
-            :class="{ active: targetPeerForSend === device.peerId }"
-          >
-            <div class="device-header">
-              <span class="icon">{{ getPlatformIcon(device.platform) }}</span>
-              <div class="device-info">
-                <div class="device-name">{{ device.name }}</div>
-                <div class="device-platform">{{ device.platform }}</div>
-              </div>
-              <div class="status">🟢 Connected</div>
-            </div>
-            <div class="device-actions">
-              <button
-                v-if="connectedPeers.size > 1"
-                class="select-btn"
-                :class="{ active: targetPeerForSend === device.peerId }"
-                @click="targetPeerForSend = device.peerId"
-              >
-                {{ targetPeerForSend === device.peerId ? '✓ Active' : 'Select' }}
-              </button>
-              <button class="disconnect-btn" @click="handleDeviceDisconnect(device)">
-                Disconnect
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+        <!-- Available Devices -->
+        <section class="section animate-section" style="--animation-order: 1">
+          <h2 class="section-header">
+            <span class="section-title">Available Devices</span>
+            <span class="section-badge">{{ devices.length }}</span>
+          </h2>
+          <DeviceList
+            :devices="devices"
+            :selected-device="selectedDevice"
+            :connected-peers="connectedPeers"
+            :connection-states="connectionStates"
+            @select="handleDeviceSelect"
+            @connect="handleDeviceConnect"
+          />
+        </section>
+      </div>
 
-      <!-- Available Devices -->
-      <section class="section">
-        <h2 class="section-header">
-          <span class="section-title">Available Devices</span>
-          <span class="section-badge">{{ devices.length }}</span>
-        </h2>
-        <DeviceList
-          :devices="devices"
-          :selected-device="selectedDevice"
-          :connected-peers="connectedPeers"
-          :connection-states="connectionStates"
-          @select="handleDeviceSelect"
-          @connect="handleDeviceConnect"
+      <!-- Right Column: Connected Devices + Send Files + Progress -->
+      <div class="grid-right">
+        <!-- Connected Devices -->
+        <section v-if="connectedPeers.size > 0 || hasConnectingDevices" class="section animate-section" style="--animation-order: 2">
+          <h2 class="section-header">
+            <span class="section-title">Connected Devices</span>
+            <span class="section-badge">{{ connectedPeers.size }}</span>
+          </h2>
+          <div class="connected-devices">
+            <!-- Show connecting devices -->
+            <div
+              v-for="device in connectingDevices"
+              :key="'connecting-' + device.id"
+              class="connected-device connecting"
+            >
+              <div class="device-header">
+                <span class="icon">{{ getPlatformIcon(device.platform) }}</span>
+                <div class="device-info">
+                  <div class="device-name">{{ device.name }}</div>
+                  <div class="device-platform">{{ device.platform }}</div>
+                </div>
+                <div class="status connecting-status">
+                  <span class="spinner" />
+                  Connecting...
+                </div>
+              </div>
+            </div>
+            <!-- Show connected devices -->
+            <div
+              v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))"
+              :key="device.id"
+              class="connected-device"
+              :class="{ active: targetPeerForSend === device.peerId }"
+            >
+              <div class="device-header">
+                <span class="icon">{{ getPlatformIcon(device.platform) }}</span>
+                <div class="device-info">
+                  <div class="device-name">{{ device.name }}</div>
+                  <div class="device-platform">{{ device.platform }}</div>
+                </div>
+                <div class="status">Connected</div>
+              </div>
+              <div class="device-actions">
+                <button
+                  v-if="connectedPeers.size > 1"
+                  class="select-btn"
+                  :class="{ active: targetPeerForSend === device.peerId }"
+                  @click="targetPeerForSend = device.peerId"
+                >
+                  {{ targetPeerForSend === device.peerId ? 'Active' : 'Select' }}
+                </button>
+                <button class="disconnect-btn" @click="handleDeviceDisconnect(device)">
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- File Uploader -->
+        <section class="section animate-section" style="--animation-order: 3">
+          <h2 class="section-header">
+            <span class="section-title">Send Files</span>
+          </h2>
+          <FileUploader
+            :disabled="connectedPeers.size === 0"
+            :connected-count="connectedPeers.size"
+            @files-selected="handleFilesSelected"
+          />
+        </section>
+
+        <!-- Transfer Progress -->
+        <TransferProgress
+          :transfers="transfers"
+          @clear-completed="clearCompleted"
         />
-      </section>
-
-      <!-- File Uploader -->
-      <section class="section">
-        <h2 class="section-header">
-          <span class="section-title">Send Files</span>
-        </h2>
-        <FileUploader
-          :disabled="connectedPeers.size === 0"
-          :connected-count="connectedPeers.size"
-          @files-selected="handleFilesSelected"
-        />
-      </section>
-
-      <!-- Transfer Progress -->
-      <TransferProgress
-        :transfers="transfers"
-        @clear-completed="clearCompleted"
-      />
+      </div>
     </div>
   </div>
 </template>
@@ -345,12 +351,66 @@ html.dark .hero-bg-gradient {
 }
 
 /* ============================================
-   MAIN CONTENT & SECTIONS
+   MAIN CONTENT & RESPONSIVE GRID
    ============================================ */
 .main-content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--space-8);
+  transition: gap var(--transition-slow);
+}
+
+/* Desktop (>1024px): Two-column layout */
+@media (min-width: 1025px) {
+  .main-content {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .grid-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+}
+
+/* Tablet (768px-1024px): Two columns, reduced gap */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-5);
+  }
+
+  .grid-left,
+  .grid-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  /* Slightly smaller section padding on tablet */
+  .section {
+    padding: var(--space-5);
+  }
+}
+
+/* Mobile (<768px): Single column stack */
+@media (max-width: 767px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  .grid-left,
+  .grid-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
 }
 
 .section {
@@ -363,8 +423,15 @@ html.dark .hero-bg-gradient {
     0 1px 3px rgba(0, 0, 0, 0.06);
   transition:
     box-shadow var(--transition-base),
-    border-color var(--transition-base);
+    border-color var(--transition-base),
+    padding var(--transition-base);
+}
+
+/* Staggered animation on mount */
+.animate-section {
+  opacity: 0;
   animation: slideUp var(--duration-slow) var(--ease-out) forwards;
+  animation-delay: calc(var(--animation-order, 0) * 80ms);
 }
 
 html.dark .section {
@@ -637,9 +704,9 @@ html.dark .local-device-card {
 }
 
 /* ============================================
-   MOBILE RESPONSIVE (Task 1 basic mobile styles)
+   MOBILE RESPONSIVE (<768px)
    ============================================ */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .page-container {
     padding: var(--space-4);
   }
@@ -657,15 +724,27 @@ html.dark .local-device-card {
     font-size: var(--text-base);
   }
 
+  /* Section mobile adjustments */
+  .section {
+    padding: var(--space-4);
+    border-radius: 0.625rem;
+  }
+
+  /* Local device card stacks vertically on mobile */
   .local-device-card {
     flex-direction: column;
     gap: var(--space-4);
     text-align: center;
+    padding: var(--space-5);
   }
 
   .device-badge {
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .device-icon {
+    font-size: 2.5rem;
   }
 
   .device-header {
@@ -676,6 +755,40 @@ html.dark .local-device-card {
   .device-actions {
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  /* Touch-friendly button sizing (min 44px tap targets) */
+  .select-btn,
+  .disconnect-btn {
+    min-height: 44px;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  /* Section header compact on mobile */
+  .section-header {
+    margin-bottom: var(--space-4);
+  }
+
+  .section-title {
+    font-size: var(--text-xs);
+  }
+}
+
+/* ============================================
+   TABLET RESPONSIVE (768px - 1024px)
+   ============================================ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .page-container {
+    padding: var(--space-5);
+  }
+
+  .hero-header {
+    padding: var(--space-10) var(--space-4) var(--space-6);
+    margin-bottom: var(--space-6);
+  }
+
+  .hero-title {
+    font-size: 2.25rem; /* between 3xl and 4xl */
   }
 }
 </style>
