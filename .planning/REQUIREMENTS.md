@@ -34,8 +34,8 @@ Local network file sharing — open, discover, connect, send.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
-| CORE-02 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | Complete |
+| CORE-02 | Phase 1 | Complete |
 | UI-03 | Phase 2 | Pending |
 | UI-04 | Phase 2 | Pending |
 | UI-05 | Phase 2 | Pending |

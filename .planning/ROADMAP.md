@@ -10,7 +10,7 @@ None
 
 ## Phases
 
-- [ ] **Phase 1: Verify & Fix Core** - Test end-to-end file transfer, fix bugs
+- [x] **Phase 1: Verify & Fix Core** - Test end-to-end file transfer, fix bugs
 - [ ] **Phase 2: Connection & Transfer UX** - State feedback, progress indicators, error handling
 - [ ] **Phase 3: Visual Polish** - Bold vibrant UI refresh, responsive design
 
@@ -24,7 +24,7 @@ None
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: Verify file transfer flow
+- [x] 01-01: Verify file transfer flow
 
 ### Phase 2: Connection & Transfer UX
 **Goal**: Clear visual feedback for all connection states and transfer progress
@@ -44,6 +44,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Verify & Fix Core | 0/1 | In progress | - |
+| 1. Verify & Fix Core | 1/1 | Complete | 2026-01-17 |
 | 2. Connection & Transfer UX | 0/? | Not started | - |
 | 3. Visual Polish | 0/? | Not started | - |
