@@ -3,10 +3,14 @@
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <!-- Global Toast Notifications -->
+    <Toast />
   </div>
 </template>
 
 <script setup lang="ts">
+import Toast from '~/components/Toast.vue'
+
 const { isDark } = useTheme()
 </script>
 

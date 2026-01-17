@@ -100,9 +100,11 @@ import type { Device } from '../types'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
 import { useFileTransfer } from '../composables/useFileTransfer'
+import { useToast } from '../composables/useToast'
 
 const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId, announce } = useDeviceDiscovery()
 const { peer, localPeerId, initPeer, connectToPeer, connections, destroy } = useWebRTC()
+const { success, error: showError } = useToast()
 const { transfers, sendFile, receiveFile, clearCompleted } = useFileTransfer()
 
 const selectedDevice = ref<Device | null>(null)
@@ -161,7 +163,7 @@ const handleDeviceConnect = async (device: Device) => {
   try {
     if (!device.peerId) {
       console.error('Device has no peer ID')
-      alert('Cannot connect: Device has no peer ID. Please try again.')
+      showError('Cannot connect: Device has no peer ID')
       return
     }
 
@@ -181,11 +183,11 @@ const handleDeviceConnect = async (device: Device) => {
     // to ensure it's only registered once per connection
 
     console.log('[Page] Successfully connected to', device.name)
-    alert(`Connected to ${device.name}!`)
+    success(`Connected to ${device.name}`)
   } catch (error) {
     console.error('[Page] Failed to connect to device:', error)
     const errorMsg = error instanceof Error ? error.message : String(error)
-    alert(`Failed to connect to ${device.name}: ${errorMsg}`)
+    showError(`Failed to connect to ${device.name}: ${errorMsg}`)
   }
 }
 
