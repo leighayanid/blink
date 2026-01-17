@@ -1,28 +1,32 @@
 <template>
-  <div class="container">
-    <header class="app-header">
-      <h1>🚀 Hatid</h1>
-      <p class="subtitle">Share files instantly on your local network</p>
+  <div class="page-container">
+    <!-- Hero Header -->
+    <header class="hero-header">
+      <div class="hero-bg-gradient" />
+      <h1 class="hero-title">Hatid</h1>
+      <p class="hero-subtitle">Share files instantly on your local network</p>
     </header>
 
     <div class="main-content">
       <!-- Local Device Info -->
-      <section class="section">
-        <h2>Your Device</h2>
-        <div v-if="localDevice" class="local-device">
+      <section class="section local-device-section">
+        <h2 class="section-header">
+          <span class="section-title">Your Device</span>
+        </h2>
+        <div v-if="localDevice" class="local-device-card">
           <div class="device-badge">
-            <span class="icon">{{ getPlatformIcon(localDevice.platform) }}</span>
-            <div>
+            <span class="device-icon">{{ getPlatformIcon(localDevice.platform) }}</span>
+            <div class="device-details">
               <div class="device-name">{{ localDevice.name }}</div>
               <div class="device-platform">{{ localDevice.platform }}</div>
             </div>
           </div>
-          <div v-if="isConnected" class="status-indicator connected">
-            <span class="dot" />
+          <div v-if="isConnected" class="status-pill connected">
+            <span class="status-dot" />
             Connected
           </div>
-          <div v-else class="status-indicator disconnected">
-            <span class="dot" />
+          <div v-else class="status-pill disconnected">
+            <span class="status-dot" />
             Disconnected
           </div>
         </div>
@@ -30,7 +34,10 @@
 
       <!-- Connected Devices -->
       <section v-if="connectedPeers.size > 0 || hasConnectingDevices" class="section">
-        <h2>Connected Devices ({{ connectedPeers.size }})</h2>
+        <h2 class="section-header">
+          <span class="section-title">Connected Devices</span>
+          <span class="section-badge">{{ connectedPeers.size }}</span>
+        </h2>
         <div class="connected-devices">
           <!-- Show connecting devices -->
           <div
@@ -84,7 +91,10 @@
 
       <!-- Available Devices -->
       <section class="section">
-        <h2>Available Devices ({{ devices.length }})</h2>
+        <h2 class="section-header">
+          <span class="section-title">Available Devices</span>
+          <span class="section-badge">{{ devices.length }}</span>
+        </h2>
         <DeviceList
           :devices="devices"
           :selected-device="selectedDevice"
@@ -97,7 +107,9 @@
 
       <!-- File Uploader -->
       <section class="section">
-        <h2>Send Files</h2>
+        <h2 class="section-header">
+          <span class="section-title">Send Files</span>
+        </h2>
         <FileUploader
           :disabled="connectedPeers.size === 0"
           :connected-count="connectedPeers.size"
@@ -275,157 +287,263 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.container {
+/* ============================================
+   PAGE CONTAINER & HERO HEADER
+   ============================================ */
+.page-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--space-6);
 }
 
-.app-header {
+.hero-header {
+  position: relative;
   text-align: center;
-  margin-bottom: 3rem;
+  padding: var(--space-12) var(--space-4) var(--space-8);
+  margin-bottom: var(--space-8);
 }
 
-.app-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-primary);
-  font-weight: 700;
+.hero-bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgba(255, 165, 0, 0.12) 0%,
+    rgba(255, 165, 0, 0.05) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
 }
 
-.subtitle {
+html.dark .hero-bg-gradient {
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgba(255, 149, 0, 0.15) 0%,
+    rgba(255, 149, 0, 0.05) 40%,
+    transparent 70%
+  );
+}
+
+.hero-title {
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-3);
+  background: linear-gradient(135deg, #FF9500 0%, #FFB84D 50%, #FFC107 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size: var(--text-lg);
   color: var(--text-secondary);
-  font-size: 1.1rem;
+  font-weight: var(--font-normal);
+  letter-spacing: var(--tracking-normal);
 }
 
+/* ============================================
+   MAIN CONTENT & SECTIONS
+   ============================================ */
 .main-content {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--space-8);
 }
 
 .section {
   background: var(--bg-secondary);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid rgba(255, 165, 0, 0.1);
-  transition: all 0.3s ease;
+  border-radius: 0.75rem;
+  padding: var(--space-6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  transition:
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
+  animation: slideUp var(--duration-slow) var(--ease-out) forwards;
 }
 
-.section:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+html.dark .section {
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.section h2 {
-  margin-top: 0;
-  margin-bottom: 1rem;
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5) 0;
+}
+
+.section-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
   color: var(--color-primary);
-  font-weight: 600;
+  background: rgba(255, 165, 0, 0.1);
+  border-radius: 9999px;
 }
 
-.local-device {
+html.dark .section-badge {
+  background: rgba(255, 149, 0, 0.15);
+}
+
+/* ============================================
+   LOCAL DEVICE CARD (Glassmorphism)
+   ============================================ */
+.local-device-section {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.local-device-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(255, 165, 0, 0.05) 0%, rgba(255, 215, 0, 0.05) 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 165, 0, 0.2);
-  transition: all 0.3s ease;
+  padding: var(--space-6);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 165, 0, 0.15);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: all var(--transition-base);
+}
+
+html.dark .local-device-card {
+  background: rgba(26, 35, 50, 0.7);
+  border-color: rgba(255, 149, 0, 0.2);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .device-badge {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
-.device-badge .icon {
-  font-size: 2.5rem;
-  filter: drop-shadow(0 2px 4px rgba(255, 165, 0, 0.2));
+.device-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 4px 8px rgba(255, 165, 0, 0.25));
+}
+
+.device-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .device-name {
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
+  letter-spacing: var(--tracking-tight);
 }
 
 .device-platform {
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  font-size: 0.9rem;
 }
 
-.status-indicator {
-  display: flex;
+/* Status Pill */
+.status-pill {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 50px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 9999px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
 }
 
-.status-indicator.connected {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+.status-pill.connected {
+  background: rgba(16, 185, 129, 0.1);
   color: var(--color-success);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.status-indicator.disconnected {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%);
+.status-pill.disconnected {
+  background: rgba(239, 68, 68, 0.1);
   color: var(--color-error);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.status-indicator .dot {
+.status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background-color: currentColor;
-  animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
+.status-pill.connected .status-dot {
+  animation: pulseSubtle 2s var(--ease-in-out) infinite;
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
     opacity: 1;
   }
-
   50% {
-    opacity: 0.5;
+    opacity: 0.6;
   }
 }
 
+/* ============================================
+   CONNECTED DEVICES
+   ============================================ */
 .connected-devices {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-3);
 }
 
 .connected-device {
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
-  border: 2px solid rgba(16, 185, 129, 0.3);
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  padding: var(--space-4);
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 0.75rem;
+  transition: all var(--transition-base);
 }
 
 .connected-device.active {
-  border-color: rgba(16, 185, 129, 0.6);
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1);
 }
 
 .device-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .device-header .icon {
@@ -436,89 +554,77 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.device-name {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.device-platform {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
 .status {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
 }
 
 .device-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .select-btn,
 .disconnect-btn {
-  padding: 0.5rem 1rem;
+  padding: var(--space-2) var(--space-4);
   border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border-radius: 0.5rem;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 
 .select-btn {
-  background-color: rgba(100, 116, 139, 0.1);
+  background-color: rgba(100, 116, 139, 0.08);
   color: var(--text-primary);
-  border: 1px solid rgba(100, 116, 139, 0.3);
+  border: 1px solid rgba(100, 116, 139, 0.2);
 }
 
 .select-btn:hover:not(.active) {
-  background-color: rgba(100, 116, 139, 0.2);
+  background-color: rgba(100, 116, 139, 0.15);
 }
 
 .select-btn.active {
-  background-color: rgba(16, 185, 129, 0.2);
+  background-color: rgba(16, 185, 129, 0.15);
   color: var(--color-success);
-  border-color: rgba(16, 185, 129, 0.5);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .disconnect-btn {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(239, 68, 68, 0.08);
   color: var(--color-error);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .disconnect-btn:hover {
-  background-color: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 /* Connecting state styles */
 .connected-device.connecting {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
-  border-color: rgba(245, 158, 11, 0.4);
-  animation: connecting-pulse 1.5s ease-in-out infinite;
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.25);
+  animation: connecting-pulse 1.5s var(--ease-in-out) infinite;
 }
 
 @keyframes connecting-pulse {
-  0%,
-  100% {
-    border-color: rgba(245, 158, 11, 0.4);
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.25);
   }
-
   50% {
-    border-color: rgba(245, 158, 11, 0.8);
+    border-color: rgba(245, 158, 11, 0.5);
   }
 }
 
 .connecting-status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   color: var(--color-warning);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
 }
 
 .spinner {
@@ -530,25 +636,36 @@ onUnmounted(() => {
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* ============================================
+   MOBILE RESPONSIVE (Task 1 basic mobile styles)
+   ============================================ */
 @media (max-width: 768px) {
-  .container {
-    padding: 1rem;
+  .page-container {
+    padding: var(--space-4);
   }
 
-  .app-header h1 {
-    font-size: 2rem;
+  .hero-header {
+    padding: var(--space-8) var(--space-2) var(--space-6);
+    margin-bottom: var(--space-6);
   }
 
-  .local-device {
+  .hero-title {
+    font-size: var(--text-3xl);
+  }
+
+  .hero-subtitle {
+    font-size: var(--text-base);
+  }
+
+  .local-device-card {
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-4);
     text-align: center;
+  }
+
+  .device-badge {
+    flex-direction: column;
+    gap: var(--space-2);
   }
 
   .device-header {
@@ -558,6 +675,7 @@ onUnmounted(() => {
 
   .device-actions {
     flex-wrap: wrap;
+    justify-content: center;
   }
 }
 </style>
