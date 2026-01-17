@@ -29,9 +29,28 @@
       </section>
 
       <!-- Connected Devices -->
-      <section v-if="connectedPeers.size > 0" class="section">
+      <section v-if="connectedPeers.size > 0 || hasConnectingDevices" class="section">
         <h2>Connected Devices ({{ connectedPeers.size }})</h2>
         <div class="connected-devices">
+          <!-- Show connecting devices -->
+          <div
+            v-for="device in connectingDevices"
+            :key="'connecting-' + device.id"
+            class="connected-device connecting"
+          >
+            <div class="device-header">
+              <span class="icon">{{ getPlatformIcon(device.platform) }}</span>
+              <div class="device-info">
+                <div class="device-name">{{ device.name }}</div>
+                <div class="device-platform">{{ device.platform }}</div>
+              </div>
+              <div class="status connecting-status">
+                <span class="spinner" />
+                Connecting...
+              </div>
+            </div>
+          </div>
+          <!-- Show connected devices -->
           <div
             v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))"
             :key="device.id"
@@ -70,6 +89,7 @@
           :devices="devices"
           :selected-device="selectedDevice"
           :connected-peers="connectedPeers"
+          :connection-states="connectionStates"
           @select="handleDeviceSelect"
           @connect="handleDeviceConnect"
         />
@@ -95,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import type { Device } from '../types'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
@@ -103,7 +123,7 @@ import { useFileTransfer } from '../composables/useFileTransfer'
 import { useToast } from '../composables/useToast'
 
 const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId, announce } = useDeviceDiscovery()
-const { peer, localPeerId, initPeer, connectToPeer, connections, destroy } = useWebRTC()
+const { peer, localPeerId, initPeer, connectToPeer, connections, connectionStates, destroy } = useWebRTC()
 const { success, error: showError } = useToast()
 const { transfers, sendFile, receiveFile, clearCompleted } = useFileTransfer()
 
@@ -111,6 +131,19 @@ const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
 const targetPeerForSend = ref<string | null>(null)
 const fileReceiveHandlerSetup = ref<Set<string>>(new Set())
+
+// Computed properties for connection states
+const connectingDevices = computed(() => {
+  return devices.value.filter(device => {
+    if (!device.peerId) return false
+    const state = connectionStates.value.get(device.peerId)
+    return state === 'connecting' && !connectedPeers.value.has(device.peerId)
+  })
+})
+
+const hasConnectingDevices = computed(() => {
+  return connectingDevices.value.length > 0
+})
 
 onMounted(async () => {
   // Initialize device info
@@ -459,6 +492,48 @@ onUnmounted(() => {
 .disconnect-btn:hover {
   background-color: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Connecting state styles */
+.connected-device.connecting {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+  border-color: rgba(245, 158, 11, 0.4);
+  animation: connecting-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes connecting-pulse {
+  0%,
+  100% {
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  50% {
+    border-color: rgba(245, 158, 11, 0.8);
+  }
+}
+
+.connecting-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-warning);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  border-top-color: var(--color-warning);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {

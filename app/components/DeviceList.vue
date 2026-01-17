@@ -12,27 +12,51 @@
         class="device-card"
         :class="{
           selected: selectedDevice?.id === device.id,
-          connected: connectedPeers?.has(device.peerId!)
+          connected: connectedPeers?.has(device.peerId!),
+          connecting: getDeviceState(device) === 'connecting',
+          'connection-error': getDeviceState(device) === 'error'
         }"
         @click="$emit('select', device)"
       >
         <div class="device-icon">
           <span>{{ getPlatformIcon(device.platform) }}</span>
-          <span v-if="connectedPeers?.has(device.peerId!)" class="connected-badge">✓</span>
+          <!-- Connecting spinner badge -->
+          <span v-if="getDeviceState(device) === 'connecting'" class="state-badge connecting">
+            <span class="spinner-small" />
+          </span>
+          <!-- Connected checkmark badge -->
+          <span v-else-if="connectedPeers?.has(device.peerId!)" class="state-badge connected">✓</span>
+          <!-- Error badge -->
+          <span v-else-if="getDeviceState(device) === 'error'" class="state-badge error">!</span>
         </div>
         <div class="device-info">
           <h3>{{ device.name }}</h3>
           <p class="platform">{{ device.platform }}</p>
           <p v-if="device.ip" class="ip">{{ device.ip }}</p>
-          <p v-if="connectedPeers?.has(device.peerId!)" class="connected-status">Connected</p>
+          <!-- Connection status text -->
+          <p v-if="getDeviceState(device) === 'connecting'" class="status-text connecting">Connecting...</p>
+          <p v-else-if="connectedPeers?.has(device.peerId!)" class="status-text connected">Connected</p>
+          <p v-else-if="getDeviceState(device) === 'error'" class="status-text error">Connection failed</p>
         </div>
         <button
           v-if="selectedDevice?.id === device.id"
           class="connect-btn"
-          :class="{ connected: connectedPeers?.has(device.peerId!) }"
+          :class="{
+            connected: connectedPeers?.has(device.peerId!),
+            connecting: getDeviceState(device) === 'connecting'
+          }"
+          :disabled="getDeviceState(device) === 'connecting'"
           @click.stop="$emit('connect', device)"
         >
-          {{ connectedPeers?.has(device.peerId!) ? '✓ Connected' : 'Connect' }}
+          <template v-if="getDeviceState(device) === 'connecting'">
+            <span class="btn-spinner" /> Connecting...
+          </template>
+          <template v-else-if="connectedPeers?.has(device.peerId!)">
+            ✓ Connected
+          </template>
+          <template v-else>
+            Connect
+          </template>
         </button>
       </div>
     </div>
@@ -41,11 +65,13 @@
 
 <script setup lang="ts">
 import type { Device } from '../types'
+import type { ConnectionState } from '../composables/useWebRTC'
 
-defineProps<{
+const props = defineProps<{
   devices: Device[]
   selectedDevice?: Device | null
   connectedPeers?: Set<string>
+  connectionStates?: Map<string, ConnectionState>
 }>()
 
 defineEmits<{
@@ -63,6 +89,11 @@ const getPlatformIcon = (platform: string): string => {
     'Unknown': '💻'
   }
   return icons[platform] || '💻'
+}
+
+const getDeviceState = (device: Device): ConnectionState | undefined => {
+  if (!device.peerId || !props.connectionStates) return undefined
+  return props.connectionStates.get(device.peerId)
 }
 </script>
 
@@ -109,18 +140,39 @@ const getPlatformIcon = (platform: string): string => {
   background-color: rgba(16, 185, 129, 0.05);
 }
 
+.device-card.connecting {
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.05);
+  animation: connecting-card-pulse 1.5s ease-in-out infinite;
+}
+
+.device-card.connection-error {
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+@keyframes connecting-card-pulse {
+  0%,
+  100% {
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  50% {
+    border-color: rgba(245, 158, 11, 0.8);
+  }
+}
+
 .device-icon {
   font-size: 2rem;
   text-align: center;
   position: relative;
+  display: inline-block;
 }
 
-.connected-badge {
+.state-badge {
   position: absolute;
   top: -4px;
   right: -4px;
-  background-color: #10b981;
-  color: white;
   border-radius: 50%;
   width: 20px;
   height: 20px;
@@ -130,6 +182,35 @@ const getPlatformIcon = (platform: string): string => {
   font-size: 0.75rem;
   font-weight: bold;
   border: 2px solid white;
+}
+
+.state-badge.connected {
+  background-color: #10b981;
+  color: white;
+}
+
+.state-badge.connecting {
+  background-color: #f59e0b;
+}
+
+.state-badge.error {
+  background-color: #ef4444;
+  color: white;
+}
+
+.spinner-small {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .device-info h3 {
@@ -143,10 +224,21 @@ const getPlatformIcon = (platform: string): string => {
   color: #666;
 }
 
-.connected-status {
-  color: #10b981;
+.status-text {
   font-weight: 600;
   font-size: 0.85rem;
+}
+
+.status-text.connected {
+  color: #10b981;
+}
+
+.status-text.connecting {
+  color: #f59e0b;
+}
+
+.status-text.error {
+  color: #ef4444;
 }
 
 .connect-btn {
@@ -159,10 +251,19 @@ const getPlatformIcon = (platform: string): string => {
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.connect-btn:hover {
+.connect-btn:hover:not(:disabled) {
   background-color: #45a049;
+}
+
+.connect-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.9;
 }
 
 .connect-btn.connected {
@@ -171,5 +272,18 @@ const getPlatformIcon = (platform: string): string => {
 
 .connect-btn.connected:hover {
   background-color: #059669;
+}
+
+.connect-btn.connecting {
+  background-color: #f59e0b;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 </style>
