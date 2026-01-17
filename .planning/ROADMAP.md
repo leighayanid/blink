@@ -34,7 +34,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Toast notifications + connection state tracking (Wave 1)
+- [x] 02-01: Toast notifications + connection state tracking (Wave 1)
 - [ ] 02-02: Integrate UI feedback, replace alerts, verify (Wave 2)
 
 ### Phase 3: Visual Polish
@@ -49,5 +49,5 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Verify & Fix Core | 1/1 | Complete | 2026-01-17 |
-| 2. Connection & Transfer UX | 0/? | Not started | - |
+| 2. Connection & Transfer UX | 1/2 | In progress | - |
 | 3. Visual Polish | 0/? | Not started | - |
