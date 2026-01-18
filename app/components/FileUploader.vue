@@ -66,6 +66,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useToast } from '../composables/useToast'
+
+const MAX_FILE_SIZE = 1024 * 1024 * 1024 // 1GB
+const { error: showError } = useToast()
 
 const props = defineProps<{
   disabled?: boolean
@@ -88,7 +92,7 @@ const dropZoneTitle = computed(() => {
 
 const dropZoneSubtitle = computed(() => {
   if (props.disabled) return 'Select a device to start sharing'
-  return `Multiple files supported`
+  return `Max file size: 1GB • Multiple files supported`
 })
 
 const handleDragOver = () => {
@@ -106,13 +110,29 @@ const handleDrop = (e: DragEvent) => {
   if (props.disabled) return
 
   const files = Array.from(e.dataTransfer?.files || [])
-  selectedFiles.value.push(...files)
+  validateAndAddFiles(files)
+}
+
+const validateAndAddFiles = (files: File[]) => {
+  const validFiles: File[] = []
+  
+  files.forEach(file => {
+    if (file.size > MAX_FILE_SIZE) {
+      showError(`File "${file.name}" exceeds the 1GB limit`)
+    } else {
+      validFiles.push(file)
+    }
+  })
+
+  if (validFiles.length > 0) {
+    selectedFiles.value.push(...validFiles)
+  }
 }
 
 const handleFileSelect = (e: Event) => {
   const input = e.target as HTMLInputElement
   const files = Array.from(input.files || [])
-  selectedFiles.value.push(...files)
+  validateAndAddFiles(files)
 
   if (fileInput.value) {
     fileInput.value.value = ''
