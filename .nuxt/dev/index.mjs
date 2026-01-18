@@ -1360,7 +1360,7 @@ const _hSltrB0UwI__inuLlnZhAJ6zfYHmn7qrsgWonxDEzo8 = (function(nitro) {
 
 const rootDir = "/Users/leighdinaya/Web/Nuxt/local-share-app";
 
-const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[],"style":[],"script":[],"noscript":[]};
+const appHead = {"meta":[{"charset":"utf-8"},{"name":"viewport","content":"width=device-width, initial-scale=1"},{"hid":"description","name":"description","content":"Fast, secure, and peer-to-peer local file sharing directly between devices on your network."},{"name":"format-detection","content":"telephone=no"},{"name":"theme-color","content":"#FF9500"}],"link":[{"rel":"icon","type":"image/svg+xml","href":"/favicon.svg"}],"style":[],"script":[],"noscript":[],"title":"Blink","titleTemplate":"%s - Blink Local Share"};
 
 const appRootTag = "div";
 
