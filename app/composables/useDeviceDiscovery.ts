@@ -47,10 +47,20 @@ export const useDeviceDiscovery = () => {
   }
 
   const connect = () => {
-    // Dynamically build WebSocket URL from current window location
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host // This includes the IP and port
-    const wsUrl = `${protocol}//${host}/ws`
+    const config = useRuntimeConfig()
+    let wsUrl = config.public.wsUrl as string
+
+    // If default localhost config is present but we are on a deployed domain,
+    // fallback to dynamic detection or prioritize config if it looks like a real URL.
+    const isLocalConfig = wsUrl.includes('localhost') || wsUrl.includes('127.0.0.1')
+    const isDeployed = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+
+    if (isLocalConfig && isDeployed) {
+      // Config is default/local, but we are deployed. Auto-detect from window.
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const host = window.location.host
+      wsUrl = `${protocol}//${host}/ws`
+    }
 
     console.log('[Discovery] Connecting to WebSocket:', wsUrl)
     socket.value = new WebSocket(wsUrl)
