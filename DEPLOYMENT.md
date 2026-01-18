@@ -32,10 +32,10 @@ Deploy to a platform that supports persistent servers (Node.js runtime) to keep 
 3.  **Configuration:**
     - Railway automatically detects `npm` and `nuxt`.
     - It will build using `npm run build` and start using `npm run start` (or similar).
-    - **Important:** Go to "Settings" -> "Generate Domain" to get a public URL (e.g., `web-production-123.up.railway.app`).
+    - **Important:** Go to "Settings" -> "Generate Domain" to get a public URL (e.g., `blink-app.up.railway.app`).
 4.  **Environment Variables:**
-    - Set `NUXT_PUBLIC_WS_URL` to `wss://<your-railway-domain>/ws` (or just `/ws` if on same origin).
-    - Set `NUXT_PUBLIC_SIGNALING_SERVER` to `https://<your-railway-domain>`.
+    - Set `NUXT_PUBLIC_WS_URL` to `wss://blink-app.up.railway.app/ws` (or just `/ws` if on same origin).
+    - Set `NUXT_PUBLIC_SIGNALING_SERVER` to `https://blink-app.up.railway.app`.
 5.  **Deploy:** Railway handles the rest.
 
 ---

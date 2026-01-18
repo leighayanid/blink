@@ -6,7 +6,12 @@
         <p class="subtitle">Share files instantly on your local network</p>
       </div>
       <button class="theme-toggle" @click="toggleColorMode" :title="colorMode.value === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
-        {{ colorMode.value === 'dark' ? '☀️' : '🌙' }}
+        <ClientOnly>
+          {{ colorMode.value === 'dark' ? '☀️' : '🌙' }}
+          <template #fallback>
+            🌙
+          </template>
+        </ClientOnly>
       </button>
     </header>
 
