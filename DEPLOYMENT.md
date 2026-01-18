@@ -52,5 +52,33 @@ If you **must** use Vercel, you need to replace the custom WebSocket server (`se
     - Set preset to `Nuxt`.
     - It will deploy, but the `/ws` route will 404 or disconnect immediately.
 
-### To make Vercel work:
 You would need to refactor `useDeviceDiscovery.ts` to use a service like **Ably** or **Pusher** instead of your local WebSocket server. This allows the static frontend on Vercel to communicate state (active users) via an external API.
+
+---
+
+## Option 3: Docker (Universal)
+*Supports full WebSocket functionality. Runs anywhere Docker runs.*
+
+This project includes a `Dockerfile` optimized for production. You can deploy this container to any provider that supports Docker (DigitalOcean App Platform, AWS App Runner, Fly.io, Google Cloud Run, etc.).
+
+### 1. Build & Run Locally
+To verify the container works:
+
+```bash
+# Build the image
+docker build -t blink-app .
+
+# Run the container (mapping port 3000)
+docker run -p 3000:3000 blink-app
+```
+
+Access the app at `http://localhost:3000`.
+
+### 2. Deploy to Cloud
+1.  **Push to Registry:** Push your image to a container registry (Docker Hub, GHCR, etc.).
+2.  **Deploy:** Configure your cloud provider to pull and run the image.
+    - **Port:** Expose port `3000`.
+    - **Environment Variables:**
+        - `NUXT_PUBLIC_WS_URL`: `wss://<your-domain>/ws` (or `/ws` if same origin).
+        - `NUXT_PUBLIC_SIGNALING_SERVER`: `https://<your-domain>`.
+
