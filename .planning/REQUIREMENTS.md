@@ -1,4 +1,4 @@
-# Requirements: Hatid v1.0
+# Requirements: Blink v1.0
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# Roadmap: Hatid
+# Roadmap: Blink
 
 ## Overview
 

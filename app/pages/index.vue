@@ -1,132 +1,137 @@
 <template>
   <div class="page-container">
-    <!-- Hero Header -->
-    <header class="hero-header">
-      <div class="hero-bg-gradient" />
-      <h1 class="hero-title">Hatid</h1>
-      <p class="hero-subtitle">Share files instantly on your local network</p>
-    </header>
+    <!-- Three-Column Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- LEFT COLUMN: Identity & Discovery -->
+      <div class="dashboard-column column-left">
+        <!-- App Header -->
+        <div class="section-card header-card">
+          <button class="theme-toggle" @click="toggleTheme"
+            :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+            <!-- Sun Icon (for Dark Mode) -->
+            <svg v-if="isDark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <!-- Moon Icon (for Light Mode) -->
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
 
-    <div class="main-content">
-      <!-- Left Column: Your Device + Available Devices -->
-      <div class="grid-left">
-        <!-- Local Device Info -->
-        <section class="section local-device-section animate-section" style="--animation-order: 0">
-          <h2 class="section-header">
-            <span class="section-title">Your Device</span>
-          </h2>
-          <div v-if="localDevice" class="local-device-card">
-            <div class="device-badge">
-              <span class="device-icon">{{ getPlatformIcon(localDevice.platform) }}</span>
-              <div class="device-details">
-                <div class="device-name">{{ localDevice.name }}</div>
-                <div class="device-platform">{{ localDevice.platform }}</div>
-              </div>
-            </div>
-            <div v-if="isConnected" class="status-pill connected">
-              <span class="status-dot" />
-              Connected
-            </div>
-            <div v-else class="status-pill disconnected">
-              <span class="status-dot" />
-              Disconnected
+          <div class="header-content">
+            <h1 class="app-title">BLINK</h1>
+            <p class="app-subtitle">SECURE LOCAL FILE SHARING</p>
+            <div class="header-status">
+              <span class="status-dot active"></span>
+              <span class="text-mono text-xs">ONLINE</span>
             </div>
           </div>
-        </section>
+        </div>
+
+        <!-- Your Device -->
+        <div class="section-card">
+          <div class="card-header">
+            <h2 class="card-title">LOCAL DEVICE</h2>
+          </div>
+          <div v-if="localDevice" class="local-device-content">
+            <div class="device-info">
+              <span class="device-type-badge">{{ getPlatformLabel(localDevice.platform) }}</span>
+              <div class="device-text">
+                <span class="device-name">{{ localDevice.name }}</span>
+                <span class="device-platform">{{ localDevice.platform }}</span>
+              </div>
+            </div>
+            <div class="status-badge" :class="{ active: isConnected }">
+              {{ isConnected ? 'CONNECTED' : 'OFFLINE' }}
+            </div>
+          </div>
+        </div>
 
         <!-- Available Devices -->
-        <section class="section animate-section" style="--animation-order: 1">
-          <h2 class="section-header">
-            <span class="section-title">Available Devices</span>
-            <span class="section-badge">{{ devices.length }}</span>
-          </h2>
-          <DeviceList
-            :devices="devices"
-            :selected-device="selectedDevice"
-            :connected-peers="connectedPeers"
-            :connection-states="connectionStates"
-            @select="handleDeviceSelect"
-            @connect="handleDeviceConnect"
-          />
-        </section>
+        <div class="section-card flex-grow">
+          <div class="card-header">
+            <h2 class="card-title">DISCOVERED</h2>
+            <span class="count-badge">{{ devices.length }}</span>
+          </div>
+          <DeviceList :devices="devices" :selected-device="selectedDevice" :connected-peers="connectedPeers"
+            :connection-states="connectionStates" @select="handleDeviceSelect" @connect="handleDeviceConnect" />
+        </div>
       </div>
 
-      <!-- Right Column: Connected Devices + Send Files + Progress -->
-      <div class="grid-right">
-        <!-- Connected Devices -->
-        <section v-if="connectedPeers.size > 0 || hasConnectingDevices" class="section animate-section" style="--animation-order: 2">
-          <h2 class="section-header">
-            <span class="section-title">Connected Devices</span>
-            <span class="section-badge">{{ connectedPeers.size }}</span>
-          </h2>
-          <div class="connected-devices">
-            <!-- Show connecting devices -->
-            <div
-              v-for="device in connectingDevices"
-              :key="'connecting-' + device.id"
-              class="connected-device connecting"
-            >
-              <div class="device-header">
-                <span class="icon">{{ getPlatformIcon(device.platform) }}</span>
-                <div class="device-info">
-                  <div class="device-name">{{ device.name }}</div>
-                  <div class="device-platform">{{ device.platform }}</div>
-                </div>
-                <div class="status connecting-status">
-                  <span class="spinner" />
-                  Connecting...
-                </div>
+      <!-- CENTER COLUMN: Actions -->
+      <div class="dashboard-column column-center">
+        <!-- File Uploader -->
+        <div class="section-card">
+          <div class="card-header">
+            <h2 class="card-title">TRANSFER FILES</h2>
+          </div>
+          <FileUploader :disabled="connectedPeers.size === 0" :connected-count="connectedPeers.size"
+            @files-selected="handleFilesSelected" />
+        </div>
+
+        <!-- Progress -->
+        <div class="section-card flex-grow">
+          <div class="card-header">
+            <h2 class="card-title">QUEUE</h2>
+            <span v-if="transfers.length > 0" class="count-badge">{{ transfers.length }}</span>
+          </div>
+          <TransferProgress :transfers="transfers" :embedded="true" @clear-completed="clearCompleted" />
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Connections -->
+      <div class="dashboard-column column-right">
+        <div class="section-card flex-grow">
+          <div class="card-header">
+            <h2 class="card-title">NETWORK</h2>
+            <span class="count-badge">{{ connectedPeers.size }}</span>
+          </div>
+
+          <div v-if="connectedPeers.size === 0 && !hasConnectingDevices" class="empty-state">
+            <p class="text-mono text-sm">NO ACTIVE CONNECTIONS</p>
+          </div>
+
+          <div v-else class="connected-list">
+            <!-- Connecting -->
+            <div v-for="device in connectingDevices" :key="'connecting-' + device.id" class="connected-item connecting">
+              <div class="item-main">
+                <span class="device-type-badge">{{ getPlatformLabel(device.platform) }}</span>
+                <span class="item-name">{{ device.name }}</span>
               </div>
+              <span class="text-xs text-mono">CONNECTING...</span>
             </div>
-            <!-- Show connected devices -->
-            <div
-              v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))"
-              :key="device.id"
-              class="connected-device"
-              :class="{ active: targetPeerForSend === device.peerId }"
-            >
-              <div class="device-header">
-                <span class="icon">{{ getPlatformIcon(device.platform) }}</span>
-                <div class="device-info">
-                  <div class="device-name">{{ device.name }}</div>
-                  <div class="device-platform">{{ device.platform }}</div>
+
+            <!-- Connected -->
+            <div v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))" :key="device.id"
+              class="connected-item" :class="{ active: targetPeerForSend === device.peerId }">
+              <div class="item-main">
+                <span class="device-type-badge">{{ getPlatformLabel(device.platform) }}</span>
+                <div class="item-details">
+                  <span class="item-name">{{ device.name }}</span>
+                  <span class="status-text">ACTIVE</span>
                 </div>
-                <div class="status">Connected</div>
               </div>
-              <div class="device-actions">
-                <button
-                  v-if="connectedPeers.size > 1"
-                  class="select-btn"
-                  :class="{ active: targetPeerForSend === device.peerId }"
-                  @click="targetPeerForSend = device.peerId"
-                >
-                  {{ targetPeerForSend === device.peerId ? 'Active' : 'Select' }}
+              <div class="item-actions">
+                <button v-if="connectedPeers.size > 1" class="btn-base btn-ghost"
+                  @click="targetPeerForSend = device.peerId">
+                  {{ targetPeerForSend === device.peerId ? 'SELECTED' : 'SELECT' }}
                 </button>
-                <button class="disconnect-btn" @click="handleDeviceDisconnect(device)">
-                  Disconnect
+                <button class="btn-base btn-outline" @click="handleDeviceDisconnect(device)">
+                  DISCONNECT
                 </button>
               </div>
             </div>
           </div>
-        </section>
-
-        <!-- File Uploader -->
-        <section class="section animate-section" style="--animation-order: 3">
-          <h2 class="section-header">
-            <span class="section-title">Send Files</span>
-          </h2>
-          <FileUploader
-            :disabled="connectedPeers.size === 0"
-            :connected-count="connectedPeers.size"
-            @files-selected="handleFilesSelected"
-          />
-        </section>
-
-        <!-- Transfer Progress -->
-        <TransferProgress
-          :transfers="transfers"
-          @clear-completed="clearCompleted"
-        />
+        </div>
       </div>
     </div>
   </div>
@@ -139,11 +144,13 @@ import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
 import { useFileTransfer } from '../composables/useFileTransfer'
 import { useToast } from '../composables/useToast'
+import { useTheme } from '../composables/useTheme'
 
 const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId, announce } = useDeviceDiscovery()
 const { peer, localPeerId, initPeer, connectToPeer, connections, connectionStates, destroy } = useWebRTC()
 const { success, error: showError } = useToast()
 const { transfers, sendFile, receiveFile, clearCompleted } = useFileTransfer()
+const { isDark, toggleTheme } = useTheme()
 
 const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
@@ -164,26 +171,15 @@ const hasConnectingDevices = computed(() => {
 })
 
 onMounted(async () => {
-  // Initialize device info
   initDevice()
-
-  // Initialize WebRTC peer with a unique ID
-  // PeerJS will use this ID for the peer connection
   try {
     const peerId = await initPeer(localDevice.value?.id)
-    // Store the PeerJS peer ID in the local device so it's included in announcements
     setLocalPeerId(peerId)
-    console.log('[Page] PeerJS initialized with ID:', peerId)
   } catch (error) {
     console.error('Failed to initialize peer:', error)
   }
-
-  // Connect to signaling server AFTER PeerJS is ready
-  // This ensures the announce includes the correct peerId
   connect()
 
-  // Set up file receive handler for incoming connections
-  // Only set up handler once per connection to prevent duplicate listeners
   watch(connections, (newConnections) => {
     newConnections.forEach((conn, peerId) => {
       if (!fileReceiveHandlerSetup.value.has(peerId)) {
@@ -194,16 +190,16 @@ onMounted(async () => {
   }, { deep: true })
 })
 
-const getPlatformIcon = (platform: string): string => {
-  const icons: Record<string, string> = {
-    'Windows': '🪟',
-    'macOS': '🍎',
-    'Linux': '🐧',
-    'Android': '🤖',
-    'iOS': '📱',
-    'Unknown': '💻'
+const getPlatformLabel = (platform: string): string => {
+  const map: Record<string, string> = {
+    'Windows': 'WIN',
+    'macOS': 'MAC',
+    'Linux': 'LIN',
+    'Android': 'AND',
+    'iOS': 'IOS',
+    'Unknown': 'UNK'
   }
-  return icons[platform] || '💻'
+  return map[platform] || 'UNK'
 }
 
 const handleDeviceSelect = (device: Device) => {
@@ -213,30 +209,18 @@ const handleDeviceSelect = (device: Device) => {
 const handleDeviceConnect = async (device: Device) => {
   try {
     if (!device.peerId) {
-      console.error('Device has no peer ID')
       showError('Cannot connect: Device has no peer ID')
       return
     }
-
-    // Check if already connected
     if (connectedPeers.value.has(device.peerId)) {
-      console.log('[Page] Already connected to', device.name)
       targetPeerForSend.value = device.peerId
       return
     }
-
-    console.log('[Page] Attempting to connect to device:', device.name, 'with peerId:', device.peerId)
     const conn = await connectToPeer(device.peerId)
     connectedPeers.value.add(device.peerId)
     targetPeerForSend.value = device.peerId
-
-    // File receive handler is set up by the connections watcher
-    // to ensure it's only registered once per connection
-
-    console.log('[Page] Successfully connected to', device.name)
     success(`Connected to ${device.name}`)
   } catch (error) {
-    console.error('[Page] Failed to connect to device:', error)
     const errorMsg = error instanceof Error ? error.message : String(error)
     showError(`Failed to connect to ${device.name}: ${errorMsg}`)
   }
@@ -245,37 +229,22 @@ const handleDeviceConnect = async (device: Device) => {
 const handleDeviceDisconnect = (device: Device) => {
   if (device.peerId && connectedPeers.value.has(device.peerId)) {
     connectedPeers.value.delete(device.peerId)
-    // Clean up file receive handler tracking
     fileReceiveHandlerSetup.value.delete(device.peerId)
-    // Close the WebRTC connection
     const conn = connections.value.get(device.peerId)
-    if (conn) {
-      conn.close()
-    }
-    // Update target peer if this was the selected one
+    if (conn) conn.close()
     if (targetPeerForSend.value === device.peerId) {
       const remaining = Array.from(connectedPeers.value)[0]
       targetPeerForSend.value = remaining || null
     }
-    console.log('[Page] Disconnected from', device.name)
   }
 }
 
 const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
   const peerId = targetPeerId || targetPeerForSend.value
-
-  if (!peerId) {
-    console.error('No peer selected for sending')
-    return
-  }
-
+  if (!peerId) return
   const connection = connections.value.get(peerId)
-  if (!connection) {
-    console.error('Connection not found for peer:', peerId)
-    return
-  }
+  if (!connection) return
 
-  // Send each file
   for (const file of files) {
     try {
       await sendFile(file, connection)
@@ -286,509 +255,317 @@ const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
 }
 
 onUnmounted(() => {
-  // Clean up connections
   disconnect()
   destroy()
 })
 </script>
 
 <style scoped>
-/* ============================================
-   PAGE CONTAINER & HERO HEADER
-   ============================================ */
 .page-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  height: 100vh;
+  margin: 0;
   padding: var(--space-6);
-}
-
-.hero-header {
-  position: relative;
-  text-align: center;
-  padding: var(--space-12) var(--space-4) var(--space-8);
-  margin-bottom: var(--space-8);
-}
-
-.hero-bg-gradient {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(255, 165, 0, 0.12) 0%,
-    rgba(255, 165, 0, 0.05) 40%,
-    transparent 70%
-  );
-  pointer-events: none;
-  z-index: -1;
-}
-
-html.dark .hero-bg-gradient {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(255, 149, 0, 0.15) 0%,
-    rgba(255, 149, 0, 0.05) 40%,
-    transparent 70%
-  );
-}
-
-.hero-title {
-  font-size: var(--text-4xl);
-  font-weight: var(--font-bold);
-  letter-spacing: var(--tracking-tight);
-  line-height: var(--leading-tight);
-  margin-bottom: var(--space-3);
-  background: linear-gradient(135deg, #FF9500 0%, #FFB84D 50%, #FFC107 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-subtitle {
-  font-size: var(--text-lg);
-  color: var(--text-secondary);
-  font-weight: var(--font-normal);
-  letter-spacing: var(--tracking-normal);
-}
-
-/* ============================================
-   MAIN CONTENT & RESPONSIVE GRID
-   ============================================ */
-.main-content {
-  display: grid;
-  gap: var(--space-8);
-  transition: gap var(--transition-slow);
-}
-
-/* Desktop (>1024px): Two-column layout */
-@media (min-width: 1025px) {
-  .main-content {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .grid-left {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-  }
-
-  .grid-right {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-  }
-}
-
-/* Tablet (768px-1024px): Two columns, reduced gap */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .main-content {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-5);
-  }
-
-  .grid-left,
-  .grid-right {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  /* Slightly smaller section padding on tablet */
-  .section {
-    padding: var(--space-5);
-  }
-}
-
-/* Mobile (<768px): Single column stack */
-@media (max-width: 767px) {
-  .main-content {
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
-  }
-
-  .grid-left,
-  .grid-right {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-5);
-  }
-}
-
-.section {
-  background: var(--bg-secondary);
-  border-radius: 0.75rem;
-  padding: var(--space-6);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 1px 3px rgba(0, 0, 0, 0.06);
-  transition:
-    box-shadow var(--transition-base),
-    border-color var(--transition-base),
-    padding var(--transition-base);
-}
-
-/* Staggered animation on mount */
-.animate-section {
-  opacity: 0;
-  animation: slideUp var(--duration-slow) var(--ease-out) forwards;
-  animation-delay: calc(var(--animation-order, 0) * 80ms);
-}
-
-html.dark .section {
-  border-color: rgba(255, 255, 255, 0.06);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.2),
-    0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-/* Section Headers */
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin: 0 0 var(--space-5) 0;
-}
-
-.section-title {
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-}
-
-.section-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 var(--space-2);
-  font-size: var(--text-xs);
-  font-weight: var(--font-semibold);
-  color: var(--color-primary);
-  background: rgba(255, 165, 0, 0.1);
-  border-radius: 9999px;
-}
-
-html.dark .section-badge {
-  background: rgba(255, 149, 0, 0.15);
-}
-
-/* ============================================
-   LOCAL DEVICE CARD (Glassmorphism)
-   ============================================ */
-.local-device-section {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-
-.local-device-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-6);
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 165, 0, 0.15);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  transition: all var(--transition-base);
-}
-
-html.dark .local-device-card {
-  background: rgba(26, 35, 50, 0.7);
-  border-color: rgba(255, 149, 0, 0.2);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.3),
-    0 2px 4px -1px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.device-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.device-icon {
-  font-size: 3rem;
-  filter: drop-shadow(0 4px 8px rgba(255, 165, 0, 0.25));
-}
-
-.device-details {
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-}
-
-.device-name {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+  background: var(--bg-primary);
   color: var(--text-primary);
-  letter-spacing: var(--tracking-tight);
 }
 
-.device-platform {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+.dashboard-grid {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
-/* Status Pill */
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-radius: 9999px;
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-}
-
-.status-pill.connected {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--color-success);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.status-pill.disconnected {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-error);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: currentColor;
-}
-
-.status-pill.connected .status-dot {
-  animation: pulseSubtle 2s var(--ease-in-out) infinite;
-}
-
-@keyframes pulseSubtle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-/* ============================================
-   CONNECTED DEVICES
-   ============================================ */
-.connected-devices {
+.dashboard-column {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  height: 100%;
+  overflow-y: auto;
 }
 
-.connected-device {
-  padding: var(--space-4);
-  background: rgba(16, 185, 129, 0.04);
-  border: 1px solid rgba(16, 185, 129, 0.15);
-  border-radius: 0.75rem;
-  transition: all var(--transition-base);
+.dashboard-column:last-child {
+  border-right: none;
 }
 
-.connected-device.active {
-  border-color: rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.08);
-  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.1);
+.column-left {
+  flex: 1;
+  min-width: 300px;
 }
 
-.device-header {
+.column-center {
+  flex: 2;
+  min-width: 400px;
+}
+
+.column-right {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* Section Cards */
+.section-card {
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
+  flex-direction: column;
+  padding: var(--space-6);
 }
 
-.device-header .icon {
-  font-size: 2rem;
-}
-
-.device-info {
+.section-card.flex-grow {
   flex: 1;
 }
 
-.status {
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
+.section-card:last-child {
+  border-bottom: none;
 }
 
-.device-actions {
+/* Headers */
+.header-card {
+  padding: var(--space-8) var(--space-6);
+  position: relative;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.header-content {
+  text-align: center;
+}
+
+.app-title {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 3rem;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+
+.app-subtitle {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:global(.dark) .card-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.count-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+/* Local Device */
+.local-device-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.device-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.device-type-badge {
+  font-family: var(--font-mono);
+  font-weight: bold;
+  font-size: var(--text-xs);
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  min-width: 48px;
+  text-align: center;
+}
+
+.device-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.device-name {
+  font-weight: bold;
+  font-size: var(--text-base);
+}
+
+.device-platform {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.status-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.status-badge.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+/* Connected Devices */
+.connected-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.connected-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+}
+
+.connected-item.active {
+  background: var(--bg-primary);
+  border-color: var(--border-strong);
+}
+
+.item-main {
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
 }
 
-.select-btn,
-.disconnect-btn {
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  border-radius: 0.5rem;
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.select-btn {
-  background-color: rgba(100, 116, 139, 0.08);
-  color: var(--text-primary);
-  border: 1px solid rgba(100, 116, 139, 0.2);
-}
-
-.select-btn:hover:not(.active) {
-  background-color: rgba(100, 116, 139, 0.15);
-}
-
-.select-btn.active {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--color-success);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.disconnect-btn {
-  background-color: rgba(239, 68, 68, 0.08);
-  color: var(--color-error);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.disconnect-btn:hover {
-  background-color: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-/* Connecting state styles */
-.connected-device.connecting {
-  background: rgba(245, 158, 11, 0.06);
-  border-color: rgba(245, 158, 11, 0.25);
-  animation: connecting-pulse 1.5s var(--ease-in-out) infinite;
-}
-
-@keyframes connecting-pulse {
-  0%, 100% {
-    border-color: rgba(245, 158, 11, 0.25);
-  }
-  50% {
-    border-color: rgba(245, 158, 11, 0.5);
-  }
-}
-
-.connecting-status {
+.item-details {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-warning);
+  flex-direction: column;
+}
+
+.item-name {
+  font-weight: 600;
   font-size: var(--text-sm);
-  font-weight: var(--font-medium);
 }
 
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(245, 158, 11, 0.3);
-  border-top-color: var(--color-warning);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.status-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
 }
 
-/* ============================================
-   MOBILE RESPONSIVE (<768px)
-   ============================================ */
-@media (max-width: 767px) {
+.item-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  opacity: 0.5;
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .page-container {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .dashboard-grid {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .dashboard-column {
+    border-right: none;
+    border-bottom: none;
+    height: auto;
+    overflow: visible;
+    flex: none;
+    width: 100%;
+  }
+
+  .column-left,
+  .column-center,
+  .column-right {
+    min-width: 0;
+    width: 100%;
+    flex: none;
+  }
+}
+
+@media (max-width: 768px) {
   .page-container {
     padding: var(--space-4);
   }
 
-  .hero-header {
-    padding: var(--space-8) var(--space-2) var(--space-6);
-    margin-bottom: var(--space-6);
+  .dashboard-column {
+    padding-bottom: var(--space-6);
   }
 
-  .hero-title {
-    font-size: var(--text-3xl);
-  }
-
-  .hero-subtitle {
-    font-size: var(--text-base);
-  }
-
-  /* Section mobile adjustments */
-  .section {
+  .section-card {
     padding: var(--space-4);
-    border-radius: 0.625rem;
   }
 
-  /* Local device card stacks vertically on mobile */
-  .local-device-card {
-    flex-direction: column;
-    gap: var(--space-4);
-    text-align: center;
-    padding: var(--space-5);
-  }
-
-  .device-badge {
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-
-  .device-icon {
-    font-size: 2.5rem;
-  }
-
-  .device-header {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .device-actions {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  /* Touch-friendly button sizing (min 44px tap targets) */
-  .select-btn,
-  .disconnect-btn {
-    min-height: 44px;
-    padding: var(--space-3) var(--space-4);
-  }
-
-  /* Section header compact on mobile */
-  .section-header {
-    margin-bottom: var(--space-4);
-  }
-
-  .section-title {
-    font-size: var(--text-xs);
-  }
-}
-
-/* ============================================
-   TABLET RESPONSIVE (768px - 1024px)
-   ============================================ */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .page-container {
-    padding: var(--space-5);
-  }
-
-  .hero-header {
-    padding: var(--space-10) var(--space-4) var(--space-6);
-    margin-bottom: var(--space-6);
-  }
-
-  .hero-title {
-    font-size: 2.25rem; /* between 3xl and 4xl */
+  .header-card {
+    padding: var(--space-6) var(--space-4);
   }
 }
 </style>

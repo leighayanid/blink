@@ -17,6 +17,7 @@ interface _GlobalComponents {
   'DeviceList': typeof import("../../app/components/DeviceList.vue")['default']
   'FileUploader': typeof import("../../app/components/FileUploader.vue")['default']
   'LocalDeviceCard': typeof import("../../app/components/LocalDeviceCard.vue")['default']
+  'Toast': typeof import("../../app/components/Toast.vue")['default']
   'TransferProgress': typeof import("../../app/components/TransferProgress.vue")['default']
   'NuxtWelcome': typeof import("../../node_modules/nuxt/dist/app/components/welcome.vue")['default']
   'NuxtLayout': typeof import("../../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
@@ -45,6 +46,7 @@ interface _GlobalComponents {
   'LazyDeviceList': LazyComponent<typeof import("../../app/components/DeviceList.vue")['default']>
   'LazyFileUploader': LazyComponent<typeof import("../../app/components/FileUploader.vue")['default']>
   'LazyLocalDeviceCard': LazyComponent<typeof import("../../app/components/LocalDeviceCard.vue")['default']>
+  'LazyToast': LazyComponent<typeof import("../../app/components/Toast.vue")['default']>
   'LazyTransferProgress': LazyComponent<typeof import("../../app/components/TransferProgress.vue")['default']>
   'LazyNuxtWelcome': LazyComponent<typeof import("../../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
   'LazyNuxtLayout': LazyComponent<typeof import("../../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>

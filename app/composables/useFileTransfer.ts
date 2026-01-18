@@ -110,12 +110,11 @@ export const useFileTransfer = () => {
 
     connection.on('data', async (data: any) => {
       try {
-        // Try to parse as JSON (metadata/control messages)
+        // Control messages are sent as JSON strings
         if (typeof data === 'string') {
           const message = JSON.parse(data)
 
           if (message.type === 'file-meta') {
-            // Initialize new transfer
             currentTransfer = {
               id: message.transferId,
               chunks: [],
@@ -138,6 +137,7 @@ export const useFileTransfer = () => {
           }
 
           if (message.type === 'file-chunk' && currentTransfer) {
+            // Keep totalChunks for progress calculation
             currentTransfer.totalChunks = message.totalChunks
           }
 
@@ -149,7 +149,6 @@ export const useFileTransfer = () => {
 
             downloadFile(blob, currentTransfer.metadata?.name || 'download')
 
-            // Update transfer status
             const transfer = transfers.value.find(t => t.id === message.transferId)
             if (transfer) {
               transfer.status = 'completed'
@@ -160,14 +159,49 @@ export const useFileTransfer = () => {
             console.log(`[FileTransfer] File received successfully: ${currentTransfer.metadata?.name}`)
             currentTransfer = null
           }
-        } else if (data instanceof ArrayBuffer && currentTransfer) {
-          currentTransfer.chunks.push(data)
+
+          return
+        }
+
+        // Binary data can arrive as ArrayBuffer, Blob, or typed arrays
+        const pushChunk = async (chunkData: ArrayBuffer) => {
+          if (!currentTransfer) return
+          currentTransfer.chunks.push(chunkData)
           currentTransfer.receivedChunks++
 
-          // Update progress
+          // Update progress using totalChunks if available, otherwise approximate by bytes
           const transfer = transfers.value.find(t => t.id === currentTransfer?.id)
-          if (transfer && currentTransfer.totalChunks > 0) {
-            transfer.progress = (currentTransfer.receivedChunks / currentTransfer.totalChunks) * 100
+          if (transfer) {
+            if (currentTransfer.totalChunks && currentTransfer.totalChunks > 0) {
+              transfer.progress = (currentTransfer.receivedChunks / currentTransfer.totalChunks) * 100
+            } else if (currentTransfer.metadata?.size) {
+              // Approximate progress by bytes received
+              const receivedBytes = currentTransfer.chunks.reduce((acc, c) => acc + c.byteLength, 0)
+              transfer.progress = Math.min(100, (receivedBytes / currentTransfer.metadata.size) * 100)
+            }
+          }
+        }
+
+        if (data instanceof ArrayBuffer) {
+          await pushChunk(data)
+        } else if (ArrayBuffer.isView(data)) {
+          // TypedArray (Uint8Array, etc.)
+          await pushChunk(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength))
+        } else if (data instanceof Blob) {
+          const ab = await data.arrayBuffer()
+          await pushChunk(ab)
+        } else if (data && data.buffer && ArrayBuffer.isView(data.buffer)) {
+          // Some libraries may deliver objects with a buffer property
+          await pushChunk(data.buffer)
+        } else {
+          // Unknown binary shape - try to coerce
+          try {
+            const coerced = await Promise.resolve(data)
+            if (coerced instanceof ArrayBuffer) {
+              await pushChunk(coerced)
+            }
+          } catch (e) {
+            console.warn('[FileTransfer] Received unknown data type for chunk', data)
           }
         }
       } catch (error) {

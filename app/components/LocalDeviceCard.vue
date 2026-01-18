@@ -1,24 +1,21 @@
 <template>
-  <section class="section local-device-card">
-    <h2>Your Device</h2>
-    <div v-if="localDevice" class="local-device">
-      <div class="device-badge">
-        <span class="icon">{{ getPlatformIcon(localDevice.platform) }}</span>
-        <div>
+  <div class="local-device-card">
+    <div class="card-header">
+      <h2>YOUR DEVICE</h2>
+    </div>
+    <div v-if="localDevice" class="device-content">
+      <div class="device-info">
+        <div class="device-badge">{{ getPlatformLabel(localDevice.platform) }}</div>
+        <div class="device-details">
           <div class="device-name">{{ localDevice.name }}</div>
           <div class="device-platform">{{ localDevice.platform }}</div>
         </div>
       </div>
-      <div v-if="isConnected" class="status-indicator connected">
-        <span class="dot" />
-        Connected
-      </div>
-      <div v-else class="status-indicator disconnected">
-        <span class="dot" />
-        Disconnected
+      <div class="status-badge" :class="{ connected: isConnected }">
+        {{ isConnected ? 'CONNECTED' : 'OFFLINE' }}
       </div>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -29,110 +26,89 @@ defineProps<{
   isConnected: boolean
 }>()
 
-const getPlatformIcon = (platform: string): string => {
-  const icons: Record<string, string> = {
-    'Windows': '🪟',
-    'macOS': '🍎',
-    'Linux': '🐧',
-    'Android': '🤖',
-    'iOS': '📱',
-    'Unknown': '💻'
+const getPlatformLabel = (platform: string): string => {
+  const map: Record<string, string> = {
+    'Windows': 'WIN',
+    'macOS': 'MAC',
+    'Linux': 'LIN',
+    'Android': 'AND',
+    'iOS': 'IOS',
+    'Unknown': 'UNK'
   }
-  return icons[platform] || '💻'
+  return map[platform] || 'UNK'
 }
 </script>
 
 <style scoped>
 .local-device-card {
-  position: sticky;
-  top: 2rem;
-}
-
-.section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.section h2 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.local-device {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  padding: var(--space-6);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+}
+
+.card-header h2 {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-4) 0;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+.device-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.device-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .device-badge {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  font-size: var(--text-xs);
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  min-width: 48px;
+  text-align: center;
 }
 
-.device-badge .icon {
-  font-size: 2rem;
+.device-details {
+  display: flex;
+  flex-direction: column;
 }
 
 .device-name {
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-weight: bold;
+  font-size: var(--text-base);
+  color: var(--text-primary);
 }
 
 .device-platform {
-  color: #666;
-  font-size: 0.9rem;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
 }
 
-.status-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
+.status-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  color: var(--text-secondary);
 }
 
-.status-indicator.connected {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.status-indicator.disconnected {
-  background-color: #ffebee;
-  color: #c62828;
-}
-
-.status-indicator .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: currentColor;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@media (max-width: 1200px) {
-  .local-device-card {
-    position: static;
-  }
+.status-badge.connected {
+  background: var(--text-primary);
+  color: var(--bg-primary);
 }
 </style>

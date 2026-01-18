@@ -8,7 +8,7 @@ tags: [webrtc, peerjs, websocket, file-transfer, nuxt]
 requires: []
 provides:
   - Verified end-to-end file transfer working
-  - Core functionality confirmation for Hatid app
+  - Core functionality confirmation for Blink app
 affects: [02-simplify-polish, 03-test-document]
 
 # Tech tracking

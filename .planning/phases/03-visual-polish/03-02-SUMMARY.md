@@ -59,7 +59,7 @@ completed: 2026-01-17
 
 ## Accomplishments
 
-- Redesigned header with gradient "Hatid" title and subtle background gradient
+  - Redesigned header with gradient "Blink" title and subtle background gradient
 - Created glassmorphism local device card with backdrop blur effect
 - Implemented responsive CSS Grid with desktop (2-column), tablet (2-column reduced), and mobile (single column) layouts
 - Added staggered section animations on mount using --animation-order variable

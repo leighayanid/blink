@@ -33,8 +33,10 @@ export { definePageMeta } from '../node_modules/nuxt/dist/pages/runtime/composab
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { useDeviceDiscovery } from '../app/composables/useDeviceDiscovery';
 export { useFileTransfer } from '../app/composables/useFileTransfer';
+export { useGsap } from '../app/composables/useGsap';
 export { useTheme } from '../app/composables/useTheme';
-export { useWebRTC } from '../app/composables/useWebRTC';
+export { useToast, ToastType, Toast } from '../app/composables/useToast';
+export { useWebRTC, ConnectionState } from '../app/composables/useWebRTC';
 export { useDevicesStore } from '../app/stores/devices';
 export { useTransfersStore } from '../app/stores/transfers';
 export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/@pinia/nuxt/dist/runtime/composables';

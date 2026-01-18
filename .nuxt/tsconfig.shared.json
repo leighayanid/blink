@@ -56,7 +56,10 @@
         "../node_modules/vite/client"
       ],
       "~": [
-        "<rootDir>"
+        "."
+      ],
+      "~/*": [
+        "./*"
       ],
       "@": [
         "../app"

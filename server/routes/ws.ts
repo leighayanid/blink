@@ -1,6 +1,6 @@
 import type { SignalingMessage, Device } from '../app/types'
 
-// Store announced devices by peerId to notify new connections
+// Store announced devices. Key is ideally the PeerJS peerId, value includes wsId
 const announcedDevices = new Map<string, any>()
 
 export default defineWebSocketHandler({
@@ -33,20 +33,23 @@ export default defineWebSocketHandler({
       switch (parsed.type) {
         case 'announce':
           console.log('[WebSocket] Device announced:', parsed.deviceInfo.name, 'with peerId:', parsed.deviceInfo.peerId)
-          // Store the announced device - use the peerId from the client (PeerJS ID)
-          // Also store the WebSocket peer.id for tracking disconnections
+          // Prefer using the PeerJS peerId as the key so other peers can reference it directly
+          const peerJsId = parsed.deviceInfo?.peerId || null
+          const key = peerJsId || peer.id
+
           const deviceWithWsId = {
             ...parsed.deviceInfo,
-            wsId: peer.id  // Track WebSocket connection separately
+            wsId: peer.id // Track WebSocket connection separately
           }
-          announcedDevices.set(peer.id, deviceWithWsId)
+
+          announcedDevices.set(key, deviceWithWsId)
 
           // Broadcast new device to ALL peers including this one
-          // The peerId is the PeerJS ID which is what other peers need to connect
           const peerJoinedMsg = JSON.stringify({
             type: 'peer-joined',
-            deviceInfo: parsed.deviceInfo  // Use the original deviceInfo with PeerJS peerId
+            deviceInfo: parsed.deviceInfo
           })
+
           // Send to this peer
           peer.send(peerJoinedMsg)
           // Also broadcast to all other connected peers
@@ -78,19 +81,21 @@ export default defineWebSocketHandler({
 
   close(peer, event) {
     console.log('[WebSocket] Client disconnected:', peer.id)
+    // Find the announced device entry that matches this WebSocket id (wsId)
+    let removedPeerJsId = null
+    for (const [key, deviceInfo] of announcedDevices.entries()) {
+      if (deviceInfo?.wsId === peer.id) {
+        removedPeerJsId = deviceInfo?.peerId || null
+        announcedDevices.delete(key)
+        break
+      }
+    }
 
-    // Get the device info before removing (we need the PeerJS peerId)
-    const deviceInfo = announcedDevices.get(peer.id)
-    const peerJsPeerId = deviceInfo?.peerId
-
-    // Remove from announced devices
-    announcedDevices.delete(peer.id)
-
-    // Notify other peers with the PeerJS peerId (not WebSocket peer.id)
-    if (peerJsPeerId) {
+    // If we found a PeerJS peerId, notify other peers
+    if (removedPeerJsId) {
       peer.publish('discovery', JSON.stringify({
         type: 'peer-left',
-        peerId: peerJsPeerId
+        peerId: removedPeerJsId
       }))
     }
   },

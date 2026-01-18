@@ -17,6 +17,7 @@ type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {},
 export const DeviceList: typeof import("../app/components/DeviceList.vue")['default']
 export const FileUploader: typeof import("../app/components/FileUploader.vue")['default']
 export const LocalDeviceCard: typeof import("../app/components/LocalDeviceCard.vue")['default']
+export const Toast: typeof import("../app/components/Toast.vue")['default']
 export const TransferProgress: typeof import("../app/components/TransferProgress.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']
 export const NuxtLayout: typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
@@ -45,6 +46,7 @@ export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components
 export const LazyDeviceList: LazyComponent<typeof import("../app/components/DeviceList.vue")['default']>
 export const LazyFileUploader: LazyComponent<typeof import("../app/components/FileUploader.vue")['default']>
 export const LazyLocalDeviceCard: LazyComponent<typeof import("../app/components/LocalDeviceCard.vue")['default']>
+export const LazyToast: LazyComponent<typeof import("../app/components/Toast.vue")['default']>
 export const LazyTransferProgress: LazyComponent<typeof import("../app/components/TransferProgress.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
 export const LazyNuxtLayout: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>

@@ -1,1 +1,0 @@
-import{_ as t,y as s,z as a,O as o}from"./UBf74eym.js";const c={},n={class:"layout"};function d(e,r){return a(),s("div",n,[o(e.$slots,"default",{},void 0)])}const l=t(c,[["render",d],["__scopeId","data-v-09d5ac5e"]]);export{l as default};

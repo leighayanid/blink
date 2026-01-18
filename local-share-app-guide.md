@@ -1,4 +1,4 @@
-# Hatid - Nuxt 4 Implementation Guide
+# Blink - Nuxt 4 Implementation Guide
 
 ## Project Overview
 Build a local file sharing web application similar to LocalSend using Nuxt 4, WebRTC, and WebSockets for peer-to-peer file transfers on a local network.
@@ -21,8 +21,8 @@ Build a local file sharing web application similar to LocalSend using Nuxt 4, We
 
 ### Initialize Nuxt 4 Project
 ```bash
-npx nuxi@latest init hatid
-cd hatid
+npx nuxi@latest init blink
+cd blink
 npm install
 ```
 
@@ -57,7 +57,7 @@ npm install @nuxtjs/tailwindcss
 ## Project Structure
 
 ```
-hatid/
+blink/
 ├── app/
 │   ├── components/
 │   │   ├── DeviceList.vue           # Display available devices

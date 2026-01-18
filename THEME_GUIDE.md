@@ -1,6 +1,6 @@
 # Dark/Light Mode Theme Guide
 
-This guide explains how to use the dark/light mode theme system in the Hatid application using `@nuxtjs/color-mode` and Tailwind CSS.
+This guide explains how to use the dark/light mode theme system in the Blink application using `@nuxtjs/color-mode` and Tailwind CSS.
 
 ## Overview
 
@@ -228,7 +228,7 @@ The dark mode class is applied to the root `<html>` element automatically by `@n
 
 ## Storage
 
-Theme preference is automatically saved to localStorage using the key `hatid-theme`. This persists the user's preference across sessions.
+Theme preference is automatically saved to localStorage using the key `blink-theme`. This persists the user's preference across sessions.
 
 ## Customization
 
@@ -284,8 +284,8 @@ The theme system works on all modern browsers that support:
 3. Verify that `tailwind.config.ts` has `darkMode: 'class'`
 
 ### Colors not persisting
-1. Check browser localStorage for `hatid-theme` key
-2. Ensure `storageKey: 'hatid-theme'` is in `nuxt.config.ts`
+1. Check browser localStorage for `blink-theme` key
+2. Ensure `storageKey: 'blink-theme'` is in `nuxt.config.ts`
 3. Clear cache and rebuild if needed
 
 ## Next Steps

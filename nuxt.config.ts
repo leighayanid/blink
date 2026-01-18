@@ -15,7 +15,7 @@ export default defineNuxtConfig({
     classSuffix: '',
     fallback: 'light',
     hid: 'nuxt-color-mode-script',
-    storageKey: 'hatid-theme',
+    storageKey: 'blink-theme',
     classPrefix: '',
     classSuffixDark: 'dark'
   },

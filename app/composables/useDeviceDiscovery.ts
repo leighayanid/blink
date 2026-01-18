@@ -58,7 +58,13 @@ export const useDeviceDiscovery = () => {
     socket.value.onopen = () => {
       console.log('[Discovery] Connected to signaling server')
       isConnected.value = true
-      announce()
+      // Only announce if we have a peerId set
+      if (localDevice.value?.peerId) {
+        console.log('[Discovery] Announcing with peerId:', localDevice.value.peerId)
+        announce()
+      } else {
+        console.log('[Discovery] Waiting for peerId before announcing...')
+      }
     }
 
     socket.value.onmessage = (event) => {
@@ -114,15 +120,31 @@ export const useDeviceDiscovery = () => {
   const setLocalPeerId = (peerId: string) => {
     if (localDevice.value) {
       localDevice.value.peerId = peerId
+      console.log('[Discovery] Local peerId set:', peerId)
+      // If WebSocket is already connected, announce now
+      if (socket.value?.readyState === WebSocket.OPEN) {
+        console.log('[Discovery] WebSocket already open, announcing now with peerId:', peerId)
+        announce()
+      }
     }
   }
 
   const announce = () => {
-    if (socket.value?.readyState === WebSocket.OPEN) {
+    if (socket.value?.readyState === WebSocket.OPEN && localDevice.value?.peerId) {
+      console.log('[Discovery] Announcing device:', {
+        name: localDevice.value.name,
+        id: localDevice.value.id,
+        peerId: localDevice.value.peerId
+      })
       socket.value.send(JSON.stringify({
         type: 'announce',
         deviceInfo: localDevice.value
       }))
+    } else {
+      console.warn('[Discovery] Cannot announce - socket not open or no peerId', {
+        socketReady: socket.value?.readyState === WebSocket.OPEN,
+        hasPeerId: !!localDevice.value?.peerId
+      })
     }
   }
 

@@ -2,7 +2,7 @@
   <div class="layout">
     <header class="app-header">
       <div class="header-content">
-        <h1>☀️ Hatid</h1>
+        <h1>☀️ Blink</h1>
         <p class="subtitle">Share files instantly on your local network</p>
       </div>
       <button class="theme-toggle" @click="toggleColorMode" :title="colorMode.value === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
