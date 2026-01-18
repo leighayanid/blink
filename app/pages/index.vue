@@ -139,6 +139,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <span class="text-mono text-xs opacity-50">CREATED BY </span>
+        <a href="https://leighdinaya.dev" target="_blank" rel="noopener" class="footer-link">LEIGH DINAYA</a>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -523,6 +531,40 @@ onUnmounted(() => {
   opacity: 0.5;
   border: 1px dashed var(--border-primary);
   border-radius: var(--radius-md);
+}
+
+/* Footer */
+.app-footer {
+  padding-top: var(--space-4);
+  margin-top: var(--space-2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-primary);
+  opacity: 0.8;
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.footer-link {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.footer-link:hover {
+  border-bottom-color: var(--text-primary);
+  opacity: 1;
 }
 
 /* Responsive */
