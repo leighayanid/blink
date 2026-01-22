@@ -1,8 +1,18 @@
-import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import type { Transfer, FileMetadata } from '../types'
+import { useTransfersStore } from '../stores/transfers'
 
 export const useFileTransfer = () => {
-  const transfers = ref<Transfer[]>([])
+  const store = useTransfersStore()
+  const { activeTransfers, completedTransfers, failedTransfers } = storeToRefs(store)
+
+  const transfers = computed(() => [
+    ...activeTransfers.value,
+    ...completedTransfers.value,
+    ...failedTransfers.value
+  ])
+
   const CHUNK_SIZE = 64 * 1024 // 64KB chunks
 
   const generateTransferId = (): string => {
@@ -21,7 +31,7 @@ export const useFileTransfer = () => {
       startTime: Date.now()
     }
 
-    transfers.value.push(transfer)
+    store.addTransfer(transfer)
 
     try {
       // Send file metadata
@@ -61,11 +71,11 @@ export const useFileTransfer = () => {
 
         chunkIndex++
 
-        // Update progress through reactive reference
-        const activeTransfer = transfers.value.find(t => t.id === transferId)
-        if (activeTransfer) {
-          activeTransfer.progress = ((offset + CHUNK_SIZE) / file.size) * 100
-        }
+        // Update progress
+        const progress = ((offset + CHUNK_SIZE) / file.size) * 100
+        store.updateTransfer(transferId, {
+          progress: Math.min(progress, 100)
+        })
 
         // Small delay to prevent overwhelming the connection
         await new Promise(resolve => setTimeout(resolve, 10))
@@ -77,24 +87,22 @@ export const useFileTransfer = () => {
         transferId
       }))
 
-      // Update transfer status through reactive reference
-      const completedTransfer = transfers.value.find(t => t.id === transferId)
-      if (completedTransfer) {
-        completedTransfer.status = 'completed'
-        completedTransfer.endTime = Date.now()
-        completedTransfer.progress = 100
-      }
+      // Update transfer status
+      store.updateTransfer(transferId, {
+        status: 'completed',
+        endTime: Date.now(),
+        progress: 100
+      })
 
       console.log(`[FileTransfer] File sent successfully: ${file.name}`)
 
       return transferId
     } catch (error) {
       console.error('[FileTransfer] Error sending file:', error)
-      // Update failed status through reactive reference
-      const failedTransfer = transfers.value.find(t => t.id === transferId)
-      if (failedTransfer) {
-        failedTransfer.status = 'failed'
-      }
+      // Update failed status
+      store.updateTransfer(transferId, {
+        status: 'failed'
+      })
       throw error
     }
   }
@@ -132,7 +140,7 @@ export const useFileTransfer = () => {
               startTime: Date.now()
             }
 
-            transfers.value.push(transfer)
+            store.addTransfer(transfer)
             console.log(`[FileTransfer] Receiving file: ${message.metadata.name}`)
           }
 
@@ -149,12 +157,11 @@ export const useFileTransfer = () => {
 
             downloadFile(blob, currentTransfer.metadata?.name || 'download')
 
-            const transfer = transfers.value.find(t => t.id === message.transferId)
-            if (transfer) {
-              transfer.status = 'completed'
-              transfer.progress = 100
-              transfer.endTime = Date.now()
-            }
+            store.updateTransfer(message.transferId, {
+              status: 'completed',
+              progress: 100,
+              endTime: Date.now()
+            })
 
             console.log(`[FileTransfer] File received successfully: ${currentTransfer.metadata?.name}`)
             currentTransfer = null
@@ -169,17 +176,19 @@ export const useFileTransfer = () => {
           currentTransfer.chunks.push(chunkData)
           currentTransfer.receivedChunks++
 
-          // Update progress using totalChunks if available, otherwise approximate by bytes
-          const transfer = transfers.value.find(t => t.id === currentTransfer?.id)
-          if (transfer) {
-            if (currentTransfer.totalChunks && currentTransfer.totalChunks > 0) {
-              transfer.progress = (currentTransfer.receivedChunks / currentTransfer.totalChunks) * 100
-            } else if (currentTransfer.metadata?.size) {
-              // Approximate progress by bytes received
-              const receivedBytes = currentTransfer.chunks.reduce((acc, c) => acc + c.byteLength, 0)
-              transfer.progress = Math.min(100, (receivedBytes / currentTransfer.metadata.size) * 100)
-            }
+          // Update progress
+          let progress = 0
+          if (currentTransfer.totalChunks && currentTransfer.totalChunks > 0) {
+            progress = (currentTransfer.receivedChunks / currentTransfer.totalChunks) * 100
+          } else if (currentTransfer.metadata?.size) {
+            // Approximate progress by bytes received
+            const receivedBytes = currentTransfer.chunks.reduce((acc, c) => acc + c.byteLength, 0)
+            progress = Math.min(100, (receivedBytes / currentTransfer.metadata.size) * 100)
           }
+
+          store.updateTransfer(currentTransfer.id, {
+            progress
+          })
         }
 
         if (data instanceof ArrayBuffer) {
@@ -222,11 +231,11 @@ export const useFileTransfer = () => {
   }
 
   const clearTransfer = (transferId: string) => {
-    transfers.value = transfers.value.filter(t => t.id !== transferId)
+    store.removeTransfer(transferId)
   }
 
   const clearCompleted = () => {
-    transfers.value = transfers.value.filter(t => t.status !== 'completed')
+    store.clearCompleted()
   }
 
   return {

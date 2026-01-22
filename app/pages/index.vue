@@ -89,7 +89,7 @@
             <h2 class="card-title">QUEUE</h2>
             <span v-if="transfers.length > 0" class="count-badge">{{ transfers.length }}</span>
           </div>
-          <TransferProgress :transfers="transfers" :embedded="true" @clear-completed="clearCompleted" />
+          <TransferProgress :embedded="true" />
         </div>
       </div>
 
@@ -162,7 +162,7 @@ import { useTheme } from '../composables/useTheme'
 const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId, announce } = useDeviceDiscovery()
 const { peer, localPeerId, initPeer, connectToPeer, connections, connectionStates, destroy } = useWebRTC()
 const { success, error: showError } = useToast()
-const { transfers, sendFile, receiveFile, clearCompleted } = useFileTransfer()
+const { transfers, sendFile, receiveFile } = useFileTransfer()
 const { isDark, toggleTheme } = useTheme()
 
 const selectedDevice = ref<Device | null>(null)
@@ -541,7 +541,6 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
-  border-top: 1px solid var(--border-primary);
   opacity: 0.8;
 }
 

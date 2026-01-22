@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
+import { useStorage } from '@vueuse/core'
 import type { Transfer } from '../types'
 
 export const useTransfersStore = defineStore('transfers', {
   state: () => ({
     activeTransfers: [] as Transfer[],
-    completedTransfers: [] as Transfer[],
-    failedTransfers: [] as Transfer[]
+    completedTransfers: useStorage<Transfer[]>('blink-completed-transfers', []),
+    failedTransfers: useStorage<Transfer[]>('blink-failed-transfers', [])
   }),
 
   getters: {
@@ -32,36 +33,42 @@ export const useTransfersStore = defineStore('transfers', {
 
   actions: {
     addTransfer(transfer: Transfer) {
-      this.activeTransfers.push(transfer)
+      // Ensure we don't have duplicates
+      if (!this.activeTransfers.find(t => t.id === transfer.id)) {
+        this.activeTransfers.push(transfer)
+      }
     },
 
     updateTransfer(transferId: string, updates: Partial<Transfer>) {
-      const transfer = this.activeTransfers.find(t => t.id === transferId)
-      if (transfer) {
+      const index = this.activeTransfers.findIndex(t => t.id === transferId)
+      if (index !== -1) {
+        const transfer = this.activeTransfers[index]
         Object.assign(transfer, updates)
 
         // Move to completed/failed if status changed
         if (updates.status === 'completed') {
-          this.moveToCompleted(transferId)
+          this.moveToCompleted(index)
         } else if (updates.status === 'failed') {
-          this.moveToFailed(transferId)
+          this.moveToFailed(index)
         }
       }
     },
 
-    moveToCompleted(transferId: string) {
-      const index = this.activeTransfers.findIndex(t => t.id === transferId)
-      if (index >= 0) {
-        const [transfer] = this.activeTransfers.splice(index, 1)
-        this.completedTransfers.push(transfer)
+    moveToCompleted(index: number) {
+      const [transfer] = this.activeTransfers.splice(index, 1)
+      // Add to beginning of list (newest first)
+      this.completedTransfers.unshift(transfer)
+      // Limit history to 50 items
+      if (this.completedTransfers.length > 50) {
+        this.completedTransfers.pop()
       }
     },
 
-    moveToFailed(transferId: string) {
-      const index = this.activeTransfers.findIndex(t => t.id === transferId)
-      if (index >= 0) {
-        const [transfer] = this.activeTransfers.splice(index, 1)
-        this.failedTransfers.push(transfer)
+    moveToFailed(index: number) {
+      const [transfer] = this.activeTransfers.splice(index, 1)
+      this.failedTransfers.unshift(transfer)
+      if (this.failedTransfers.length > 50) {
+        this.failedTransfers.pop()
       }
     },
 

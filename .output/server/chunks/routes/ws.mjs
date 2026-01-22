@@ -35,6 +35,7 @@ const ws = defineWebSocketHandler({
     }
   },
   message(peer, message) {
+    var _a;
     try {
       const data = message.text();
       const parsed = JSON.parse(data);
@@ -42,16 +43,17 @@ const ws = defineWebSocketHandler({
       switch (parsed.type) {
         case "announce":
           console.log("[WebSocket] Device announced:", parsed.deviceInfo.name, "with peerId:", parsed.deviceInfo.peerId);
+          const peerJsId = ((_a = parsed.deviceInfo) == null ? void 0 : _a.peerId) || null;
+          const key = peerJsId || peer.id;
           const deviceWithWsId = {
             ...parsed.deviceInfo,
             wsId: peer.id
             // Track WebSocket connection separately
           };
-          announcedDevices.set(peer.id, deviceWithWsId);
+          announcedDevices.set(key, deviceWithWsId);
           const peerJoinedMsg = JSON.stringify({
             type: "peer-joined",
             deviceInfo: parsed.deviceInfo
-            // Use the original deviceInfo with PeerJS peerId
           });
           peer.send(peerJoinedMsg);
           peer.publish("discovery", peerJoinedMsg);
@@ -77,13 +79,18 @@ const ws = defineWebSocketHandler({
   },
   close(peer, event) {
     console.log("[WebSocket] Client disconnected:", peer.id);
-    const deviceInfo = announcedDevices.get(peer.id);
-    const peerJsPeerId = deviceInfo == null ? void 0 : deviceInfo.peerId;
-    announcedDevices.delete(peer.id);
-    if (peerJsPeerId) {
+    let removedPeerJsId = null;
+    for (const [key, deviceInfo] of announcedDevices.entries()) {
+      if ((deviceInfo == null ? void 0 : deviceInfo.wsId) === peer.id) {
+        removedPeerJsId = (deviceInfo == null ? void 0 : deviceInfo.peerId) || null;
+        announcedDevices.delete(key);
+        break;
+      }
+    }
+    if (removedPeerJsId) {
       peer.publish("discovery", JSON.stringify({
         type: "peer-left",
-        peerId: peerJsPeerId
+        peerId: removedPeerJsId
       }));
     }
   },

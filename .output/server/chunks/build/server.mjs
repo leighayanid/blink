@@ -1,4 +1,4 @@
-import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { ref, toRef, isRef, hasInjectionContext, getCurrentInstance, inject, defineComponent, createElementBlock, shallowRef, provide, cloneVNode, h, defineAsyncComponent, computed, unref, shallowReactive, Suspense, Fragment, useSSRContext, createApp, withCtx, createVNode, onErrorCaptured, onServerPrefetch, resolveDynamicComponent, reactive, effectScope, isReadonly, isShallow, isReactive, toRaw, nextTick, mergeProps, getCurrentScope } from 'vue';
+import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { defineComponent, shallowRef, getCurrentInstance, provide, cloneVNode, h, createElementBlock, ref, toRef, isRef, hasInjectionContext, inject, defineAsyncComponent, computed, unref, shallowReactive, Suspense, Fragment, useSSRContext, createApp, withCtx, createVNode, onErrorCaptured, onServerPrefetch, resolveDynamicComponent, reactive, effectScope, isReadonly, isShallow, isReactive, toRaw, nextTick, mergeProps, getCurrentScope } from 'vue';
 import { k as hasProtocol, l as isScriptProtocol, m as joinURL, w as withQuery, s as sanitizeStatusCode, n as getContext, $ as $fetch, o as createHooks, p as executeAsync, e as createError$1, t as toRouteMatcher, q as createRouter$1, r as defu } from '../nitro/nitro.mjs';
 import { u as useHead$1, h as headSymbol, b as baseURL } from '../routes/renderer.mjs';
 import { createPinia, setActivePinia, shouldHydrate } from 'pinia';
@@ -425,7 +425,7 @@ const _routes = [
   {
     name: "index",
     path: "/",
-    component: () => import('./index-CUJwwkbN.mjs')
+    component: () => import('./index-C2olS011.mjs')
   }
 ];
 const _wrapInTransition = (props, children) => {
@@ -766,7 +766,7 @@ defineComponent({
   }
 });
 const clientOnlySymbol = Symbol.for("nuxt:client-only");
-defineComponent({
+const __nuxt_component_0$1 = defineComponent({
   name: "ClientOnly",
   inheritAttrs: false,
   props: ["fallback", "placeholder", "placeholderTag", "fallbackTag"],
@@ -875,7 +875,7 @@ const plugins = [
 ];
 const layouts = {
   default: defineAsyncComponent(() => import('./default-DLCfPxr2.mjs').then((m) => m.default || m)),
-  "three-column": defineAsyncComponent(() => import('./three-column-lXc1Hurz.mjs').then((m) => m.default || m))
+  "three-column": defineAsyncComponent(() => import('./three-column-HjC81lmF.mjs').then((m) => m.default || m))
 };
 const LayoutLoader = defineComponent({
   name: "LayoutLoader",
@@ -1137,20 +1137,21 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   __ssrInlineRender: true,
   setup(__props) {
     const { toasts: toasts2 } = useToast();
-    const getIcon = (type) => {
-      const icons = {
-        success: "✓",
-        error: "✕",
-        info: "ℹ",
-        warning: "!"
-      };
-      return icons[type];
-    };
     return (_ctx, _push, _parent, _attrs) => {
       ssrRenderTeleport(_push, (_push2) => {
-        _push2(`<div class="toast-container" data-v-7ca481e3><!--[-->`);
+        _push2(`<div class="toast-container" data-v-732eec2c><!--[-->`);
         ssrRenderList(unref(toasts2), (toast) => {
-          _push2(`<div class="${ssrRenderClass([[`toast--${toast.type}`], "toast"])}" data-v-7ca481e3><span class="toast-icon" data-v-7ca481e3>${ssrInterpolate(getIcon(toast.type))}</span><span class="toast-message" data-v-7ca481e3>${ssrInterpolate(toast.message)}</span><button class="toast-close" aria-label="Close notification" data-v-7ca481e3> × </button></div>`);
+          _push2(`<div class="${ssrRenderClass([[`toast--${toast.type}`], "toast"])}" data-v-732eec2c><div class="toast-content" data-v-732eec2c><span class="toast-icon" data-v-732eec2c>`);
+          if (toast.type === "success") {
+            _push2(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-v-732eec2c><polyline points="20 6 9 17 4 12" data-v-732eec2c></polyline></svg>`);
+          } else if (toast.type === "error") {
+            _push2(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-v-732eec2c><line x1="18" y1="6" x2="6" y2="18" data-v-732eec2c></line><line x1="6" y1="6" x2="18" y2="18" data-v-732eec2c></line></svg>`);
+          } else if (toast.type === "warning") {
+            _push2(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-v-732eec2c><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" data-v-732eec2c></path><line x1="12" y1="9" x2="12" y2="13" data-v-732eec2c></line><line x1="12" y1="17" x2="12.01" y2="17" data-v-732eec2c></line></svg>`);
+          } else {
+            _push2(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-v-732eec2c><circle cx="12" cy="12" r="10" data-v-732eec2c></circle><line x1="12" y1="16" x2="12" y2="12" data-v-732eec2c></line><line x1="12" y1="8" x2="12.01" y2="8" data-v-732eec2c></line></svg>`);
+          }
+          _push2(`</span><span class="toast-message" data-v-732eec2c>${ssrInterpolate(toast.message.toUpperCase())}</span></div><button class="toast-close" aria-label="Close notification" data-v-732eec2c><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-v-732eec2c><line x1="18" y1="6" x2="6" y2="18" data-v-732eec2c></line><line x1="6" y1="6" x2="18" y2="18" data-v-732eec2c></line></svg></button></div>`);
         });
         _push2(`<!--]--></div>`);
       }, "body", false, _parent);
@@ -1170,7 +1171,7 @@ _sfc_main$3.setup = (props, ctx) => {
   (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/Toast.vue");
   return _sfc_setup$3 ? _sfc_setup$3(props, ctx) : void 0;
 };
-const Toast = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$3, [["__scopeId", "data-v-7ca481e3"]]), { __name: "Toast" });
+const Toast = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$3, [["__scopeId", "data-v-732eec2c"]]), { __name: "Toast" });
 const _sfc_main$2 = /* @__PURE__ */ defineComponent({
   __name: "app",
   __ssrInlineRender: true,
@@ -1305,5 +1306,5 @@ let entry;
 }
 const entry$1 = (ssrContext) => entry(ssrContext);
 
-export { _export_sfc as _, useNuxtApp as a, useRuntimeConfig as b, nuxtLinkDefaults as c, useHead as d, entry$1 as default, useToast as e, useState as f, navigateTo as n, resolveRouteObject as r, useRouter as u };
+export { _export_sfc as _, useNuxtApp as a, useRuntimeConfig as b, nuxtLinkDefaults as c, useHead as d, entry$1 as default, __nuxt_component_0$1 as e, useToast as f, useState as g, navigateTo as n, resolveRouteObject as r, useRouter as u };
 //# sourceMappingURL=server.mjs.map
