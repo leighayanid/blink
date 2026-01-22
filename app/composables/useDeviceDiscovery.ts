@@ -50,15 +50,11 @@ export const useDeviceDiscovery = () => {
     const config = useRuntimeConfig()
     let wsUrl = config.public.wsUrl as string
 
-    // If default localhost config is present but we are on a deployed domain,
-    // fallback to dynamic detection or prioritize config if it looks like a real URL.
-    const isLocalConfig = wsUrl.includes('localhost') || wsUrl.includes('127.0.0.1')
-    const isDeployed = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-
-    if (isLocalConfig && isDeployed) {
-      // Config is default/local, but we are deployed. Auto-detect from window.
+    // Always use current window location for WebSocket URL when in browser
+    // This ensures correct protocol (ws/wss) and host/port (localhost, LAN, or production)
+    if (typeof window !== 'undefined') {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const host = window.location.host
+      const host = window.location.host // includes port if present
       wsUrl = `${protocol}//${host}/ws`
     }
 

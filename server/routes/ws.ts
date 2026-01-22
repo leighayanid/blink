@@ -3,9 +3,13 @@ import type { SignalingMessage, Device } from '../app/types'
 // Store announced devices. Key is ideally the PeerJS peerId, value includes wsId
 const announcedDevices = new Map<string, any>()
 
+// Store active WebSocket connections for manual broadcasting
+const connectedPeers = new Map<string, any>()
+
 export default defineWebSocketHandler({
   open(peer) {
     console.log('[WebSocket] Client connected:', peer.id)
+    connectedPeers.set(peer.id, peer)
     peer.subscribe('discovery')
 
     // Send existing peers to new peer
@@ -50,20 +54,46 @@ export default defineWebSocketHandler({
             deviceInfo: parsed.deviceInfo
           })
 
-          // Send to this peer
-          peer.send(peerJoinedMsg)
-          // Also broadcast to all other connected peers
+          // Manual broadcast to all connected peers
+          for (const targetPeer of connectedPeers.values()) {
+            try {
+              targetPeer.send(peerJoinedMsg)
+            } catch (err) {
+              console.error('[WebSocket] Failed to send to peer:', err)
+            }
+          }
+          
+          // Also try standard publish (backup)
           peer.publish('discovery', peerJoinedMsg)
           break
 
         case 'signal':
           // Forward WebRTC signaling messages to specific peer
           if (parsed.targetPeer) {
-            peer.send(JSON.stringify({
-              type: 'signal',
-              signal: parsed.signal,
-              fromPeer: peer.id
-            }))
+            // Find target peer by looking up their WS ID from announcedDevices
+            // We need to find the WS ID associated with the target PeerJS ID
+            let targetWsId = null
+            
+            // Direct lookup if key is PeerID
+            if (announcedDevices.has(parsed.targetPeer)) {
+                targetWsId = announcedDevices.get(parsed.targetPeer).wsId
+            }
+            
+            if (targetWsId && connectedPeers.has(targetWsId)) {
+                const targetSocket = connectedPeers.get(targetWsId)
+                targetSocket.send(JSON.stringify({
+                    type: 'signal',
+                    signal: parsed.signal,
+                    fromPeer: peer.id
+                }))
+            } else {
+                // Fallback to publish if manual lookup fails
+                 peer.send(JSON.stringify({
+                  type: 'signal',
+                  signal: parsed.signal,
+                  fromPeer: peer.id
+                }))
+            }
           }
           break
 
@@ -71,7 +101,14 @@ export default defineWebSocketHandler({
         case 'answer':
         case 'ice-candidate':
           // Forward WebRTC signaling
-          peer.publish('discovery', JSON.stringify(parsed))
+          const signalMsg = JSON.stringify(parsed)
+          // Manual broadcast
+          for (const targetPeer of connectedPeers.values()) {
+             if (targetPeer.id !== peer.id) { // Don't send back to self for these
+                try { targetPeer.send(signalMsg) } catch(e) {}
+             }
+          }
+          peer.publish('discovery', signalMsg)
           break
       }
     } catch (error) {
@@ -81,6 +118,8 @@ export default defineWebSocketHandler({
 
   close(peer, event) {
     console.log('[WebSocket] Client disconnected:', peer.id)
+    connectedPeers.delete(peer.id)
+    
     // Find the announced device entry that matches this WebSocket id (wsId)
     let removedPeerJsId = null
     for (const [key, deviceInfo] of announcedDevices.entries()) {
@@ -93,10 +132,17 @@ export default defineWebSocketHandler({
 
     // If we found a PeerJS peerId, notify other peers
     if (removedPeerJsId) {
-      peer.publish('discovery', JSON.stringify({
+      const leftMsg = JSON.stringify({
         type: 'peer-left',
         peerId: removedPeerJsId
-      }))
+      })
+      
+      // Manual broadcast
+      for (const targetPeer of connectedPeers.values()) {
+        try { targetPeer.send(leftMsg) } catch(e) {}
+      }
+      
+      peer.publish('discovery', leftMsg)
     }
   },
 

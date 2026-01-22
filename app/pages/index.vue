@@ -3,8 +3,8 @@
     <!-- Three-Column Dashboard Grid -->
     <div class="dashboard-grid">
       <!-- LEFT COLUMN: Identity & Discovery -->
-      <div class="dashboard-column column-left">
-        <!-- App Header -->
+      <div class="dashboard-column column-left" :class="{ 'mobile-hidden': activeMobileTab !== 'discover' }">
+        <!-- App Header (Visible on all tabs in mobile, but compacted) -->
         <div class="section-card header-card">
           <button class="theme-toggle" @click="toggleTheme"
             :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
@@ -73,7 +73,12 @@
       </div>
 
       <!-- CENTER COLUMN: Actions -->
-      <div class="dashboard-column column-center">
+      <div class="dashboard-column column-center" :class="{ 'mobile-hidden': activeMobileTab !== 'transfer' }">
+        <!-- Mobile Header (Only visible on mobile transfer tab) -->
+        <div class="section-card mobile-header md:hidden">
+            <h1 class="app-title-small">BLINK</h1>
+        </div>
+
         <!-- File Uploader -->
         <div class="section-card">
           <div class="card-header">
@@ -94,7 +99,12 @@
       </div>
 
       <!-- RIGHT COLUMN: Connections -->
-      <div class="dashboard-column column-right">
+      <div class="dashboard-column column-right" :class="{ 'mobile-hidden': activeMobileTab !== 'network' }">
+         <!-- Mobile Header -->
+         <div class="section-card mobile-header md:hidden">
+            <h1 class="app-title-small">BLINK</h1>
+        </div>
+
         <div class="section-card flex-grow">
           <div class="card-header">
             <h2 class="card-title">NETWORK</h2>
@@ -140,6 +150,32 @@
       </div>
     </div>
 
+    <!-- Mobile Navigation Bar -->
+    <div class="mobile-nav">
+      <button class="nav-item" :class="{ active: activeMobileTab === 'discover' }" @click="activeMobileTab = 'discover'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+        </svg>
+        <span>DISCOVER</span>
+      </button>
+      <button class="nav-item" :class="{ active: activeMobileTab === 'transfer' }" @click="activeMobileTab = 'transfer'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>TRANSFER</span>
+      </button>
+      <button class="nav-item" :class="{ active: activeMobileTab === 'network' }" @click="activeMobileTab = 'network'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span>NETWORK</span>
+        <span v-if="connectedPeers.size > 0" class="nav-badge">{{ connectedPeers.size }}</span>
+      </button>
+    </div>
+
     <!-- Footer -->
     <footer class="app-footer">
       <div class="footer-content">
@@ -169,6 +205,9 @@ const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
 const targetPeerForSend = ref<string | null>(null)
 const fileReceiveHandlerSetup = ref<Set<string>>(new Set())
+
+// Mobile Tab State
+const activeMobileTab = ref<'discover' | 'transfer' | 'network'>('transfer')
 
 // Computed properties for connection states
 const connectingDevices = computed(() => {
@@ -317,6 +356,26 @@ onUnmounted(() => {
 .column-right {
   flex: 1;
   min-width: 300px;
+}
+
+/* Mobile Navigation */
+.mobile-nav {
+  display: none; /* Hidden on desktop */
+}
+
+/* Mobile Header */
+.mobile-header {
+  text-align: center;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+}
+
+.app-title-small {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 1.5rem;
+  letter-spacing: -0.05em;
+  line-height: 1;
 }
 
 /* Section Cards */
@@ -569,14 +628,28 @@ onUnmounted(() => {
 /* Responsive */
 @media (max-width: 1024px) {
   .page-container {
-    height: auto;
-    min-height: 100vh;
-    overflow-y: auto;
+    height: 100vh;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 0;
+    height: 100vh; /* Use full viewport height */
+    position: fixed; /* Fix to viewport to prevent body scroll */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 
   .dashboard-grid {
     flex-direction: column;
-    height: auto;
+    height: calc(100% - 60px); /* Subtract nav height */
+    overflow-y: auto;
+    padding: var(--space-4);
+    padding-bottom: 80px; /* Extra padding for bottom nav */
   }
 
   .dashboard-column {
@@ -586,6 +659,11 @@ onUnmounted(() => {
     overflow: visible;
     flex: none;
     width: 100%;
+    padding-bottom: 0;
+  }
+
+  .mobile-hidden {
+    display: none !important;
   }
 
   .column-left,
@@ -595,23 +673,58 @@ onUnmounted(() => {
     width: 100%;
     flex: none;
   }
-}
 
-@media (max-width: 768px) {
-  .page-container {
-    padding: var(--space-4);
+  .app-footer {
+    display: none; /* Hide footer on mobile to save space */
   }
 
-  .dashboard-column {
-    padding-bottom: var(--space-6);
+  /* Mobile Navigation */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-primary);
+    z-index: 50;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  .section-card {
-    padding: var(--space-4);
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    gap: 4px;
+    padding: 8px;
+    width: 100%;
+    cursor: pointer;
+    position: relative;
   }
 
-  .header-card {
-    padding: var(--space-6) var(--space-4);
+  .nav-item.active {
+    color: var(--text-primary);
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 25%;
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 999px;
+    line-height: 1;
   }
 }
 </style>
