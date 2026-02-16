@@ -1,34 +1,23 @@
 {
-  "name": "blink",
+  "name": "blink-monorepo",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "nuxt dev",
-    "build": "nuxt build",
-    "preview": "nuxt preview",
-    "generate": "nuxt generate",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.14.0",
-    "@pinia/nuxt": "^0.11.2",
-    "@types/node": "^24.9.2",
-    "@vueuse/core": "^14.0.0",
-    "@vueuse/nuxt": "^14.0.0",
-    "nuxt": "^4.2.0",
-    "peerjs": "^1.5.5",
-    "pinia": "^3.0.3",
-    "qrcode.vue": "^3.6.0",
-    "socket.io-client": "^4.8.1",
-    "typescript": "^5.9.3",
-    "vue-tsc": "^3.1.2"
+    "turbo": "^2.3.3",
+    "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "@nuxtjs/color-mode": "^3.5.2",
-    "gsap": "^3.14.2"
+  "packageManager": "npm@10.2.4",
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

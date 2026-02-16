@@ -8,6 +8,7 @@ export const useWebRTC = () => {
   const connections = ref<Map<string, any>>(new Map())
   const connectionStates = ref<Map<string, ConnectionState>>(new Map())
   const localPeerId = ref<string>('')
+  const shouldReconnect = ref(true) // Flag to control peer reconnection
 
   const setConnectionState = (peerId: string, state: ConnectionState): void => {
     connectionStates.value.set(peerId, state)
@@ -20,6 +21,8 @@ export const useWebRTC = () => {
 
   const initPeer = (deviceId?: string): Promise<string> => {
     return new Promise((resolve, reject) => {
+      shouldReconnect.value = true // Re-enable reconnection when initializing
+
       try {
         peer.value = new Peer(deviceId as string, {
           config: {
@@ -49,8 +52,13 @@ export const useWebRTC = () => {
         })
 
         peer.value.on('disconnected', () => {
-          console.log('[WebRTC] Peer disconnected, attempting reconnect...')
-          peer.value?.reconnect()
+          console.log('[WebRTC] Peer disconnected')
+          if (shouldReconnect.value) {
+            console.log('[WebRTC] Attempting to reconnect peer...')
+            peer.value?.reconnect()
+          } else {
+            console.log('[WebRTC] Reconnect disabled, staying disconnected')
+          }
         })
       } catch (error) {
         console.error('[WebRTC] Failed to initialize peer:', error)
@@ -159,11 +167,15 @@ export const useWebRTC = () => {
   }
 
   const destroy = () => {
+    console.log('[WebRTC] Destroying peer - disabling reconnect')
+    shouldReconnect.value = false // Disable reconnection
+
     connections.value.forEach(conn => conn.close())
     connections.value.clear()
     connectionStates.value.clear()
     peer.value?.destroy()
     peer.value = null
+    localPeerId.value = ''
   }
 
   return {

@@ -1,0 +1,14 @@
+{
+  "name": "@blink/config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tailwind": "./tailwind.config.ts",
+    "./typescript": "./tsconfig.base.json"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.9.3"
+  }
+}

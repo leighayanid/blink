@@ -62,7 +62,7 @@
 import { ref, computed, h } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTransfersStore } from '../stores/transfers'
-import type { Transfer } from '../types'
+import type { Transfer } from '@blink/types'
 
 const props = defineProps<{
   embedded?: boolean

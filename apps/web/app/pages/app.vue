@@ -188,7 +188,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-import type { Device } from '../types'
+import type { Device } from '@blink/types'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
 import { useFileTransfer } from '../composables/useFileTransfer'

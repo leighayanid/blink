@@ -1,4 +1,4 @@
-import type { SignalingMessage, Device } from '../app/types'
+import type { SignalingMessage, Device } from '@blink/types'
 
 // Store announced devices. Key is ideally the PeerJS peerId, value includes wsId
 const announcedDevices = new Map<string, any>()

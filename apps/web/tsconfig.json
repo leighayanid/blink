@@ -1,0 +1,14 @@
+{
+  "extends": "@blink/config/typescript",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "~/*": ["./*"],
+      "@blink/types": ["../../packages/types/src"]
+    }
+  },
+  "include": [
+    "**/*",
+    "../../packages/types/src"
+  ]
+}

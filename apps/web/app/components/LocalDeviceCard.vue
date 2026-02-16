@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Device } from '../types'
+import type { Device } from '@blink/types'
 
 defineProps<{
   localDevice: Device | null

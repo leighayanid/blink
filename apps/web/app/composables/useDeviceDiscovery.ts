@@ -1,11 +1,12 @@
 import { ref } from 'vue'
-import type { Device, SignalingMessage } from '../types'
+import type { Device, SignalingMessage } from '@blink/types'
 
 export const useDeviceDiscovery = () => {
   const devices = ref<Device[]>([])
   const localDevice = ref<Device | null>(null)
   const socket = ref<WebSocket | null>(null)
   const isConnected = ref(false)
+  const shouldReconnect = ref(true) // Flag to control reconnection
 
   const generateDeviceId = (): string => {
     return `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -47,6 +48,8 @@ export const useDeviceDiscovery = () => {
   }
 
   const connect = () => {
+    shouldReconnect.value = true // Re-enable reconnection when connecting
+
     const config = useRuntimeConfig()
     let wsUrl = config.public.wsUrl as string
 
@@ -114,12 +117,17 @@ export const useDeviceDiscovery = () => {
       console.log('[Discovery] Disconnected from signaling server')
       isConnected.value = false
 
-      // Attempt to reconnect after 5 seconds
-      setTimeout(() => {
-        if (!isConnected.value) {
-          connect()
-        }
-      }, 5000)
+      // Only attempt to reconnect if disconnect was NOT intentional
+      if (shouldReconnect.value) {
+        console.log('[Discovery] Scheduling reconnect...')
+        setTimeout(() => {
+          if (!isConnected.value && shouldReconnect.value) {
+            connect()
+          }
+        }, 5000)
+      } else {
+        console.log('[Discovery] Reconnect disabled, staying disconnected')
+      }
     }
   }
 
@@ -168,11 +176,17 @@ export const useDeviceDiscovery = () => {
   }
 
   const disconnect = () => {
+    console.log('[Discovery] Intentional disconnect - disabling reconnect')
+    shouldReconnect.value = false // Disable reconnection
+
     if (socket.value) {
       socket.value.close()
       socket.value = null
     }
+
     isConnected.value = false
+    devices.value = [] // Clear devices list
+    localDevice.value = null // Clear local device
   }
 
   return {

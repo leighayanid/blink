@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { Device } from '../types'
+import type { Device } from '@blink/types'
 
 export const useDevicesStore = defineStore('devices', {
   state: () => ({

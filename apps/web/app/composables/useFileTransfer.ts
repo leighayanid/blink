@@ -1,6 +1,6 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
-import type { Transfer, FileMetadata } from '../types'
+import type { Transfer, FileMetadata } from '@blink/types'
 import { useTransfersStore } from '../stores/transfers'
 
 export const useFileTransfer = () => {

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { useStorage } from '@vueuse/core'
-import type { Transfer } from '../types'
+import type { Transfer } from '@blink/types'
 
 export const useTransfersStore = defineStore('transfers', {
   state: () => ({

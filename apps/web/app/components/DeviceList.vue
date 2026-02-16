@@ -89,7 +89,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Device } from '../types'
+import type { Device } from '@blink/types'
 import type { ConnectionState } from '../composables/useWebRTC'
 
 const props = defineProps<{
