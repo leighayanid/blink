@@ -9,11 +9,21 @@ This project has been converted to a Turborepo monorepo for better code organiza
 ```
 blink-monorepo/
 ├── apps/
-│   └── web/                 # Main Nuxt.js application
-│       ├── app/             # Nuxt app directory
-│       ├── server/          # Nitro server routes
-│       ├── public/          # Static assets
-│       └── package.json
+│   ├── web/                 # Nuxt.js web application
+│   │   ├── app/             # Nuxt app directory
+│   │   ├── server/          # Nitro server routes
+│   │   ├── public/          # Static assets
+│   │   └── package.json
+│   ├── mobile/              # Flutter mobile application
+│   │   ├── lib/             # Flutter app code
+│   │   ├── android/         # Android platform
+│   │   ├── ios/             # iOS platform
+│   │   ├── macos/           # macOS platform
+│   │   ├── windows/         # Windows platform
+│   │   ├── linux/           # Linux platform
+│   │   ├── pubspec.yaml     # Flutter dependencies
+│   │   └── package.json
+│   └── docs/                # Documentation site
 ├── packages/
 │   ├── types/               # Shared TypeScript types
 │   │   └── src/index.ts
@@ -31,6 +41,7 @@ blink-monorepo/
 
 - Node.js >= 18.0.0
 - npm >= 10.0.0
+- Flutter >= 3.38.0 (for mobile app)
 
 ### Installation
 
@@ -66,10 +77,10 @@ cd apps/web && npm run build
 npm run typecheck
 ```
 
-## 📦 Packages
+## 📦 Apps & Packages
 
 ### `@blink/web`
-Main Nuxt.js application with the file sharing UI and WebRTC functionality.
+Nuxt.js web application with the file sharing UI and WebRTC functionality.
 
 **Tech Stack:**
 - Nuxt 4
@@ -78,6 +89,24 @@ Main Nuxt.js application with the file sharing UI and WebRTC functionality.
 - Tailwind CSS (Synthwave theme)
 - PeerJS (WebRTC)
 - Socket.io (Signaling)
+
+### `@blink/mobile`
+Flutter cross-platform mobile application (Android, iOS, macOS, Windows, Linux).
+
+**Tech Stack:**
+- Flutter 3.38+
+- Dart 3.10+
+- Riverpod (State Management)
+- flutter_webrtc (P2P connections)
+- socket_io_client (Device discovery)
+- Material Design 3 (Synthwave theme)
+
+**Supported Platforms:**
+- 📱 Android
+- 📱 iOS
+- 💻 macOS
+- 💻 Windows
+- 💻 Linux
 
 ### `@blink/types`
 Shared TypeScript type definitions used across the monorepo.
@@ -156,13 +185,24 @@ import type { Device, Transfer } from '@blink/types'
 
 ### Package-Specific Scripts
 
-Navigate to the package directory first:
-
+**Web App:**
 ```bash
 cd apps/web
-npm run dev      # Dev server for web app only
-npm run build    # Build web app only
+npm run dev      # Dev server for web app
+npm run build    # Build web app
 npm run preview  # Preview production build
+```
+
+**Mobile App:**
+```bash
+cd apps/mobile
+flutter run                    # Run on connected device/emulator
+flutter build apk --release    # Build Android APK
+flutter build ios --release    # Build iOS app
+flutter build macos --release  # Build macOS app
+flutter build windows --release # Build Windows app
+flutter build linux --release  # Build Linux app
+flutter test                   # Run tests
 ```
 
 ## 🔍 Troubleshooting

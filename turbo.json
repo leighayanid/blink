@@ -9,7 +9,8 @@
         "!.next/cache/**",
         ".nuxt/**",
         ".output/**",
-        "dist/**"
+        "dist/**",
+        "build/web/**"
       ],
       "env": ["NODE_ENV"]
     },
@@ -19,6 +20,10 @@
     },
     "typecheck": {
       "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "test": {
+      "cache": false,
       "outputs": []
     },
     "clean": {

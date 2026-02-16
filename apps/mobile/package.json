@@ -1,0 +1,19 @@
+{
+  "name": "@blink/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "flutter run -d chrome --web-port=3001",
+    "dev:edge": "flutter run -d edge --web-port=3001",
+    "build": "flutter build web --release",
+    "build:android": "flutter build apk --release",
+    "build:ios": "flutter build ios --release",
+    "build:macos": "flutter build macos --release",
+    "build:windows": "flutter build windows --release",
+    "build:linux": "flutter build linux --release",
+    "clean": "flutter clean",
+    "typecheck": "flutter analyze",
+    "test": "flutter test"
+  },
+  "description": "BLINK Flutter application for secure local file sharing (Web, Mobile, Desktop)"
+}

@@ -10,7 +10,8 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "docs:dev": "npm run dev --workspace=@blink/docs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
