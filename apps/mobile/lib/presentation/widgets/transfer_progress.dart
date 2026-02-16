@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animate_do/animate_do.dart';
 import '../../data/models/transfer.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -33,33 +34,46 @@ class TransferProgress extends StatelessWidget {
           const SizedBox(height: AppDimensions.space3),
       itemBuilder: (context, index) {
         final transfer = transfers[index];
-        return _TransferItem(
-          transfer: transfer,
-          onClear: onClearTransfer,
+        return FadeInUp(
+          duration: Duration(milliseconds: 300 + (index * 50)),
+          child: SlideInRight(
+            duration: Duration(milliseconds: 300 + (index * 50)),
+            child: _TransferItem(
+              transfer: transfer,
+              onClear: onClearTransfer,
+            ),
+          ),
         );
       },
     );
   }
 
   Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.space8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.hourglass_empty,
-            size: AppDimensions.iconLarge,
-            color: AppColors.textTertiary.withOpacity(0.5),
-          ),
-          const SizedBox(height: AppDimensions.space2),
-          Text(
-            'NO ACTIVE TRANSFERS',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textTertiary,
+    return FadeIn(
+      duration: const Duration(milliseconds: 600),
+      child: Container(
+        padding: const EdgeInsets.all(AppDimensions.space8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Pulse(
+              infinite: true,
+              duration: const Duration(seconds: 2),
+              child: Icon(
+                Icons.hourglass_empty,
+                size: AppDimensions.iconLarge,
+                color: AppColors.textTertiary.withOpacity(0.5),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppDimensions.space2),
+            Text(
+              'NO ACTIVE TRANSFERS',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -120,7 +134,8 @@ class _TransferItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(AppDimensions.space4),
       decoration: BoxDecoration(
         color: AppColors.bgTertiary,
@@ -188,12 +203,20 @@ class _TransferItem extends StatelessWidget {
             const SizedBox(height: AppDimensions.space3),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-              child: LinearProgressIndicator(
-                value: transfer.progress / 100,
-                minHeight: 4,
-                backgroundColor: AppColors.bgSecondary,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  _getIconColor(),
+              child: TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+                tween: Tween<double>(
+                  begin: 0,
+                  end: transfer.progress / 100,
+                ),
+                builder: (context, value, _) => LinearProgressIndicator(
+                  value: value,
+                  minHeight: 4,
+                  backgroundColor: AppColors.bgSecondary,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _getIconColor(),
+                  ),
                 ),
               ),
             ),

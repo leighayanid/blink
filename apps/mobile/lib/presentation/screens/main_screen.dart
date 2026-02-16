@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:animate_do/animate_do.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_dimensions.dart';
@@ -12,6 +13,8 @@ import '../widgets/file_uploader.dart';
 import '../widgets/transfer_progress.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/platform_badge.dart';
+import 'settings_screen.dart';
+import 'history_screen.dart';
 
 /// Main screen with responsive layout
 class MainScreen extends ConsumerStatefulWidget {
@@ -51,6 +54,29 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
+      appBar: AppBar(
+        backgroundColor: AppColors.bgSecondary,
+        elevation: 0,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('BLINK', style: AppTextStyles.headingMedium),
+          ],
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => _navigateToHistory(context),
+            tooltip: 'History',
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => _navigateToSettings(context),
+            tooltip: 'Settings',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
       ),
@@ -83,13 +109,29 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   /// Mobile layout (tabbed)
   Widget _buildMobileLayout() {
-    return IndexedStack(
-      index: _currentMobileTab,
-      children: [
-        _buildDiscoverColumn(),
-        _buildTransferColumn(),
-        _buildNetworkColumn(),
-      ],
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.05, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: IndexedStack(
+        key: ValueKey<int>(_currentMobileTab),
+        index: _currentMobileTab,
+        children: [
+          _buildDiscoverColumn(),
+          _buildTransferColumn(),
+          _buildNetworkColumn(),
+        ],
+      ),
     );
   }
 
@@ -98,52 +140,95 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final deviceState = ref.watch(deviceProvider);
     final connectionStatesAsync = ref.watch(connectionStatesProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppDimensions.space6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: AppDimensions.space6),
-          _buildLocalDeviceCard(),
-          const SizedBox(height: AppDimensions.space6),
-          _buildSectionHeader(
-            title: 'DISCOVERED',
-            count: deviceState.discoveredDevices.length,
-          ),
-          const SizedBox(height: AppDimensions.space4),
-          connectionStatesAsync.when(
-            data: (connectionStates) => DeviceList(
-              devices: deviceState.discoveredDevices,
-              selectedDevice: deviceState.selectedDevice,
-              connectedPeers: deviceState.connectedPeers,
-              connectionStates: connectionStates,
-              onDeviceSelect: (device) {
-                ref.read(deviceProvider.notifier).selectDevice(device);
-              },
-              onDeviceConnect: (device) => _handleDeviceConnect(device),
+    return RefreshIndicator(
+      onRefresh: _handleRefreshDevices,
+      color: AppColors.neonCyan,
+      backgroundColor: AppColors.bgSecondary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppDimensions.space6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: AppDimensions.space6),
+            _buildLocalDeviceCard(),
+            const SizedBox(height: AppDimensions.space6),
+            _buildSectionHeader(
+              title: 'DISCOVERED',
+              count: deviceState.discoveredDevices.length,
             ),
-            loading: () => const CircularProgressIndicator(),
-            error: (_, __) => DeviceList(
-              devices: deviceState.discoveredDevices,
-              selectedDevice: deviceState.selectedDevice,
-              connectedPeers: deviceState.connectedPeers,
-              connectionStates: const {},
-              onDeviceSelect: (device) {
-                ref.read(deviceProvider.notifier).selectDevice(device);
-              },
-              onDeviceConnect: (device) => _handleDeviceConnect(device),
+            const SizedBox(height: AppDimensions.space4),
+            connectionStatesAsync.when(
+              data: (connectionStates) => DeviceList(
+                devices: deviceState.discoveredDevices,
+                selectedDevice: deviceState.selectedDevice,
+                connectedPeers: deviceState.connectedPeers,
+                connectionStates: connectionStates,
+                onDeviceSelect: (device) {
+                  ref.read(deviceProvider.notifier).selectDevice(device);
+                },
+                onDeviceConnect: (device) => _handleDeviceConnect(device),
+              ),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppDimensions.space8),
+                  child: CircularProgressIndicator(
+                    color: AppColors.neonCyan,
+                  ),
+                ),
+              ),
+              error: (error, stack) => Column(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: AppDimensions.iconLarge,
+                    color: AppColors.statusError,
+                  ),
+                  const SizedBox(height: AppDimensions.space2),
+                  Text(
+                    'Error loading devices',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.statusError,
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.space4),
+                  DeviceList(
+                    devices: deviceState.discoveredDevices,
+                    selectedDevice: deviceState.selectedDevice,
+                    connectedPeers: deviceState.connectedPeers,
+                    connectionStates: const {},
+                    onDeviceSelect: (device) {
+                      ref.read(deviceProvider.notifier).selectDevice(device);
+                    },
+                    onDeviceConnect: (device) => _handleDeviceConnect(device),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _handleRefreshDevices() async {
+    try {
+      // Announce to network again to refresh discovery
+      ref.read(deviceProvider.notifier).announce();
+      await Future.delayed(const Duration(milliseconds: 500));
+      _showSuccess('Refreshed device list');
+    } catch (error) {
+      print('[MainScreen] Error refreshing devices: $error');
+      _showError('Failed to refresh devices');
+    }
   }
 
   /// Center column: Transfer
   Widget _buildTransferColumn() {
     final deviceState = ref.watch(deviceProvider);
     final transfersAsync = ref.watch(transfersProvider);
+    final completedTransfers = ref.watch(completedTransfersProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.space6),
@@ -158,30 +243,110 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             onFilesSelected: (files) => _handleFilesSelected(files),
           ),
           const SizedBox(height: AppDimensions.space6),
-          _buildSectionHeader(
-            title: 'QUEUE',
-            count: transfersAsync.value?.length ?? 0,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeader(
+                title: 'QUEUE',
+                count: transfersAsync.value?.length ?? 0,
+              ),
+              if (completedTransfers.isNotEmpty)
+                TextButton.icon(
+                  onPressed: _handleClearCompleted,
+                  icon: const Icon(Icons.clear_all, size: 16),
+                  label: Text(
+                    'CLEAR COMPLETED',
+                    style: AppTextStyles.buttonSmall,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: AppDimensions.space4),
           transfersAsync.when(
-            data: (transfers) => TransferProgress(
-              transfers: transfers,
-              embedded: true,
-              onClearTransfer: (id) {
-                ref
-                    .read(fileTransferServiceProvider)
-                    .removeTransfer(id);
-              },
+            data: (transfers) => transfers.isEmpty
+                ? _buildEmptyTransfers()
+                : TransferProgress(
+                    transfers: transfers,
+                    embedded: true,
+                    onClearTransfer: (id) async {
+                      final confirmed = await _showConfirmDialog(
+                        'Remove Transfer',
+                        'Are you sure you want to remove this transfer?',
+                      );
+                      if (confirmed) {
+                        ref.read(fileTransferServiceProvider).removeTransfer(id);
+                      }
+                    },
+                  ),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppDimensions.space8),
+                child: CircularProgressIndicator(
+                  color: AppColors.neonPink,
+                ),
+              ),
             ),
-            loading: () => const CircularProgressIndicator(),
-            error: (_, __) => const TransferProgress(
-              transfers: [],
-              embedded: true,
+            error: (error, stack) => Column(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: AppDimensions.iconLarge,
+                  color: AppColors.statusError,
+                ),
+                const SizedBox(height: AppDimensions.space2),
+                Text(
+                  'Error loading transfers',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.statusError,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildEmptyTransfers() {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.space12),
+      child: Column(
+        children: [
+          Icon(
+            Icons.cloud_upload_outlined,
+            size: AppDimensions.iconLarge,
+            color: AppColors.textTertiary.withOpacity(0.5),
+          ),
+          const SizedBox(height: AppDimensions.space2),
+          Text(
+            'NO ACTIVE TRANSFERS',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.space1),
+          Text(
+            'Select files above to start transferring',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textTertiary.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleClearCompleted() async {
+    final confirmed = await _showConfirmDialog(
+      'Clear Completed',
+      'Remove all completed transfers from the list?',
+    );
+
+    if (confirmed) {
+      ref.read(fileTransferServiceProvider).clearCompleted();
+      _showSuccess('Cleared completed transfers');
+    }
   }
 
   /// Right column: Network
@@ -235,19 +400,28 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
         Column(
           children: [
-            Text(
-              'BLINK',
-              style: AppTextStyles.displayLarge,
-              textAlign: TextAlign.center,
+            FadeInDown(
+              duration: const Duration(milliseconds: 600),
+              child: Text(
+                'BLINK',
+                style: AppTextStyles.displayLarge,
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: AppDimensions.space2),
-            Text(
-              'SECURE LOCAL FILE SHARING',
-              style: AppTextStyles.subtitle,
-              textAlign: TextAlign.center,
+            FadeInDown(
+              duration: const Duration(milliseconds: 800),
+              child: Text(
+                'SECURE LOCAL FILE SHARING',
+                style: AppTextStyles.subtitle,
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: AppDimensions.space4),
-            _buildOnlineStatus(),
+            FadeIn(
+              duration: const Duration(milliseconds: 1000),
+              child: _buildOnlineStatus(),
+            ),
           ],
         ),
       ],
@@ -465,26 +639,160 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Future<void> _handleDeviceConnect(device) async {
     if (device.peerId == null) return;
 
-    final webrtcManager = ref.read(webrtcManagerProvider);
-    await webrtcManager.connectToPeer(device.peerId!);
-    ref.read(deviceProvider.notifier).addConnectedPeer(device.peerId!);
+    try {
+      final webrtcManager = ref.read(webrtcManagerProvider);
+      final fileTransferService = ref.read(fileTransferServiceProvider);
+
+      // Connect to peer
+      final dataChannel = await webrtcManager.connectToPeer(device.peerId!);
+
+      // Setup receive handler for incoming files
+      fileTransferService.setupReceiveHandler(dataChannel);
+
+      ref.read(deviceProvider.notifier).addConnectedPeer(device.peerId!);
+      _showSuccess('Connected to ${device.name}');
+    } catch (error) {
+      print('[MainScreen] Error connecting to device: $error');
+      _showError('Failed to connect to ${device.name}');
+    }
   }
 
   Future<void> _handleDeviceDisconnect(device) async {
     if (device.peerId == null) return;
 
-    final webrtcManager = ref.read(webrtcManagerProvider);
-    await webrtcManager.closeConnection(device.peerId!);
-    ref.read(deviceProvider.notifier).removeConnectedPeer(device.peerId!);
+    // Show confirmation dialog
+    final confirmed = await _showConfirmDialog(
+      'Disconnect Device',
+      'Are you sure you want to disconnect from ${device.name}?',
+    );
+
+    if (!confirmed) return;
+
+    try {
+      final webrtcManager = ref.read(webrtcManagerProvider);
+      await webrtcManager.closeConnection(device.peerId!);
+      ref.read(deviceProvider.notifier).removeConnectedPeer(device.peerId!);
+      _showSuccess('Disconnected from ${device.name}');
+    } catch (error) {
+      print('[MainScreen] Error disconnecting from device: $error');
+      _showError('Failed to disconnect from ${device.name}');
+    }
+  }
+
+  Future<bool> _showConfirmDialog(String title, String message) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.bgSecondary,
+        title: Text(title, style: AppTextStyles.headingSmall),
+        content: Text(message, style: AppTextStyles.bodyMedium),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('CANCEL', style: AppTextStyles.buttonSmall),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.statusError,
+            ),
+            child: Text('CONFIRM', style: AppTextStyles.buttonSmall),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   Future<void> _handleFilesSelected(files) async {
-    for (final platformFile in files) {
-      // For web, we can access bytes directly
-      if (platformFile.bytes != null) {
-        // TODO: Implement file sending through WebRTC
-        print('Selected file: ${platformFile.name} (${platformFile.size} bytes)');
-      }
+    final deviceState = ref.read(deviceProvider);
+    final fileTransferService = ref.read(fileTransferServiceProvider);
+    final webrtcManager = ref.read(webrtcManagerProvider);
+
+    // Get all connected peers
+    final connectedPeers = deviceState.connectedPeers;
+    if (connectedPeers.isEmpty) {
+      _showError('No connected devices to send files to');
+      return;
     }
+
+    try {
+      for (final platformFile in files) {
+        // For web, we can access bytes directly
+        if (platformFile.bytes != null && platformFile.name != null) {
+          print('[MainScreen] Sending file: ${platformFile.name} (${platformFile.size} bytes)');
+
+          // Send file to all connected peers
+          for (final peerId in connectedPeers) {
+            final dataChannel = webrtcManager.dataChannels[peerId];
+
+            if (dataChannel != null) {
+              // Setup receive handler if not already set
+              fileTransferService.setupReceiveHandler(dataChannel);
+
+              // Send the file
+              await fileTransferService.sendFile(
+                fileBytes: platformFile.bytes!,
+                fileName: platformFile.name!,
+                fileSize: platformFile.size!,
+                channel: dataChannel,
+                onProgress: (progress) {
+                  print('[MainScreen] Transfer progress: $progress%');
+                },
+              );
+            }
+          }
+        } else {
+          _showError('Unable to read file: ${platformFile.name ?? "unknown"}');
+        }
+      }
+    } catch (error) {
+      print('[MainScreen] Error sending files: $error');
+      _showError('Failed to send file: $error');
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.statusError,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(AppDimensions.space4),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _showSuccess(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.statusOnline,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(AppDimensions.space4),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _navigateToSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SettingsScreen(),
+      ),
+    );
+  }
+
+  void _navigateToHistory(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const HistoryScreen(),
+      ),
+    );
   }
 }
