@@ -74,11 +74,6 @@
 
       <!-- CENTER COLUMN: Actions -->
       <div class="dashboard-column column-center" :class="{ 'mobile-hidden': activeMobileTab !== 'transfer' }">
-        <!-- Mobile Header (Only visible on mobile transfer tab) -->
-        <div class="section-card mobile-header md:hidden">
-            <h1 class="app-title-small">BLINK</h1>
-        </div>
-
         <!-- File Uploader -->
         <div class="section-card">
           <div class="card-header">
@@ -100,11 +95,6 @@
 
       <!-- RIGHT COLUMN: Connections -->
       <div class="dashboard-column column-right" :class="{ 'mobile-hidden': activeMobileTab !== 'network' }">
-         <!-- Mobile Header -->
-         <div class="section-card mobile-header md:hidden">
-            <h1 class="app-title-small">BLINK</h1>
-        </div>
-
         <div class="section-card flex-grow">
           <div class="card-header">
             <h2 class="card-title">NETWORK</h2>
@@ -361,21 +351,6 @@ onUnmounted(() => {
 /* Mobile Navigation */
 .mobile-nav {
   display: none; /* Hidden on desktop */
-}
-
-/* Mobile Header */
-.mobile-header {
-  text-align: center;
-  margin-bottom: var(--space-4);
-  padding: var(--space-4);
-}
-
-.app-title-small {
-  font-family: var(--font-sans);
-  font-weight: 900;
-  font-size: 1.5rem;
-  letter-spacing: -0.05em;
-  line-height: 1;
 }
 
 /* Section Cards */

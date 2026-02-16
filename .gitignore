@@ -21,3 +21,4 @@ dist
 
 # Turbo
 .turbo
+test-docker-build.sh
