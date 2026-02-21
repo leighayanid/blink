@@ -1,7 +1,27 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import type { Transfer, FileMetadata } from '@blink/types'
+import type { DataConnection } from 'peerjs'
 import { useTransfersStore } from '../stores/transfers'
+
+// File extensions that browsers may auto-execute or prompt to open dangerously.
+const DANGEROUS_EXTENSIONS = new Set([
+  'exe', 'bat', 'cmd', 'com', 'msi', 'ps1', 'vbs', 'js', 'jse',
+  'wsf', 'wsh', 'reg', 'scr', 'pif', 'hta', 'jar', 'sh', 'bash',
+  'zsh', 'fish', 'csh', 'ksh', 'html', 'htm', 'xhtml', 'svg', 'xml',
+  'php', 'py', 'rb', 'pl', 'lua', 'app', 'deb', 'rpm', 'dmg', 'pkg',
+  'apk', 'ipa'
+])
+
+interface ReceiveOperation {
+  id: string
+  chunks: ArrayBuffer[]
+  metadata: FileMetadata | null
+  receivedChunks: number
+  totalChunks: number
+  /** transferId of the metadata frame we're waiting for a binary chunk for */
+  pendingBinaryTransferId: string | null
+}
 
 export const useFileTransfer = () => {
   const store = useTransfersStore()
@@ -13,13 +33,13 @@ export const useFileTransfer = () => {
     ...failedTransfers.value
   ])
 
-  const CHUNK_SIZE = 64 * 1024 // 64KB chunks
+  const CHUNK_SIZE = 64 * 1024 // 64 KB
 
   const generateTransferId = (): string => {
-    return `transfer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    return `transfer-${crypto.randomUUID()}`
   }
 
-  const sendFile = async (file: File, connection: any): Promise<string> => {
+  const sendFile = async (file: File, connection: DataConnection): Promise<string> => {
     const transferId = generateTransferId()
 
     const transfer: Transfer = {
@@ -46,19 +66,16 @@ export const useFileTransfer = () => {
         }
       }))
 
-      // Wait a bit for metadata to be processed
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Calculate total chunks
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
       let chunkIndex = 0
 
-      // Send file in chunks
       for (let offset = 0; offset < file.size; offset += CHUNK_SIZE) {
         const chunk = file.slice(offset, offset + CHUNK_SIZE)
         const arrayBuffer = await chunk.arrayBuffer()
 
-        // Send chunk with metadata
+        // Send chunk descriptor, then the binary payload immediately after.
+        // The receiver correlates binary data to the preceding descriptor
+        // within the same ordered, reliable DataChannel.
         connection.send(JSON.stringify({
           type: 'file-chunk',
           transferId,
@@ -66,28 +83,20 @@ export const useFileTransfer = () => {
           totalChunks
         }))
 
-        // Send actual chunk data
         connection.send(arrayBuffer)
 
         chunkIndex++
 
-        // Update progress
-        const progress = ((offset + CHUNK_SIZE) / file.size) * 100
-        store.updateTransfer(transferId, {
-          progress: Math.min(progress, 100)
-        })
-
-        // Small delay to prevent overwhelming the connection
-        await new Promise(resolve => setTimeout(resolve, 10))
+        const progress = Math.min(((offset + CHUNK_SIZE) / file.size) * 100, 100)
+        store.updateTransfer(transferId, { progress })
       }
 
-      // Send completion message
+      // Signal end of file
       connection.send(JSON.stringify({
         type: 'file-complete',
         transferId
       }))
 
-      // Update transfer status
       store.updateTransfer(transferId, {
         status: 'completed',
         endTime: Date.now(),
@@ -95,67 +104,93 @@ export const useFileTransfer = () => {
       })
 
       console.log(`[FileTransfer] File sent successfully: ${file.name}`)
-
       return transferId
     } catch (error) {
       console.error('[FileTransfer] Error sending file:', error)
-      // Update failed status
-      store.updateTransfer(transferId, {
-        status: 'failed'
-      })
+      store.updateTransfer(transferId, { status: 'failed' })
       throw error
     }
   }
 
-  const receiveFile = (connection: any) => {
-    let currentTransfer: {
-      id: string
-      chunks: ArrayBuffer[]
-      metadata: FileMetadata | null
-      receivedChunks: number
-      totalChunks: number
-    } | null = null
+  /**
+   * Registers a data handler on `connection` for incoming files.
+   * Must be called immediately when a connection is established.
+   * Supports multiple concurrent files from the same peer because each JSON
+   * file-chunk frame identifies the transferId for the binary that follows.
+   */
+  const receiveFile = (connection: DataConnection) => {
+    // Map from transferId → receive state for this connection
+    const receiveMap = new Map<string, ReceiveOperation>()
+    // transferId of the most recent 'file-chunk' descriptor — next binary belongs to it
+    let pendingTransferId: string | null = null
 
-    connection.on('data', async (data: any) => {
+    const pushChunk = async (chunkData: ArrayBuffer) => {
+      const id = pendingTransferId
+      if (!id) return
+      pendingTransferId = null
+
+      const op = receiveMap.get(id)
+      if (!op) return
+
+      op.chunks.push(chunkData)
+      op.receivedChunks++
+
+      let progress = 0
+      if (op.totalChunks > 0) {
+        progress = (op.receivedChunks / op.totalChunks) * 100
+      } else if (op.metadata?.size) {
+        const receivedBytes = op.chunks.reduce((acc, c) => acc + c.byteLength, 0)
+        progress = Math.min(100, (receivedBytes / op.metadata.size) * 100)
+      }
+
+      store.updateTransfer(id, { progress })
+    }
+
+    connection.on('data', async (data: unknown) => {
       try {
-        // Control messages are sent as JSON strings
         if (typeof data === 'string') {
           const message = JSON.parse(data)
 
           if (message.type === 'file-meta') {
-            currentTransfer = {
+            const op: ReceiveOperation = {
               id: message.transferId,
               chunks: [],
               metadata: message.metadata,
               receivedChunks: 0,
-              totalChunks: 0
+              totalChunks: 0,
+              pendingBinaryTransferId: null
             }
+            receiveMap.set(message.transferId, op)
 
-            const transfer: Transfer = {
+            store.addTransfer({
               id: message.transferId,
               fileName: message.metadata.name,
               fileSize: message.metadata.size,
               progress: 0,
               status: 'receiving',
               startTime: Date.now()
-            }
-
-            store.addTransfer(transfer)
+            })
             console.log(`[FileTransfer] Receiving file: ${message.metadata.name}`)
           }
 
-          if (message.type === 'file-chunk' && currentTransfer) {
-            // Keep totalChunks for progress calculation
-            currentTransfer.totalChunks = message.totalChunks
+          if (message.type === 'file-chunk') {
+            const op = receiveMap.get(message.transferId)
+            if (op) {
+              op.totalChunks = message.totalChunks
+              // Mark which transfer the next binary belongs to
+              pendingTransferId = message.transferId
+            }
           }
 
-          if (message.type === 'file-complete' && currentTransfer) {
-            // Assemble and download file
-            const blob = new Blob(currentTransfer.chunks, {
-              type: currentTransfer.metadata?.type || 'application/octet-stream'
+          if (message.type === 'file-complete') {
+            const op = receiveMap.get(message.transferId)
+            if (!op) return
+
+            const blob = new Blob(op.chunks, {
+              type: op.metadata?.type || 'application/octet-stream'
             })
 
-            downloadFile(blob, currentTransfer.metadata?.name || 'download')
+            downloadFile(blob, op.metadata?.name || 'download')
 
             store.updateTransfer(message.transferId, {
               status: 'completed',
@@ -163,55 +198,20 @@ export const useFileTransfer = () => {
               endTime: Date.now()
             })
 
-            console.log(`[FileTransfer] File received successfully: ${currentTransfer.metadata?.name}`)
-            currentTransfer = null
+            console.log(`[FileTransfer] File received: ${op.metadata?.name}`)
+            receiveMap.delete(message.transferId)
           }
 
           return
         }
 
-        // Binary data can arrive as ArrayBuffer, Blob, or typed arrays
-        const pushChunk = async (chunkData: ArrayBuffer) => {
-          if (!currentTransfer) return
-          currentTransfer.chunks.push(chunkData)
-          currentTransfer.receivedChunks++
-
-          // Update progress
-          let progress = 0
-          if (currentTransfer.totalChunks && currentTransfer.totalChunks > 0) {
-            progress = (currentTransfer.receivedChunks / currentTransfer.totalChunks) * 100
-          } else if (currentTransfer.metadata?.size) {
-            // Approximate progress by bytes received
-            const receivedBytes = currentTransfer.chunks.reduce((acc, c) => acc + c.byteLength, 0)
-            progress = Math.min(100, (receivedBytes / currentTransfer.metadata.size) * 100)
-          }
-
-          store.updateTransfer(currentTransfer.id, {
-            progress
-          })
-        }
-
+        // Binary chunk — normalise to ArrayBuffer
         if (data instanceof ArrayBuffer) {
           await pushChunk(data)
         } else if (ArrayBuffer.isView(data)) {
-          // TypedArray (Uint8Array, etc.)
           await pushChunk(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength))
         } else if (data instanceof Blob) {
-          const ab = await data.arrayBuffer()
-          await pushChunk(ab)
-        } else if (data && data.buffer && ArrayBuffer.isView(data.buffer)) {
-          // Some libraries may deliver objects with a buffer property
-          await pushChunk(data.buffer)
-        } else {
-          // Unknown binary shape - try to coerce
-          try {
-            const coerced = await Promise.resolve(data)
-            if (coerced instanceof ArrayBuffer) {
-              await pushChunk(coerced)
-            }
-          } catch (e) {
-            console.warn('[FileTransfer] Received unknown data type for chunk', data)
-          }
+          await pushChunk(await data.arrayBuffer())
         }
       } catch (error) {
         console.error('[FileTransfer] Error receiving data:', error)
@@ -220,6 +220,13 @@ export const useFileTransfer = () => {
   }
 
   const downloadFile = (blob: Blob, fileName: string) => {
+    // Warn for potentially dangerous file types instead of blocking outright,
+    // as the OS file-open dialog is the last line of defence.
+    const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
+    if (DANGEROUS_EXTENSIONS.has(ext)) {
+      console.warn(`[FileTransfer] Received file with potentially dangerous extension: .${ext}`)
+    }
+
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

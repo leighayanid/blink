@@ -1,25 +1,52 @@
 import type { SignalingMessage, Device } from '@blink/types'
 
-// Store announced devices. Key is ideally the PeerJS peerId, value includes wsId
-const announcedDevices = new Map<string, any>()
+// Store announced devices. Key is the PeerJS peerId, value includes wsId
+const announcedDevices = new Map<string, Device & { wsId: string }>()
 
-// Store active WebSocket connections for manual broadcasting
+// Store active WebSocket connections for broadcasting
 const connectedPeers = new Map<string, any>()
+
+/** Validate and sanitize an incoming deviceInfo object. Returns null if invalid. */
+function sanitizeDeviceInfo(raw: unknown): (Device & { peerId: string }) | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const d = raw as Record<string, unknown>
+
+  const id = typeof d.id === 'string' ? d.id.slice(0, 64) : null
+  const name = typeof d.name === 'string' ? d.name.slice(0, 128) : null
+  const platform = typeof d.platform === 'string' ? d.platform.slice(0, 32) : 'Unknown'
+  const peerId = typeof d.peerId === 'string' ? d.peerId.slice(0, 128) : null
+  const timestamp = typeof d.timestamp === 'number' ? d.timestamp : Date.now()
+
+  if (!id || !name || !peerId) return null
+
+  return { id, name, platform, peerId, timestamp }
+}
+
+/** Broadcast a message to all connected peers except an optional exclusion */
+function broadcast(message: string, excludeWsId?: string) {
+  for (const [wsId, peer] of connectedPeers.entries()) {
+    if (wsId === excludeWsId) continue
+    try {
+      peer.send(message)
+    } catch (err) {
+      console.error('[WebSocket] Failed to send to peer:', err)
+    }
+  }
+}
 
 export default defineWebSocketHandler({
   open(peer) {
     console.log('[WebSocket] Client connected:', peer.id)
     connectedPeers.set(peer.id, peer)
-    peer.subscribe('discovery')
 
-    // Send existing peers to new peer
+    // Send the new peer its assigned WebSocket ID
     peer.send(JSON.stringify({
       type: 'init',
       peerId: peer.id
     }))
 
     // Send all previously announced devices to the new peer
-    for (const [peerId, deviceInfo] of announcedDevices.entries()) {
+    for (const [, deviceInfo] of announcedDevices.entries()) {
       peer.send(JSON.stringify({
         type: 'peer-joined',
         deviceInfo
@@ -35,114 +62,85 @@ export default defineWebSocketHandler({
       console.log('[WebSocket] Message received:', parsed.type)
 
       switch (parsed.type) {
-        case 'announce':
-          console.log('[WebSocket] Device announced:', parsed.deviceInfo.name, 'with peerId:', parsed.deviceInfo.peerId)
-          // Prefer using the PeerJS peerId as the key so other peers can reference it directly
-          const peerJsId = parsed.deviceInfo?.peerId || null
-          const key = peerJsId || peer.id
-
-          const deviceWithWsId = {
-            ...parsed.deviceInfo,
-            wsId: peer.id // Track WebSocket connection separately
+        case 'announce': {
+          const deviceInfo = sanitizeDeviceInfo(parsed.deviceInfo)
+          if (!deviceInfo) {
+            console.warn('[WebSocket] Rejecting malformed announce from', peer.id)
+            break
           }
 
-          announcedDevices.set(key, deviceWithWsId)
+          console.log('[WebSocket] Device announced:', deviceInfo.name, 'peerId:', deviceInfo.peerId)
 
-          // Broadcast new device to ALL peers including this one
+          announcedDevices.set(deviceInfo.peerId, { ...deviceInfo, wsId: peer.id })
+
+          // Broadcast new device to all peers (including the announcer so it
+          // sees itself reflected back, which is useful for multi-tab debugging)
           const peerJoinedMsg = JSON.stringify({
             type: 'peer-joined',
-            deviceInfo: parsed.deviceInfo
+            deviceInfo
           })
-
-          // Manual broadcast to all connected peers
-          for (const targetPeer of connectedPeers.values()) {
-            try {
-              targetPeer.send(peerJoinedMsg)
-            } catch (err) {
-              console.error('[WebSocket] Failed to send to peer:', err)
-            }
-          }
-          
-          // Also try standard publish (backup)
-          peer.publish('discovery', peerJoinedMsg)
+          broadcast(peerJoinedMsg)
           break
+        }
 
-        case 'signal':
-          // Forward WebRTC signaling messages to specific peer
-          if (parsed.targetPeer) {
-            // Find target peer by looking up their WS ID from announcedDevices
-            // We need to find the WS ID associated with the target PeerJS ID
-            let targetWsId = null
-            
-            // Direct lookup if key is PeerID
-            if (announcedDevices.has(parsed.targetPeer)) {
-                targetWsId = announcedDevices.get(parsed.targetPeer).wsId
-            }
-            
-            if (targetWsId && connectedPeers.has(targetWsId)) {
-                const targetSocket = connectedPeers.get(targetWsId)
-                targetSocket.send(JSON.stringify({
-                    type: 'signal',
-                    signal: parsed.signal,
-                    fromPeer: peer.id
-                }))
-            } else {
-                // Fallback to publish if manual lookup fails
-                 peer.send(JSON.stringify({
-                  type: 'signal',
-                  signal: parsed.signal,
-                  fromPeer: peer.id
-                }))
-            }
+        case 'signal': {
+          // Forward WebRTC signaling message to a specific target peer
+          if (!parsed.targetPeer || typeof parsed.targetPeer !== 'string') break
+
+          const targetEntry = announcedDevices.get(parsed.targetPeer)
+          if (!targetEntry) {
+            console.warn('[WebSocket] Signal target not found:', parsed.targetPeer)
+            break
           }
+
+          const targetSocket = connectedPeers.get(targetEntry.wsId)
+          if (!targetSocket) {
+            console.warn('[WebSocket] Target peer socket not connected:', parsed.targetPeer)
+            break
+          }
+
+          targetSocket.send(JSON.stringify({
+            type: 'signal',
+            signal: parsed.signal,
+            fromPeer: peer.id
+          }))
           break
+        }
 
         case 'offer':
         case 'answer':
-        case 'ice-candidate':
-          // Forward WebRTC signaling
+        case 'ice-candidate': {
+          // Forward WebRTC signaling to all peers except sender
           const signalMsg = JSON.stringify(parsed)
-          // Manual broadcast
-          for (const targetPeer of connectedPeers.values()) {
-             if (targetPeer.id !== peer.id) { // Don't send back to self for these
-                try { targetPeer.send(signalMsg) } catch(e) {}
-             }
-          }
-          peer.publish('discovery', signalMsg)
+          broadcast(signalMsg, peer.id)
           break
+        }
       }
     } catch (error) {
       console.error('[WebSocket] Error handling message:', error)
     }
   },
 
-  close(peer, event) {
+  close(peer) {
     console.log('[WebSocket] Client disconnected:', peer.id)
     connectedPeers.delete(peer.id)
-    
-    // Find the announced device entry that matches this WebSocket id (wsId)
-    let removedPeerJsId = null
-    for (const [key, deviceInfo] of announcedDevices.entries()) {
-      if (deviceInfo?.wsId === peer.id) {
-        removedPeerJsId = deviceInfo?.peerId || null
-        announcedDevices.delete(key)
+
+    // Find the announced device entry that matches this WebSocket connection
+    let removedPeerId: string | null = null
+    for (const [peerId, deviceInfo] of announcedDevices.entries()) {
+      if (deviceInfo.wsId === peer.id) {
+        removedPeerId = deviceInfo.peerId || null
+        announcedDevices.delete(peerId)
         break
       }
     }
 
-    // If we found a PeerJS peerId, notify other peers
-    if (removedPeerJsId) {
+    if (removedPeerId) {
       const leftMsg = JSON.stringify({
         type: 'peer-left',
-        peerId: removedPeerJsId
+        peerId: removedPeerId
       })
-      
-      // Manual broadcast
-      for (const targetPeer of connectedPeers.values()) {
-        try { targetPeer.send(leftMsg) } catch(e) {}
-      }
-      
-      peer.publish('discovery', leftMsg)
+      broadcast(leftMsg)
     }
   },
 

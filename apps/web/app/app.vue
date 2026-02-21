@@ -10,10 +10,7 @@ import Toast from './components/Toast.vue'
 </script>
 
 <style>
-/* ============================================
-   ORBITRON FONT IMPORT
-   ============================================ */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+/* Orbitron is loaded via nuxt.config.ts app.head.link — no @import needed here */
 
 /* ============================================
    GLOBAL BASE STYLES
@@ -161,7 +158,6 @@ html.dark body {
       #1E1E3F 100%
     );
   background-size: 60px 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  background-attachment: fixed;
   background-position: center, center, center, center, center;
 }
 

@@ -11,7 +11,15 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#FF9500' }
       ],
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        // Preconnect to Google Fonts for faster font load
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
+        // Orbitron font (loaded non-render-blocking via <link> instead of CSS @import)
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap'
+        }
       ]
     }
   },

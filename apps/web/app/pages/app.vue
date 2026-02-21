@@ -177,7 +177,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Device } from '@blink/types'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
@@ -185,8 +185,8 @@ import { useFileTransfer } from '../composables/useFileTransfer'
 import { useToast } from '../composables/useToast'
 import { useTheme } from '../composables/useTheme'
 
-const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId, announce } = useDeviceDiscovery()
-const { peer, localPeerId, initPeer, connectToPeer, connections, connectionStates, destroy } = useWebRTC()
+const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId } = useDeviceDiscovery()
+const { localPeerId, initPeer, connectToPeer, connections, connectionStates, onConnection, destroy } = useWebRTC()
 const { success, error: showError } = useToast()
 const { transfers, sendFile, receiveFile } = useFileTransfer()
 const { isDark, toggleTheme } = useTheme()
@@ -194,7 +194,6 @@ const { isDark, toggleTheme } = useTheme()
 const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
 const targetPeerForSend = ref<string | null>(null)
-const fileReceiveHandlerSetup = ref<Set<string>>(new Set())
 
 // Mobile Tab State
 const activeMobileTab = ref<'discover' | 'transfer' | 'network'>('transfer')
@@ -214,6 +213,12 @@ const hasConnectingDevices = computed(() => {
 
 onMounted(async () => {
   initDevice()
+
+  // Wire receive handler immediately when any connection opens — no watcher needed
+  onConnection((conn) => {
+    receiveFile(conn)
+  })
+
   try {
     const peerId = await initPeer(localDevice.value?.id)
     setLocalPeerId(peerId)
@@ -221,15 +226,6 @@ onMounted(async () => {
     console.error('Failed to initialize peer:', error)
   }
   connect()
-
-  watch(connections, (newConnections) => {
-    newConnections.forEach((conn, peerId) => {
-      if (!fileReceiveHandlerSetup.value.has(peerId)) {
-        fileReceiveHandlerSetup.value.add(peerId)
-        receiveFile(conn)
-      }
-    })
-  }, { deep: true })
 })
 
 const getPlatformLabel = (platform: string): string => {
@@ -271,7 +267,6 @@ const handleDeviceConnect = async (device: Device) => {
 const handleDeviceDisconnect = (device: Device) => {
   if (device.peerId && connectedPeers.value.has(device.peerId)) {
     connectedPeers.value.delete(device.peerId)
-    fileReceiveHandlerSetup.value.delete(device.peerId)
     const conn = connections.value.get(device.peerId)
     if (conn) conn.close()
     if (targetPeerForSend.value === device.peerId) {

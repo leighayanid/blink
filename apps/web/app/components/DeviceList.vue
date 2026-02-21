@@ -104,23 +104,9 @@ defineEmits<{
   connect: [device: Device]
 }>()
 
-// Helpers
-const resolveConnectedPeers = (): Set<string> => {
-  const cpAny: any = props.connectedPeers
-  return (cpAny instanceof Set || (cpAny?.has)) ? cpAny : (cpAny?.value || new Set())
-}
-const connectedPeersResolved = computed(() => resolveConnectedPeers())
-
-const resolveConnectionStates = (): Map<string, ConnectionState> | null => {
-  const csAny: any = props.connectionStates
-  return (csAny instanceof Map || (csAny?.get)) ? csAny : (csAny?.value || null)
-}
-
-const resolveSelectedDevice = (): Device | null => {
-  const sAny: any = props.selectedDevice
-  return (sAny?.id) ? sAny : (sAny?.value || null)
-}
-const selectedDeviceResolved = computed(() => resolveSelectedDevice())
+// Vue auto-unwraps refs when passed as props, so no manual unwrapping is needed.
+const connectedPeersResolved = computed(() => props.connectedPeers ?? new Set<string>())
+const selectedDeviceResolved = computed(() => props.selectedDevice ?? null)
 
 const getPlatformLabel = (platform: string): string => {
   const map: Record<string, string> = {
@@ -143,8 +129,7 @@ const getPlatformIcon = (platform: string): 'monitor' | 'smartphone' | 'unknown'
 
 const getDeviceState = (device: Device): ConnectionState | undefined => {
   if (!device.peerId) return undefined
-  const map = resolveConnectionStates()
-  return map?.get(device.peerId)
+  return props.connectionStates?.get(device.peerId)
 }
 
 const getStatusText = (device: Device): string => {

@@ -27,20 +27,20 @@ export interface FileMetadata {
   lastModified: number
 }
 
-export interface ChunkData {
+/** Describes the JSON control frame sent before each binary chunk. */
+export interface ChunkDescriptor {
   type: 'file-meta' | 'file-chunk' | 'file-complete'
-  transferId?: string
-  data?: ArrayBuffer
-  metadata?: FileMetadata
+  transferId: string
   chunkIndex?: number
   totalChunks?: number
+  metadata?: FileMetadata
 }
 
 export interface SignalingMessage {
   type: 'announce' | 'signal' | 'peer-joined' | 'peer-left' | 'offer' | 'answer' | 'ice-candidate' | 'init'
   deviceInfo?: Device
   peerId?: string
-  signal?: any
+  signal?: unknown
   targetPeer?: string
   fromPeer?: string
 }
