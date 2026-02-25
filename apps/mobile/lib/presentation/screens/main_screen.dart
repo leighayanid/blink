@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
+import '../../data/models/device.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_dimensions.dart';
@@ -26,6 +28,7 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   int _currentMobileTab = 1; // Start with transfer tab
+  ProviderSubscription<DeviceState>? _deviceSub;
 
   @override
   void initState() {
@@ -33,18 +36,77 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     _initializeApp();
   }
 
+  @override
+  void dispose() {
+    _deviceSub?.close();
+    super.dispose();
+  }
+
+  /// Issue 8: Split into two phases — connect first, then wait for localDevice
   Future<void> _initializeApp() async {
-    // Connect to signaling server
     await ref.read(deviceProvider.notifier).connect();
 
-    // Initialize WebRTC
     final deviceState = ref.read(deviceProvider);
     if (deviceState.localDevice != null) {
-      final webrtcManager = ref.read(webrtcManagerProvider);
-      final peerId = await webrtcManager.initPeer(deviceState.localDevice!.id);
-      ref.read(deviceProvider.notifier).setLocalPeerId(peerId);
-      ref.read(deviceProvider.notifier).announce();
+      await _setupWebRTC(deviceState.localDevice!);
+      return;
     }
+
+    // localDevice is set asynchronously inside DeviceNotifier._init() — wait for it
+    final completer = Completer<Device>();
+    _deviceSub = ref.listenManual<DeviceState>(deviceProvider, (_, next) {
+      if (next.localDevice != null && !completer.isCompleted) {
+        completer.complete(next.localDevice!);
+      }
+    });
+
+    try {
+      final device = await completer.future.timeout(
+        const Duration(seconds: 5),
+      );
+      await _setupWebRTC(device);
+    } catch (_) {
+      _showError('Failed to initialize device');
+    } finally {
+      _deviceSub?.close();
+      _deviceSub = null;
+    }
+  }
+
+  /// Wire signaling ↔ WebRTC and start listening for incoming data channels
+  Future<void> _setupWebRTC(Device localDevice) async {
+    final webrtcManager = ref.read(webrtcManagerProvider);
+    final signalingClient = ref.read(signalingClientProvider);
+    final fileTransferService = ref.read(fileTransferServiceProvider);
+
+    // Wire outgoing signals: WebRTC → signaling server
+    webrtcManager.onSendSignal = (targetPeer, signal) =>
+        signalingClient.sendSignal(targetPeer: targetPeer, signal: signal);
+
+    // Wire incoming signals: signaling server → WebRTC
+    signalingClient.signalsStream.listen((msg) async {
+      await webrtcManager.handleSignal(
+        msg['fromPeer'] as String,
+        msg['signal'] as Map<String, dynamic>,
+      );
+    });
+
+    // Auto-setup file transfer handler on incoming data channels (responder side)
+    final handledChannels = <String>{};
+    webrtcManager.dataChannelsStream.listen((channels) {
+      for (final entry in channels.entries) {
+        if (handledChannels.add(entry.key)) {
+          fileTransferService.setupReceiveHandler(entry.value);
+          if (!ref.read(deviceProvider).connectedPeers.contains(entry.key)) {
+            ref.read(deviceProvider.notifier).addConnectedPeer(entry.key);
+          }
+        }
+      }
+    });
+
+    final peerId = await webrtcManager.initPeer(localDevice.id);
+    ref.read(deviceProvider.notifier).setLocalPeerId(peerId);
+    ref.read(deviceProvider.notifier).announce();
   }
 
   @override
@@ -214,7 +276,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Future<void> _handleRefreshDevices() async {
     try {
-      // Announce to network again to refresh discovery
       ref.read(deviceProvider.notifier).announce();
       await Future.delayed(const Duration(milliseconds: 500));
       _showSuccess('Refreshed device list');
@@ -643,10 +704,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       final webrtcManager = ref.read(webrtcManagerProvider);
       final fileTransferService = ref.read(fileTransferServiceProvider);
 
-      // Connect to peer
       final dataChannel = await webrtcManager.connectToPeer(device.peerId!);
-
-      // Setup receive handler for incoming files
       fileTransferService.setupReceiveHandler(dataChannel);
 
       ref.read(deviceProvider.notifier).addConnectedPeer(device.peerId!);
@@ -660,7 +718,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Future<void> _handleDeviceDisconnect(device) async {
     if (device.peerId == null) return;
 
-    // Show confirmation dialog
     final confirmed = await _showConfirmDialog(
       'Disconnect Device',
       'Are you sure you want to disconnect from ${device.name}?',
@@ -709,7 +766,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final fileTransferService = ref.read(fileTransferServiceProvider);
     final webrtcManager = ref.read(webrtcManagerProvider);
 
-    // Get all connected peers
     final connectedPeers = deviceState.connectedPeers;
     if (connectedPeers.isEmpty) {
       _showError('No connected devices to send files to');
@@ -718,19 +774,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     try {
       for (final platformFile in files) {
-        // For web, we can access bytes directly
         if (platformFile.bytes != null && platformFile.name != null) {
-          print('[MainScreen] Sending file: ${platformFile.name} (${platformFile.size} bytes)');
+          print(
+            '[MainScreen] Sending file: ${platformFile.name} (${platformFile.size} bytes)',
+          );
 
-          // Send file to all connected peers
           for (final peerId in connectedPeers) {
             final dataChannel = webrtcManager.dataChannels[peerId];
 
             if (dataChannel != null) {
-              // Setup receive handler if not already set
               fileTransferService.setupReceiveHandler(dataChannel);
 
-              // Send the file
               await fileTransferService.sendFile(
                 fileBytes: platformFile.bytes!,
                 fileName: platformFile.name!,
@@ -743,7 +797,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             }
           }
         } else {
-          _showError('Unable to read file: ${platformFile.name ?? "unknown"}');
+          _showError(
+            'Unable to read file: ${platformFile.name ?? "unknown"}',
+          );
         }
       }
     } catch (error) {

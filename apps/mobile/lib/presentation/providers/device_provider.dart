@@ -41,7 +41,10 @@ class DeviceNotifier extends StateNotifier<DeviceState> {
   final SignalingClient _signalingClient;
 
   DeviceNotifier(this._signalingClient) : super(const DeviceState()) {
-    _init();
+    // Issue 7: catch async errors from unawaited _init()
+    _init().catchError((error, stackTrace) {
+      print('[DeviceNotifier] Init error: $error\n$stackTrace');
+    });
   }
 
   Future<void> _init() async {
@@ -109,9 +112,9 @@ class DeviceNotifier extends StateNotifier<DeviceState> {
   }
 }
 
-/// Signaling client provider
+/// Signaling client provider — points at the Nuxt ws.ts route
 final signalingClientProvider = Provider<SignalingClient>((ref) {
-  final client = SignalingClient();
+  final client = SignalingClient(serverUrl: 'ws://localhost:3000/ws');
   ref.onDispose(() => client.dispose());
   return client;
 });

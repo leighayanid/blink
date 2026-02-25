@@ -1,11 +1,12 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:uuid/uuid.dart';
-import 'package:universal_html/html.dart' as html;
 import '../models/transfer.dart';
 import '../models/file_metadata.dart';
+import 'file_saver.dart';
 
 /// File Transfer Service with chunking
 /// Replicates the functionality of useFileTransfer.ts from the web app
@@ -23,6 +24,12 @@ class FileTransferService {
 
   // Active receive operations
   final Map<String, _ReceiveOperation> _receiveOperations = {};
+
+  // FIFO queue mapping binary chunks to their pending transfer IDs (Issue 5)
+  final Queue<String> _pendingBinaryQueue = Queue<String>();
+
+  // Throttled notify timer (Issue 4)
+  Timer? _notifyTimer;
 
   // Getters
   List<Transfer> get activeTransfers => List.unmodifiable(_activeTransfers);
@@ -49,7 +56,6 @@ class FileTransferService {
   }) async {
     final transferId = _generateTransferId();
 
-    // Create transfer object
     final transfer = Transfer(
       id: transferId,
       fileName: fileName,
@@ -79,19 +85,15 @@ class FileTransferService {
       await channel.send(RTCDataChannelMessage(metaMessage));
       print('[FileTransfer] Sent metadata for: $fileName');
 
-      // Wait a bit for metadata to be processed
       await Future.delayed(const Duration(milliseconds: 100));
 
       // 2. Send file in chunks (binary)
-      final bytes = fileBytes;
       final totalChunks = (fileSize / chunkSize).ceil();
       int chunkIndex = 0;
 
       for (int offset = 0; offset < fileSize; offset += chunkSize) {
-        final end = (offset + chunkSize < fileSize)
-            ? offset + chunkSize
-            : fileSize;
-        final chunk = bytes.sublist(offset, end);
+        final end = (offset + chunkSize < fileSize) ? offset + chunkSize : fileSize;
+        final chunk = fileBytes.sublist(offset, end);
 
         // Send chunk metadata (JSON)
         final chunkMetaMessage = jsonEncode({
@@ -102,22 +104,17 @@ class FileTransferService {
         });
 
         await channel.send(RTCDataChannelMessage(chunkMetaMessage));
-
-        // Send actual chunk data (binary)
         await channel.send(RTCDataChannelMessage.fromBinary(chunk));
 
         chunkIndex++;
 
-        // Update progress
         final progress = ((offset + chunkSize) / fileSize) * 100;
         _updateTransfer(
           transferId,
           transfer.copyWith(progress: progress.clamp(0, 100)),
         );
-
         onProgress?.call(progress.clamp(0, 100));
 
-        // Small delay to prevent overwhelming the connection
         await Future.delayed(const Duration(milliseconds: 10));
       }
 
@@ -129,7 +126,6 @@ class FileTransferService {
 
       await channel.send(RTCDataChannelMessage(completeMessage));
 
-      // Update transfer status
       _updateTransfer(
         transferId,
         transfer.copyWith(
@@ -162,14 +158,13 @@ class FileTransferService {
   /// Handle incoming data (control messages or file chunks)
   Future<void> _handleIncomingData(RTCDataChannelMessage message) async {
     try {
-      // Check if it's a text message (control message)
-      if (message.text != null && message.text!.isNotEmpty) {
-        final data = jsonDecode(message.text!);
-        await _handleControlMessage(data);
-      }
-      // Binary data (file chunk)
-      else if (message.binary != null) {
-        await _handleBinaryChunk(message.binary!);
+      if (!message.isBinary) {
+        if (message.text.isNotEmpty) {
+          final data = jsonDecode(message.text) as Map<String, dynamic>;
+          await _handleControlMessage(data);
+        }
+      } else {
+        await _handleBinaryChunk(message.binary);
       }
     } catch (error) {
       print('[FileTransfer] Error handling incoming data: $error');
@@ -186,13 +181,11 @@ class FileTransferService {
         data['metadata'] as Map<String, dynamic>,
       );
 
-      // Create receive operation
       _receiveOperations[transferId] = _ReceiveOperation(
         transferId: transferId,
         metadata: metadata,
       );
 
-      // Create transfer object
       final transfer = Transfer(
         id: transferId,
         fileName: metadata.name,
@@ -208,7 +201,8 @@ class FileTransferService {
       final operation = _receiveOperations[transferId];
       if (operation != null) {
         operation.totalChunks = data['totalChunks'] as int;
-        operation.awaitingChunk = true;
+        // Enqueue so _handleBinaryChunk knows which transfer this chunk belongs to
+        _pendingBinaryQueue.addLast(transferId);
       }
     } else if (type == 'file-complete' && transferId != null) {
       final operation = _receiveOperations[transferId];
@@ -218,31 +212,28 @@ class FileTransferService {
     }
   }
 
-  /// Handle binary chunk data
+  /// Handle binary chunk data — dequeues the pending transfer ID (Issue 5)
   Future<void> _handleBinaryChunk(Uint8List chunk) async {
-    // Find the receive operation that's awaiting a chunk
-    for (final entry in _receiveOperations.entries) {
-      final operation = entry.value;
-      if (operation.awaitingChunk) {
+    if (_pendingBinaryQueue.isNotEmpty) {
+      final transferId = _pendingBinaryQueue.removeFirst();
+      final operation = _receiveOperations[transferId];
+      if (operation != null) {
         operation.chunks.add(chunk);
         operation.receivedChunks++;
-        operation.awaitingChunk = false;
 
-        // Update progress
         if (operation.totalChunks > 0) {
           final progress =
               (operation.receivedChunks / operation.totalChunks) * 100;
-          final transfer = _activeTransfers.firstWhere(
-            (t) => t.id == operation.transferId,
-            orElse: () => throw Exception('Transfer not found'),
-          );
-
-          _updateTransfer(
-            operation.transferId,
-            transfer.copyWith(progress: progress.clamp(0, 100)),
-          );
+          final idx = _activeTransfers.indexWhere((t) => t.id == transferId);
+          if (idx != -1) {
+            _updateTransfer(
+              transferId,
+              _activeTransfers[idx].copyWith(
+                progress: progress.clamp(0, 100),
+              ),
+            );
+          }
         }
-        break;
       }
     }
   }
@@ -267,98 +258,96 @@ class FileTransferService {
         offset += chunk.length;
       }
 
-      // Save file
-      await _saveFile(fileBytes, operation.metadata.name);
+      // Save file using platform-appropriate saver
+      await saveFile(fileBytes, operation.metadata.name);
 
-      // Update transfer status
-      final transfer = _activeTransfers.firstWhere(
-        (t) => t.id == transferId,
-        orElse: () => throw Exception('Transfer not found'),
+      final idx = _activeTransfers.indexWhere((t) => t.id == transferId);
+      if (idx != -1) {
+        _updateTransfer(
+          transferId,
+          _activeTransfers[idx].copyWith(
+            status: TransferStatus.completed,
+            progress: 100,
+            endTime: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
+      }
+
+      print(
+        '[FileTransfer] File received successfully: ${operation.metadata.name}',
       );
-
-      _updateTransfer(
-        transferId,
-        transfer.copyWith(
-          status: TransferStatus.completed,
-          progress: 100,
-          endTime: DateTime.now().millisecondsSinceEpoch,
-        ),
-      );
-
-      print('[FileTransfer] File received successfully: ${operation.metadata.name}');
-
-      // Cleanup
       _receiveOperations.remove(transferId);
     } catch (error) {
       print('[FileTransfer] Error completing file receive: $error');
-      final transfer = _activeTransfers.firstWhere(
-        (t) => t.id == transferId,
-        orElse: () => throw Exception('Transfer not found'),
-      );
-      _updateTransfer(
-        transferId,
-        transfer.copyWith(status: TransferStatus.failed),
-      );
+      // Issue 9: cleanup operation and mark as failed
+      _receiveOperations.remove(transferId);
+      final idx = _activeTransfers.indexWhere((t) => t.id == transferId);
+      if (idx != -1) {
+        _updateTransfer(
+          transferId,
+          _activeTransfers[idx].copyWith(status: TransferStatus.failed),
+        );
+      }
     }
   }
 
-  /// Save file to device storage (Web: triggers download)
-  Future<void> _saveFile(Uint8List bytes, String fileName) async {
-    try {
-      // For web: trigger browser download
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', fileName)
-        ..click();
-      html.Url.revokeObjectUrl(url);
-
-      print('[FileTransfer] File download triggered: $fileName');
-    } catch (error) {
-      print('[FileTransfer] Error saving file: $error');
-      rethrow;
-    }
-  }
-
-  /// Add transfer to list
+  /// Add transfer to active list
   void _addTransfer(Transfer transfer) {
     _activeTransfers.add(transfer);
-    _notifyListeners();
+    _notifyListenersImmediate();
   }
 
-  /// Update transfer
-  void _updateTransfer(String transferId, Transfer updatedTransfer) {
-    // Remove from active
-    _activeTransfers.removeWhere((t) => t.id == transferId);
-
-    // Add to appropriate list based on status
-    if (updatedTransfer.status == TransferStatus.completed) {
-      _completedTransfers.add(updatedTransfer);
-    } else if (updatedTransfer.status == TransferStatus.failed) {
-      _failedTransfers.add(updatedTransfer);
-    } else {
-      _activeTransfers.add(updatedTransfer);
+  /// Update transfer in-place for active transfers; move to terminal lists otherwise (Issue 4)
+  void _updateTransfer(String transferId, Transfer updated) {
+    if (updated.status == TransferStatus.sending ||
+        updated.status == TransferStatus.receiving) {
+      final idx = _activeTransfers.indexWhere((t) => t.id == transferId);
+      if (idx != -1) {
+        _activeTransfers[idx] = updated;
+        _notifyListenersThrottled();
+        return;
+      }
     }
 
-    _notifyListeners();
+    _activeTransfers.removeWhere((t) => t.id == transferId);
+    if (updated.status == TransferStatus.completed) {
+      _completedTransfers.add(updated);
+      _notifyListenersImmediate();
+    } else if (updated.status == TransferStatus.failed) {
+      _failedTransfers.add(updated);
+      _notifyListenersImmediate();
+    } else {
+      _activeTransfers.add(updated);
+      _notifyListenersThrottled();
+    }
   }
 
-  /// Remove transfer
+  /// Remove transfer from all lists
   void removeTransfer(String transferId) {
     _activeTransfers.removeWhere((t) => t.id == transferId);
     _completedTransfers.removeWhere((t) => t.id == transferId);
     _failedTransfers.removeWhere((t) => t.id == transferId);
-    _notifyListeners();
+    _notifyListenersImmediate();
   }
 
   /// Clear completed transfers
   void clearCompleted() {
     _completedTransfers.clear();
-    _notifyListeners();
+    _notifyListenersImmediate();
   }
 
-  /// Notify listeners of changes
-  void _notifyListeners() {
+  /// Throttled notify — coalesces rapid progress updates (Issue 4)
+  void _notifyListenersThrottled() {
+    if (_notifyTimer?.isActive == true) return;
+    _notifyTimer = Timer(
+      const Duration(milliseconds: 100),
+      _notifyListenersImmediate,
+    );
+  }
+
+  /// Immediate notify — used for state changes (add, complete, fail)
+  void _notifyListenersImmediate() {
+    _notifyTimer?.cancel();
     _transfersController.add(allTransfers);
   }
 
@@ -382,6 +371,7 @@ class FileTransferService {
 
   /// Dispose service
   Future<void> dispose() async {
+    _notifyTimer?.cancel();
     _receiveOperations.clear();
     await _transfersController.close();
   }
@@ -394,7 +384,6 @@ class _ReceiveOperation {
   final List<Uint8List> chunks = [];
   int receivedChunks = 0;
   int totalChunks = 0;
-  bool awaitingChunk = false;
 
   _ReceiveOperation({
     required this.transferId,

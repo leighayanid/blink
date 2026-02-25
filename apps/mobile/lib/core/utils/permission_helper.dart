@@ -1,19 +1,27 @@
-/// Permission helper for web (no permissions needed)
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
+
+/// Permission helper for native platforms
 class PermissionHelper {
-  /// Request storage permission (not needed for web)
+  /// Request storage permission
   static Future<bool> requestStoragePermission() async {
-    // Web doesn't require explicit storage permissions
-    return true;
+    if (kIsWeb) return true;
+    if (await Permission.storage.isGranted) return true;
+    final status = await Permission.storage.request();
+    return status.isGranted;
   }
 
-  /// Request notification permission (optional for web)
+  /// Request notification permission
   static Future<bool> requestNotificationPermission() async {
-    // Web notifications are optional and handled by browser
-    return true;
+    if (kIsWeb) return true;
+    final status = await Permission.notification.request();
+    // Treat denied (but not permanently denied) as acceptable
+    return status.isGranted || status.isDenied;
   }
 
-  /// Check if all required permissions are granted (always true for web)
+  /// Check if all required permissions are granted
   static Future<bool> checkAllPermissions() async {
-    return true;
+    if (kIsWeb) return true;
+    return await Permission.storage.isGranted;
   }
 }

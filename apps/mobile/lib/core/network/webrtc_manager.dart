@@ -22,6 +22,9 @@ class WebRTCManager {
   String? _localPeerId;
   bool _shouldReconnect = true;
 
+  /// Callback wired by main_screen to forward signals through signaling server
+  Function(String targetPeer, Map<String, dynamic> signal)? onSendSignal;
+
   // Ice servers (same as web app)
   final List<Map<String, String>> _iceServers = [
     {'urls': 'stun:stun.l.google.com:19302'},
@@ -56,7 +59,6 @@ class WebRTCManager {
     _logger.info('Initializing peer with ID: $deviceId');
 
     try {
-      // Create peer connection configuration
       final configuration = {
         'iceServers': _iceServers,
         'sdpSemantics': 'unified-plan',
@@ -73,7 +75,7 @@ class WebRTCManager {
     }
   }
 
-  /// Connect to a peer
+  /// Connect to a peer (initiator side — creates offer)
   Future<RTCDataChannel> connectToPeer(String peerId) async {
     if (_localPeer == null) {
       final error = 'Peer not initialized';
@@ -86,7 +88,6 @@ class WebRTCManager {
     _setConnectionState(peerId, WebRTCConnectionState.connecting);
 
     try {
-      // Create peer connection for this peer
       final configuration = {
         'iceServers': _iceServers,
         'sdpSemantics': 'unified-plan',
@@ -105,21 +106,17 @@ class WebRTCManager {
       );
 
       _dataChannels[peerId] = dataChannel;
-
-      // Set up data channel event handlers
       _setupDataChannelHandlers(peerId, dataChannel);
-
-      // Set up peer connection event handlers
       _setupPeerConnectionHandlers(peerId, peerConnection);
 
-      // Create and send offer
+      // Create offer and set local description
       final offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
 
       _logger.success('Created offer for peer: $peerId');
 
-      // In a real implementation, you would send this offer through signaling server
-      // For now, we'll mark it as connecting
+      // Forward offer through signaling server
+      onSendSignal?.call(peerId, {'type': 'offer', 'sdp': offer.sdp});
 
       return dataChannel;
     } catch (error, stackTrace) {
@@ -130,7 +127,7 @@ class WebRTCManager {
     }
   }
 
-  /// Handle incoming connection (when another peer initiates)
+  /// Handle incoming connection (responder side — processes offer, creates answer)
   Future<void> handleIncomingConnection(
     String peerId,
     RTCSessionDescription offer,
@@ -147,22 +144,53 @@ class WebRTCManager {
       final peerConnection = await createPeerConnection(configuration);
       _peerConnections[peerId] = peerConnection;
 
-      // Set up event handlers
       _setupPeerConnectionHandlers(peerId, peerConnection);
 
-      // Set remote description (offer)
       await peerConnection.setRemoteDescription(offer);
 
-      // Create and set answer
       final answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
 
       _logger.success('Created answer for peer: $peerId');
+
+      // Forward answer through signaling server
+      onSendSignal?.call(peerId, {'type': 'answer', 'sdp': answer.sdp});
     } catch (error, stackTrace) {
-      _logger.error('Error handling incoming connection from: $peerId', error, stackTrace);
+      _logger.error(
+        'Error handling incoming connection from: $peerId',
+        error,
+        stackTrace,
+      );
       _setConnectionState(peerId, WebRTCConnectionState.error);
       _errorController.add('Failed to handle incoming connection: $error');
       rethrow;
+    }
+  }
+
+  /// Handle a WebRTC signal received via the signaling server
+  Future<void> handleSignal(
+    String fromPeer,
+    Map<String, dynamic> signal,
+  ) async {
+    final type = signal['type'] as String?;
+
+    if (type == 'offer') {
+      await handleIncomingConnection(
+        fromPeer,
+        RTCSessionDescription(signal['sdp'] as String, 'offer'),
+      );
+    } else if (type == 'answer') {
+      await _peerConnections[fromPeer]?.setRemoteDescription(
+        RTCSessionDescription(signal['sdp'] as String, 'answer'),
+      );
+    } else if (type == 'ice-candidate') {
+      await _peerConnections[fromPeer]?.addCandidate(
+        RTCIceCandidate(
+          signal['candidate'] as String?,
+          signal['sdpMid'] as String?,
+          signal['sdpMLineIndex'] as int?,
+        ),
+      );
     }
   }
 
@@ -173,7 +201,14 @@ class WebRTCManager {
   ) {
     connection.onIceCandidate = (candidate) {
       _logger.debug('ICE candidate for $peerId: ${candidate.candidate}');
-      // In real implementation, send this to signaling server
+      if (candidate.candidate != null) {
+        onSendSignal?.call(peerId, {
+          'type': 'ice-candidate',
+          'candidate': candidate.candidate,
+          'sdpMid': candidate.sdpMid,
+          'sdpMLineIndex': candidate.sdpMLineIndex,
+        });
+      }
     };
 
     connection.onIceConnectionState = (state) {
@@ -220,6 +255,7 @@ class WebRTCManager {
       if (state == RTCDataChannelState.RTCDataChannelOpen) {
         _setConnectionState(peerId, WebRTCConnectionState.connected);
         _logger.success('Data channel OPENED with peer: $peerId');
+        _dataChannelsController.add({..._dataChannels});
       } else if (state == RTCDataChannelState.RTCDataChannelClosed) {
         _setConnectionState(peerId, WebRTCConnectionState.disconnected);
         _logger.warning('Data channel closed with peer: $peerId');
@@ -232,7 +268,7 @@ class WebRTCManager {
 
     channel.onMessage = (message) {
       _logger.debug('Data received from $peerId');
-      // This will be handled by FileTransferService
+      // Handled by FileTransferService
     };
   }
 
@@ -256,7 +292,9 @@ class WebRTCManager {
       if (data is String) {
         await dataChannel.send(RTCDataChannelMessage(data));
       } else if (data is List<int>) {
-        await dataChannel.send(RTCDataChannelMessage.fromBinary(Uint8List.fromList(data)));
+        await dataChannel.send(
+          RTCDataChannelMessage.fromBinary(Uint8List.fromList(data)),
+        );
       } else if (data is Uint8List) {
         await dataChannel.send(RTCDataChannelMessage.fromBinary(data));
       } else {
@@ -292,7 +330,11 @@ class WebRTCManager {
       _setConnectionState(peerId, WebRTCConnectionState.disconnected);
       _logger.success('Connection closed with: $peerId');
     } catch (error, stackTrace) {
-      _logger.error('Error closing connection with: $peerId', error, stackTrace);
+      _logger.error(
+        'Error closing connection with: $peerId',
+        error,
+        stackTrace,
+      );
       _errorController.add('Failed to close connection: $error');
     }
   }
@@ -315,19 +357,16 @@ class WebRTCManager {
     _shouldReconnect = false;
 
     try {
-      // Close all data channels
       for (final channel in _dataChannels.values) {
         await channel.close();
       }
       _dataChannels.clear();
 
-      // Close all peer connections
       for (final connection in _peerConnections.values) {
         await connection.close();
       }
       _peerConnections.clear();
 
-      // Close local peer
       if (_localPeer != null) {
         await _localPeer!.close();
         _localPeer = null;
@@ -336,7 +375,6 @@ class WebRTCManager {
       _connectionStates.clear();
       _localPeerId = null;
 
-      // Close streams
       await _connectionStatesController.close();
       await _dataChannelsController.close();
       await _errorController.close();
