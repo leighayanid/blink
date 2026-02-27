@@ -8,14 +8,12 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { hid: 'description', name: 'description', content: 'Fast, secure, and peer-to-peer local file sharing directly between devices on your network.' },
         { name: 'format-detection', content: 'telephone=no' },
-        { name: 'theme-color', content: '#FF9500' }
+        { name: 'theme-color', content: '#000000' }
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        // Preconnect to Google Fonts for faster font load
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
-        // Orbitron font (loaded non-render-blocking via <link> instead of CSS @import)
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap'
@@ -27,27 +25,23 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
 
-  css: ['~/app/assets/css/design-system.css'],
-
   modules: [
+    '@nuxt/ui',
     '@pinia/nuxt',
-    '@vueuse/nuxt',
-    '@nuxtjs/tailwindcss',
-    '@nuxtjs/color-mode'
+    '@vueuse/nuxt'
   ],
 
-  colorMode: {
-    classSuffix: '',
-    fallback: 'light',
-    hid: 'nuxt-color-mode-script',
-    storageKey: 'blink-theme',
-    classPrefix: '',
-    classSuffixDark: 'dark'
-  },
+  css: ['~/app/assets/css/main.css'],
 
-  tailwindcss: {
-    configPath: 'tailwind.config.ts',
-    exposeConfig: true
+  ui: {
+    theme: {
+      colors: ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'],
+      transitions: true,
+      defaultVariants: {
+        color: 'neutral',
+        size: 'md'
+      }
+    }
   },
 
   nitro: {

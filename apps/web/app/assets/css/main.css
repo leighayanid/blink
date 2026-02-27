@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+
+/* ─── Custom CSS Variables ─────────────────────────── */
+:root {
+  --font-display: 'Orbitron', sans-serif;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-400);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-700);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-600);
+}
+
+/* ─── Slide-up transition ──────────────────────────── */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.25s ease-out;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}

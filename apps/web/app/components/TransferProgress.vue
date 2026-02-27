@@ -1,50 +1,79 @@
 <template>
-  <div class="transfer-progress" :class="{ embedded: embedded }">
-    <!-- Header with Tabs -->
-    <div class="section-header">
-      <div class="tabs">
-        <button
-          class="tab-btn"
-          :class="{ active: activeTab === 'active' }"
-          @click="activeTab = 'active'"
+  <div class="flex flex-col h-full">
+    <!-- Tab Bar -->
+    <div class="flex border-b border-neutral-200 dark:border-neutral-700 mb-3 gap-1">
+      <button
+        v-for="tab in tabs"
+        :key="tab.value"
+        class="relative pb-2.5 px-1 text-xs font-mono font-bold tracking-widest transition-colors"
+        :class="activeTab === tab.value
+          ? 'text-neutral-900 dark:text-white'
+          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'"
+        @click="activeTab = tab.value"
+      >
+        {{ tab.label }}
+        <UBadge
+          v-if="tab.value === 'active' && activeCount > 0"
+          color="neutral"
+          variant="solid"
+          size="xs"
+          class="ml-1.5 font-mono text-[10px]"
         >
-          ACTIVE
-          <span v-if="activeCount > 0" class="badge">{{ activeCount }}</span>
-        </button>
-        <button
-          class="tab-btn"
-          :class="{ active: activeTab === 'history' }"
-          @click="activeTab = 'history'"
-        >
-          HISTORY
-        </button>
-      </div>
+          {{ activeCount }}
+        </UBadge>
+        <span
+          v-if="activeTab === tab.value"
+          class="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900 dark:bg-white rounded-t-full"
+        />
+      </button>
     </div>
 
-    <!-- ACTIVE TAB -->
-    <div v-if="activeTab === 'active'" class="tab-content">
-      <div v-if="activeTransfers.length === 0" class="empty-transfers">
-        <div class="empty-text">NO ACTIVE TRANSFERS</div>
+    <!-- Active Tab -->
+    <div v-if="activeTab === 'active'" class="flex-1 overflow-y-auto">
+      <div
+        v-if="activeTransfers.length === 0"
+        class="flex items-center justify-center py-10 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-lg"
+      >
+        <p class="text-xs font-mono text-neutral-400 tracking-widest">NO ACTIVE TRANSFERS</p>
       </div>
-      <div v-else class="transfers-list">
-        <div v-for="transfer in activeTransfers" :key="transfer.id" class="transfer-card" :class="transfer.status">
+      <div v-else class="flex flex-col gap-3">
+        <div
+          v-for="transfer in activeTransfers"
+          :key="transfer.id"
+          class="p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900"
+        >
           <TransferItem :transfer="transfer" />
         </div>
       </div>
     </div>
 
-    <!-- HISTORY TAB -->
-    <div v-else class="tab-content">
-      <div v-if="historyTransfers.length === 0" class="empty-transfers">
-        <div class="empty-text">NO HISTORY</div>
+    <!-- History Tab -->
+    <div v-else class="flex-1 overflow-y-auto">
+      <div
+        v-if="historyTransfers.length === 0"
+        class="flex items-center justify-center py-10 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-lg"
+      >
+        <p class="text-xs font-mono text-neutral-400 tracking-widest">NO HISTORY</p>
       </div>
-      <div v-else class="transfers-list">
-        <div v-for="transfer in historyTransfers" :key="transfer.id" class="transfer-card" :class="transfer.status">
+      <div v-else class="flex flex-col gap-3">
+        <div
+          v-for="transfer in historyTransfers"
+          :key="transfer.id"
+          class="p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900"
+        >
           <TransferItem :transfer="transfer" />
         </div>
-        <button class="btn-base btn-ghost clear-btn" @click="store.clearCompleted()">
-          CLEAR HISTORY
-        </button>
+        <div class="flex justify-center pt-2">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            class="font-mono text-xs tracking-wider"
+            @click="store.clearCompleted()"
+          >
+            CLEAR HISTORY
+          </UButton>
+        </div>
       </div>
     </div>
   </div>
@@ -65,121 +94,13 @@ const { activeTransfers, completedTransfers, failedTransfers, activeCount } = st
 
 const activeTab = ref<'active' | 'history'>('active')
 
+const tabs = [
+  { label: 'ACTIVE', value: 'active' as const },
+  { label: 'HISTORY', value: 'history' as const }
+]
+
 const historyTransfers = computed(() => [
   ...completedTransfers.value,
   ...failedTransfers.value
 ])
 </script>
-
-<style scoped>
-.transfer-progress {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.embedded {
-  padding: 0;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border-primary);
-}
-
-.tabs {
-  display: flex;
-  gap: var(--space-4);
-}
-
-.tab-btn {
-  background: none;
-  border: none;
-  padding: var(--space-2) 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.tab-btn:hover {
-  color: var(--text-secondary);
-}
-
-.tab-btn.active {
-  color: var(--text-primary);
-}
-
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: var(--text-primary);
-}
-
-.badge {
-  font-size: 10px;
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  padding: 1px 5px;
-  border-radius: 999px;
-  line-height: 1;
-}
-
-.tab-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.empty-transfers {
-  padding: var(--space-8);
-  text-align: center;
-  border: 1px dashed var(--border-primary);
-  border-radius: var(--radius-md);
-  opacity: 0.6;
-  margin-top: var(--space-4);
-}
-
-.empty-text {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: bold;
-}
-
-.transfers-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-top: var(--space-2);
-}
-
-.transfer-card {
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-3);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-}
-
-.clear-btn {
-  margin-top: var(--space-4);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  align-self: center;
-}
-</style>
