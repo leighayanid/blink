@@ -5,12 +5,29 @@ import { createPinia, setActivePinia } from 'pinia'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createMockConnection() {
+function createMockConnection(options: { autoAcceptMeta?: boolean } = {}) {
+  const { autoAcceptMeta = true } = options
   const handlers: Record<string, Array<(...args: unknown[]) => void>> = {}
   const conn: any = {
     peer: 'remote-peer',
     open: true,
-    send: vi.fn(),
+    send: vi.fn((payload: unknown) => {
+      if (!autoAcceptMeta || typeof payload !== 'string') return
+
+      try {
+        const parsed = JSON.parse(payload)
+        if (parsed.type === 'file-meta' && typeof parsed.transferId === 'string') {
+          setTimeout(() => {
+            conn._emit('data', JSON.stringify({
+              type: 'file-accept',
+              transferId: parsed.transferId
+            }))
+          }, 0)
+        }
+      } catch {
+        // Ignore non-JSON payloads
+      }
+    }),
     close: vi.fn(),
     on(event: string, handler: (...args: unknown[]) => void) {
       if (!handlers[event]) handlers[event] = []
@@ -140,6 +157,33 @@ describe('useFileTransfer', () => {
       expect(typeof id).toBe('string')
       expect(id).toMatch(/^transfer-/)
     })
+
+    it('marks transfer as failed if receiver rejects metadata', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { sendFile, transfers } = useFileTransfer()
+      const conn = createMockConnection({ autoAcceptMeta: false })
+      conn.send.mockImplementation((payload: unknown) => {
+        if (typeof payload !== 'string') return
+        try {
+          const parsed = JSON.parse(payload)
+          if (parsed.type === 'file-meta') {
+            setTimeout(() => {
+              conn._emit('data', JSON.stringify({
+                type: 'file-reject',
+                transferId: parsed.transferId,
+                reason: 'No thanks'
+              }))
+            }, 0)
+          }
+        } catch {
+          // Ignore
+        }
+      })
+
+      await expect(sendFile(makeFile('x'), conn)).rejects.toThrow('No thanks')
+      const failed = [...transfers.value].find(t => t.status === 'failed')
+      expect(failed).toBeDefined()
+    })
   })
 
   // ---------------------------------------------------------------------------
@@ -248,6 +292,46 @@ describe('useFileTransfer', () => {
       }))
       conn._emit('data', new Uint8Array([1, 2, 3]))
       // Should not throw
+    })
+
+    it('declines incoming file when prompt callback returns false', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile, transfers } = useFileTransfer()
+      const conn = createMockConnection({ autoAcceptMeta: false })
+      receiveFile(conn, {
+        onIncomingFile: () => false
+      })
+
+      conn._emit('data', JSON.stringify({
+        type: 'file-meta',
+        transferId: 'decline-1',
+        metadata: { name: 'blocked.txt', size: 100, type: 'text/plain', lastModified: 0 }
+      }))
+
+      await new Promise(r => setTimeout(r, 0))
+
+      expect(transfers.value.find((t: any) => t.id === 'decline-1')).toBeUndefined()
+      expect(conn.send).toHaveBeenCalledWith(expect.stringContaining('"type":"file-reject"'))
+    })
+
+    it('accepts incoming file when prompt callback returns true', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile, transfers } = useFileTransfer()
+      const conn = createMockConnection({ autoAcceptMeta: false })
+      receiveFile(conn, {
+        onIncomingFile: () => true
+      })
+
+      conn._emit('data', JSON.stringify({
+        type: 'file-meta',
+        transferId: 'accept-1',
+        metadata: { name: 'allowed.txt', size: 100, type: 'text/plain', lastModified: 0 }
+      }))
+
+      await new Promise(r => setTimeout(r, 0))
+
+      expect(transfers.value.some((t: any) => t.id === 'accept-1' && t.status === 'receiving')).toBe(true)
+      expect(conn.send).toHaveBeenCalledWith(expect.stringContaining('"type":"file-accept"'))
     })
   })
 

@@ -179,7 +179,7 @@
                   variant="ghost"
                   class="font-mono font-bold text-xs tracking-wider"
                   :class="targetPeerForSend === device.peerId ? 'text-neutral-400 dark:text-neutral-600 hover:text-neutral-300' : ''"
-                  @click="targetPeerForSend = device.peerId"
+                  @click="targetPeerForSend = device.peerId ?? null"
                 >
                   {{ targetPeerForSend === device.peerId ? 'SELECTED' : 'SELECT' }}
                 </UButton>
@@ -219,6 +219,43 @@
       </button>
     </nav>
 
+    <UModal :open="isIncomingFileModalOpen" :close="false" :prevent-close="true">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-download" class="size-5 text-neutral-500" />
+          <h3 class="text-sm font-bold tracking-wide">INCOMING FILE</h3>
+        </div>
+      </template>
+
+      <div v-if="currentIncomingFile" class="space-y-3">
+        <p class="text-sm text-neutral-600 dark:text-neutral-300">
+          <span class="font-semibold">{{ currentIncomingFile.peerId }}</span>
+          wants to send:
+        </p>
+        <div class="rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
+          <p class="font-semibold break-all">{{ currentIncomingFile.metadata.name }}</p>
+          <p class="text-xs text-neutral-500 mt-1">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
+        </div>
+        <p class="text-xs text-neutral-500">
+          Accept to start receiving. Decline to cancel this transfer.
+        </p>
+        <p v-if="incomingFileQueue.length > 1" class="text-xs text-neutral-500">
+          {{ incomingFileQueue.length - 1 }} more file request(s) waiting.
+        </p>
+      </div>
+
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton color="neutral" variant="outline" @click="declineIncomingFile">
+            DECLINE
+          </UButton>
+          <UButton color="success" @click="acceptIncomingFile">
+            ACCEPT
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+
     <!-- Footer (desktop only) -->
     <footer class="hidden md:flex justify-center items-center py-2.5 text-xs font-mono text-neutral-400 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
       CREATED BY
@@ -234,10 +271,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import type { Device } from '@blink/types'
+import type { Device, FileMetadata } from '@blink/types'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
-import { useFileTransfer } from '../composables/useFileTransfer'
+import { useFileTransfer, type IncomingFilePrompt } from '../composables/useFileTransfer'
 import { useTheme } from '../composables/useTheme'
 
 const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId } = useDeviceDiscovery()
@@ -250,6 +287,18 @@ const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
 const targetPeerForSend = ref<string | null>(null)
 const activeMobileTab = ref<'discover' | 'transfer' | 'network'>('transfer')
+
+type IncomingFileQueueItem = {
+  transferId: string
+  metadata: FileMetadata
+  peerId: string
+}
+
+const incomingFileQueue = ref<IncomingFileQueueItem[]>([])
+const incomingFileResolvers = new Map<string, (accepted: boolean) => void>()
+
+const currentIncomingFile = computed(() => incomingFileQueue.value[0] ?? null)
+const isIncomingFileModalOpen = computed(() => currentIncomingFile.value !== null)
 
 const mobileTabs = [
   { value: 'discover', label: 'DISCOVER', icon: 'i-lucide-compass' },
@@ -267,11 +316,60 @@ const connectingDevices = computed(() =>
 
 const hasConnectingDevices = computed(() => connectingDevices.value.length > 0)
 
+const formatBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const value = bytes / 1024 ** exponent
+  return `${value.toFixed(value >= 10 || exponent === 0 ? 0 : 1)} ${units[exponent]}`
+}
+
+const enqueueIncomingFilePrompt = ({ transferId, metadata, connection }: IncomingFilePrompt): Promise<boolean> => {
+  return new Promise((resolve) => {
+    incomingFileQueue.value.push({
+      transferId,
+      metadata,
+      peerId: connection.peer
+    })
+    incomingFileResolvers.set(transferId, resolve)
+  })
+}
+
+const resolveIncomingFilePrompt = (accepted: boolean) => {
+  const current = incomingFileQueue.value.shift()
+  if (!current) return
+
+  const resolve = incomingFileResolvers.get(current.transferId)
+  incomingFileResolvers.delete(current.transferId)
+  resolve?.(accepted)
+
+  if (!accepted) {
+    toast.add({
+      title: `Declined ${current.metadata.name}`,
+      color: 'warning'
+    })
+  }
+}
+
+const acceptIncomingFile = () => resolveIncomingFilePrompt(true)
+const declineIncomingFile = () => resolveIncomingFilePrompt(false)
+
+const rejectAllIncomingPrompts = () => {
+  for (const request of incomingFileQueue.value) {
+    incomingFileResolvers.get(request.transferId)?.(false)
+  }
+  incomingFileQueue.value = []
+  incomingFileResolvers.clear()
+}
+
 onMounted(async () => {
   initDevice()
 
   onConnection((conn) => {
-    receiveFile(conn)
+    receiveFile(conn, {
+      onIncomingFile: enqueueIncomingFilePrompt
+    })
   })
 
   try {
@@ -307,12 +405,12 @@ const handleDeviceConnect = async (device: Device) => {
       return
     }
     if (connectedPeers.value.has(device.peerId)) {
-      targetPeerForSend.value = device.peerId
+      targetPeerForSend.value = device.peerId ?? null
       return
     }
     await connectToPeer(device.peerId)
     connectedPeers.value.add(device.peerId)
-    targetPeerForSend.value = device.peerId
+    targetPeerForSend.value = device.peerId ?? null
     toast.add({ title: `Connected to ${device.name}`, color: 'success' })
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
@@ -348,6 +446,7 @@ const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
 }
 
 onUnmounted(() => {
+  rejectAllIncomingPrompts()
   disconnect()
   destroy()
 })
