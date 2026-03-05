@@ -110,6 +110,39 @@
             <UBadge color="neutral" variant="soft" class="font-mono text-xs">{{ connectedPeers.size }}</UBadge>
           </div>
 
+          <div class="mb-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/70">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[10px] font-mono font-bold text-neutral-400 tracking-widest">PAIRING CODE</p>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                class="font-mono font-bold text-[10px] tracking-wider"
+                @click="regeneratePairCode"
+              >
+                NEW
+              </UButton>
+            </div>
+            <p class="text-xl font-mono font-black tracking-[0.25em]">{{ localPairCode }}</p>
+            <p class="text-[11px] text-neutral-500 mt-1">
+              Share this 6-digit code with the sender to trust their device.
+            </p>
+            <div class="mt-3 flex items-center justify-between gap-2">
+              <p class="text-[10px] font-mono font-bold text-neutral-400 tracking-widest">
+                AUTO-ACCEPT TRUSTED FILES
+              </p>
+              <UButton
+                size="xs"
+                :color="autoAcceptTrustedFiles ? 'success' : 'neutral'"
+                :variant="autoAcceptTrustedFiles ? 'soft' : 'outline'"
+                class="font-mono font-bold text-[10px] tracking-wider"
+                @click="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
+              >
+                {{ autoAcceptTrustedFiles ? 'ON' : 'OFF' }}
+              </UButton>
+            </div>
+          </div>
+
           <!-- Empty state -->
           <div
             v-if="connectedPeers.size === 0 && !hasConnectingDevices"
@@ -166,9 +199,42 @@
                     class="text-xs font-mono"
                     :class="targetPeerForSend === device.peerId ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-400'"
                   >
-                    ACTIVE
+                    {{ isTrustedPeer(device.peerId) ? 'TRUSTED CONNECTION' : 'ACTIVE' }}
                   </p>
                 </div>
+              </div>
+
+              <div class="mb-2.5">
+                <UBadge
+                  :color="isTrustedPeer(device.peerId) ? 'success' : 'neutral'"
+                  variant="soft"
+                  class="font-mono text-[10px] tracking-wider"
+                >
+                  {{ isTrustedPeer(device.peerId) ? 'TRUSTED' : 'UNTRUSTED' }}
+                </UBadge>
+              </div>
+
+              <div v-if="device.peerId && !isTrustedPeer(device.peerId)" class="flex gap-2 mb-2.5">
+                <UInput
+                  :model-value="pairCodeInputs[device.peerId] || ''"
+                  placeholder="ENTER CODE"
+                  size="xs"
+                  inputmode="numeric"
+                  maxlength="6"
+                  class="flex-1"
+                  @update:model-value="updatePairCodeInput(device.peerId, String($event ?? ''))"
+                  @keydown.enter.prevent="pairWithPeer(device.peerId)"
+                />
+                <UButton
+                  size="xs"
+                  color="primary"
+                  variant="solid"
+                  class="font-mono font-bold text-xs tracking-wider"
+                  :loading="isPairingPeer(device.peerId)"
+                  @click="pairWithPeer(device.peerId)"
+                >
+                  PAIR
+                </UButton>
               </div>
 
               <div class="flex gap-2">
@@ -182,6 +248,16 @@
                   @click="targetPeerForSend = device.peerId ?? null"
                 >
                   {{ targetPeerForSend === device.peerId ? 'SELECTED' : 'SELECT' }}
+                </UButton>
+                <UButton
+                  v-if="device.peerId && isTrustedPeer(device.peerId)"
+                  size="xs"
+                  color="warning"
+                  variant="outline"
+                  class="font-mono font-bold text-xs tracking-wider"
+                  @click="untrustPeer(device.peerId)"
+                >
+                  UNTRUST
                 </UButton>
                 <UButton
                   size="xs"
@@ -271,7 +347,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useStorage } from '@vueuse/core'
 import type { Device, FileMetadata } from '@blink/types'
+import type { DataConnection } from 'peerjs'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
 import { useFileTransfer, type IncomingFilePrompt } from '../composables/useFileTransfer'
@@ -287,6 +365,15 @@ const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
 const targetPeerForSend = ref<string | null>(null)
 const activeMobileTab = ref<'discover' | 'transfer' | 'network'>('transfer')
+const trustedPeerIds = useStorage<string[]>('blink-trusted-peer-ids', [])
+const autoAcceptTrustedFiles = useStorage<boolean>('blink-auto-accept-trusted-files', false)
+const localPairCode = useStorage<string>('blink-local-pair-code', generatePairCode())
+const pairCodeInputs = ref<Record<string, string>>({})
+const pairingPeers = ref<Set<string>>(new Set())
+
+if (!/^\d{6}$/.test(localPairCode.value)) {
+  localPairCode.value = generatePairCode()
+}
 
 type IncomingFileQueueItem = {
   transferId: string
@@ -296,9 +383,13 @@ type IncomingFileQueueItem = {
 
 const incomingFileQueue = ref<IncomingFileQueueItem[]>([])
 const incomingFileResolvers = new Map<string, (accepted: boolean) => void>()
+const pendingPairRequests = new Map<string, { peerId: string; timeoutId: ReturnType<typeof setTimeout> }>()
+const pairingMessageListeners = new WeakSet<DataConnection>()
+const PAIR_REQUEST_TIMEOUT_MS = 30000
 
 const currentIncomingFile = computed(() => incomingFileQueue.value[0] ?? null)
 const isIncomingFileModalOpen = computed(() => currentIncomingFile.value !== null)
+const trustedPeerSet = computed(() => new Set(trustedPeerIds.value))
 
 const mobileTabs = [
   { value: 'discover', label: 'DISCOVER', icon: 'i-lucide-compass' },
@@ -316,6 +407,12 @@ const connectingDevices = computed(() =>
 
 const hasConnectingDevices = computed(() => connectingDevices.value.length > 0)
 
+function generatePairCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+const normalizePairCode = (value: string): string => value.replace(/\D/g, '').slice(0, 6)
+
 const formatBytes = (bytes: number): string => {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
 
@@ -323,6 +420,49 @@ const formatBytes = (bytes: number): string => {
   const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
   const value = bytes / 1024 ** exponent
   return `${value.toFixed(value >= 10 || exponent === 0 ? 0 : 1)} ${units[exponent]}`
+}
+
+const getDeviceNameByPeerId = (peerId: string): string => {
+  const device = devices.value.find(d => d.peerId === peerId)
+  return device?.name || peerId
+}
+
+const isTrustedPeer = (peerId?: string | null): boolean => {
+  return !!peerId && trustedPeerSet.value.has(peerId)
+}
+
+const addTrustedPeer = (peerId: string) => {
+  if (trustedPeerSet.value.has(peerId)) return
+  trustedPeerIds.value = [...trustedPeerIds.value, peerId]
+}
+
+const untrustPeer = (peerId: string) => {
+  if (!trustedPeerSet.value.has(peerId)) return
+
+  trustedPeerIds.value = trustedPeerIds.value.filter(id => id !== peerId)
+  toast.add({
+    title: `Untrusted ${getDeviceNameByPeerId(peerId)}`,
+    color: 'warning'
+  })
+}
+
+const setPairingPeerPending = (peerId: string, pending: boolean) => {
+  const next = new Set(pairingPeers.value)
+  if (pending) next.add(peerId)
+  else next.delete(peerId)
+  pairingPeers.value = next
+}
+
+const isPairingPeer = (peerId?: string | null): boolean => {
+  return !!peerId && pairingPeers.value.has(peerId)
+}
+
+const updatePairCodeInput = (peerId: string, value: string) => {
+  pairCodeInputs.value[peerId] = normalizePairCode(value)
+}
+
+const regeneratePairCode = () => {
+  localPairCode.value = generatePairCode()
 }
 
 const enqueueIncomingFilePrompt = ({ transferId, metadata, connection }: IncomingFilePrompt): Promise<boolean> => {
@@ -334,6 +474,19 @@ const enqueueIncomingFilePrompt = ({ transferId, metadata, connection }: Incomin
     })
     incomingFileResolvers.set(transferId, resolve)
   })
+}
+
+const handleIncomingFilePrompt = (incoming: IncomingFilePrompt): Promise<boolean> | boolean => {
+  if (autoAcceptTrustedFiles.value && isTrustedPeer(incoming.connection.peer)) {
+    toast.add({
+      title: `Auto-accepted ${incoming.metadata.name}`,
+      description: `Trusted device: ${getDeviceNameByPeerId(incoming.connection.peer)}`,
+      color: 'success'
+    })
+    return true
+  }
+
+  return enqueueIncomingFilePrompt(incoming)
 }
 
 const resolveIncomingFilePrompt = (accepted: boolean) => {
@@ -363,12 +516,176 @@ const rejectAllIncomingPrompts = () => {
   incomingFileResolvers.clear()
 }
 
+const clearPendingPairRequest = (requestId: string) => {
+  const pending = pendingPairRequests.get(requestId)
+  if (!pending) return
+
+  clearTimeout(pending.timeoutId)
+  setPairingPeerPending(pending.peerId, false)
+  pendingPairRequests.delete(requestId)
+}
+
+const clearAllPendingPairRequests = () => {
+  for (const [requestId, pending] of pendingPairRequests.entries()) {
+    clearTimeout(pending.timeoutId)
+    setPairingPeerPending(pending.peerId, false)
+    pendingPairRequests.delete(requestId)
+  }
+}
+
+const pairWithPeer = (peerId: string) => {
+  if (isTrustedPeer(peerId)) {
+    toast.add({ title: `${getDeviceNameByPeerId(peerId)} is already trusted`, color: 'info' })
+    return
+  }
+
+  const connection = connections.value.get(peerId)
+  if (!connection || !connection.open) {
+    toast.add({ title: 'Device is not connected', color: 'error' })
+    return
+  }
+
+  const targetCode = normalizePairCode(pairCodeInputs.value[peerId] || '')
+  if (targetCode.length !== 6) {
+    toast.add({ title: 'Enter a valid 6-digit pairing code', color: 'warning' })
+    return
+  }
+
+  const requestId = `pair-${crypto.randomUUID()}`
+  const timeoutId = setTimeout(() => {
+    clearPendingPairRequest(requestId)
+    toast.add({
+      title: `Pairing timed out with ${getDeviceNameByPeerId(peerId)}`,
+      color: 'warning'
+    })
+  }, PAIR_REQUEST_TIMEOUT_MS)
+
+  pendingPairRequests.set(requestId, { peerId, timeoutId })
+  setPairingPeerPending(peerId, true)
+
+  connection.send(JSON.stringify({
+    type: 'pair-request',
+    requestId,
+    targetCode,
+    requesterCode: localPairCode.value
+  }))
+
+  toast.add({
+    title: `Pair request sent to ${getDeviceNameByPeerId(peerId)}`,
+    color: 'info'
+  })
+}
+
+const setupPairingHandlers = (connection: DataConnection) => {
+  if (pairingMessageListeners.has(connection)) return
+  pairingMessageListeners.add(connection)
+
+  connection.on('data', (data: unknown) => {
+    if (typeof data !== 'string') return
+
+    let message: Record<string, unknown>
+    try {
+      message = JSON.parse(data)
+    } catch {
+      return
+    }
+
+    if (message.type === 'pair-request') {
+      const requestId = typeof message.requestId === 'string' ? message.requestId : ''
+      const targetCode = typeof message.targetCode === 'string' ? normalizePairCode(message.targetCode) : ''
+      const requesterCode = typeof message.requesterCode === 'string' ? normalizePairCode(message.requesterCode) : ''
+      if (!requestId || requesterCode.length !== 6) return
+
+      if (targetCode !== localPairCode.value) {
+        connection.send(JSON.stringify({
+          type: 'pair-reject',
+          requestId,
+          reason: 'Invalid pairing code'
+        }))
+        return
+      }
+
+      addTrustedPeer(connection.peer)
+      connection.send(JSON.stringify({
+        type: 'pair-approve',
+        requestId,
+        requesterCode
+      }))
+
+      toast.add({
+        title: `Paired with ${getDeviceNameByPeerId(connection.peer)}`,
+        color: 'success'
+      })
+      return
+    }
+
+    if (message.type === 'pair-approve') {
+      const requestId = typeof message.requestId === 'string' ? message.requestId : ''
+      const requesterCode = typeof message.requesterCode === 'string' ? normalizePairCode(message.requesterCode) : ''
+      const pending = pendingPairRequests.get(requestId)
+      if (!requestId || !pending || pending.peerId !== connection.peer) return
+
+      clearPendingPairRequest(requestId)
+
+      if (requesterCode !== localPairCode.value) {
+        toast.add({
+          title: `Pairing validation failed with ${getDeviceNameByPeerId(connection.peer)}`,
+          color: 'error'
+        })
+        return
+      }
+
+      addTrustedPeer(connection.peer)
+      pairCodeInputs.value[connection.peer] = ''
+      toast.add({
+        title: `Paired with ${getDeviceNameByPeerId(connection.peer)}`,
+        color: 'success'
+      })
+      return
+    }
+
+    if (message.type === 'pair-reject') {
+      const requestId = typeof message.requestId === 'string' ? message.requestId : ''
+      const reason = typeof message.reason === 'string' ? message.reason : 'Pairing was rejected'
+      const pending = pendingPairRequests.get(requestId)
+      if (!requestId || !pending || pending.peerId !== connection.peer) return
+
+      clearPendingPairRequest(requestId)
+      toast.add({
+        title: `Pairing failed with ${getDeviceNameByPeerId(connection.peer)}`,
+        description: reason,
+        color: 'warning'
+      })
+    }
+  })
+
+  connection.on('close', () => {
+    connectedPeers.value.delete(connection.peer)
+    if (targetPeerForSend.value === connection.peer) {
+      const remaining = Array.from(connectedPeers.value)[0]
+      targetPeerForSend.value = remaining || null
+    }
+
+    for (const requestId of Array.from(pendingPairRequests.keys())) {
+      if (pendingPairRequests.get(requestId)?.peerId === connection.peer) {
+        clearPendingPairRequest(requestId)
+      }
+    }
+  })
+}
+
 onMounted(async () => {
   initDevice()
 
   onConnection((conn) => {
+    connectedPeers.value.add(conn.peer)
+    if (!targetPeerForSend.value) {
+      targetPeerForSend.value = conn.peer
+    }
+    setupPairingHandlers(conn)
+
     receiveFile(conn, {
-      onIncomingFile: enqueueIncomingFilePrompt
+      onIncomingFile: handleIncomingFilePrompt
     })
   })
 
@@ -447,6 +764,7 @@ const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
 
 onUnmounted(() => {
   rejectAllIncomingPrompts()
+  clearAllPendingPairRequests()
   disconnect()
   destroy()
 })
