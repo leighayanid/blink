@@ -5,7 +5,7 @@
 
       <!-- LEFT COLUMN: Identity & Discovery -->
       <div
-        class="flex flex-col w-72 shrink-0 border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto"
+        class="flex flex-col w-full md:w-72 shrink-0 border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto"
         :class="{ 'hidden md:flex': activeMobileTab !== 'discover' }"
       >
         <!-- App Header -->
@@ -101,7 +101,7 @@
 
       <!-- RIGHT COLUMN: Active Connections -->
       <div
-        class="flex flex-col w-72 shrink-0 border-l border-neutral-200 dark:border-neutral-800 overflow-y-auto"
+        class="flex flex-col w-full md:w-72 shrink-0 border-l border-neutral-200 dark:border-neutral-800 overflow-y-auto"
         :class="{ 'hidden md:flex': activeMobileTab !== 'network' }"
       >
         <div class="px-5 py-4 flex-1">
