@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4">
     <div
-      class="relative overflow-hidden rounded-[1.75rem] border-2 border-dashed p-10 text-center transition-all duration-200"
+      class="relative overflow-hidden rounded-[1.75rem] border-2 border-dashed p-8 text-center transition-all duration-200 sm:p-10"
       :class="[
         isDragging
           ? 'border-primary-400 bg-primary-50/80 scale-[1.01] dark:border-primary-400/60 dark:bg-primary-500/12'
@@ -28,17 +28,14 @@
 
       <div class="relative flex flex-col items-center gap-4">
         <div
-          class="flex size-16 items-center justify-center rounded-[1.5rem] border border-black/5 bg-white/80 text-primary-700 shadow-[0_16px_30px_rgba(255,149,0,0.10)] transition-transform dark:border-white/10 dark:bg-white/5 dark:text-primary-300"
+          class="flex size-15 items-center justify-center rounded-[1.35rem] border border-black/5 bg-white/80 text-primary-700 shadow-[0_12px_24px_rgba(255,149,0,0.08)] transition-transform dark:border-white/10 dark:bg-white/5 dark:text-primary-300 sm:size-16 sm:rounded-[1.5rem]"
           :class="{ 'animate-bounce': isDragging }"
         >
           <UIcon name="i-lucide-upload" class="size-9" />
         </div>
         <div>
-          <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-900 dark:text-white">{{ dropZoneTitle }}</p>
+          <p class="text-sm font-semibold tracking-[0.08em] text-neutral-900 dark:text-white">{{ dropZoneTitle }}</p>
           <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{{ dropZoneSubtitle }}</p>
-        </div>
-        <div v-if="!disabled" class="rounded-full border border-black/5 bg-white/70 px-4 py-2 text-[11px] text-neutral-500 dark:border-white/10 dark:bg-white/5 dark:text-neutral-400">
-          {{ connectedCount || 0 }} connected device{{ connectedCount === 1 ? '' : 's' }} available
         </div>
       </div>
     </div>
@@ -46,7 +43,7 @@
     <Transition name="slide-up">
       <div v-if="selectedFiles.length > 0" class="flex flex-col gap-3">
         <div class="flex items-center justify-between">
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-400">Selected files</p>
+          <p class="text-xs font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400">Selected</p>
           <UBadge color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
             {{ selectedFiles.length }}
           </UBadge>
@@ -78,21 +75,21 @@
 
         <div class="flex gap-3">
           <UButton
-            class="flex-1 rounded-full border-0 bg-primary-600 px-5 font-semibold uppercase tracking-[0.22em] text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400"
+            class="flex-1 rounded-full border-0 bg-primary-600 px-5 font-medium text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400"
             color="neutral"
             variant="solid"
             icon="i-lucide-send"
             @click="sendFiles"
           >
-            SEND {{ selectedFiles.length }} FILE{{ selectedFiles.length > 1 ? 'S' : '' }}
+            Send {{ selectedFiles.length }} file{{ selectedFiles.length > 1 ? 's' : '' }}
           </UButton>
           <UButton
             color="neutral"
             variant="outline"
-            class="rounded-full px-4 text-[11px] font-semibold tracking-[0.22em]"
+            class="rounded-full px-4 text-[11px] font-medium"
             @click="clearFiles"
           >
-            CLEAR ALL
+            Clear
           </UButton>
         </div>
       </div>
@@ -120,14 +117,14 @@ const selectedFiles = ref<File[]>([])
 const isDragging = ref(false)
 
 const dropZoneTitle = computed(() => {
-  if (props.disabled) return 'CONNECT DEVICE FIRST'
-  if (isDragging.value) return 'DROP FILES HERE'
-  return 'DRAG FILES OR CLICK'
+  if (props.disabled) return 'Connect device'
+  if (isDragging.value) return 'Drop files here'
+  return 'Drop files'
 })
 
 const dropZoneSubtitle = computed(() => {
-  if (props.disabled) return 'Select a device to start sharing'
-  return 'Max file size: 1GB • Multiple files supported'
+  if (props.disabled) return 'Choose a device first'
+  return 'Up to 1GB per file'
 })
 
 const handleDragOver = () => {

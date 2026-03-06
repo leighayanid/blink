@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full rounded-[1.25rem] border border-black/5 bg-white/65 p-4 dark:border-white/10 dark:bg-black/10">
+  <div class="w-full rounded-[1.25rem] border border-black/5 bg-white/60 p-4 dark:border-white/10 dark:bg-black/10">
     <div class="flex items-center gap-3">
       <div class="flex size-10 shrink-0 items-center justify-center rounded-2xl" :class="statusBubbleClass">
         <UIcon
@@ -14,7 +14,7 @@
           {{ formatFileSize(transfer.fileSize) }}<span v-if="transfer.speed"> · {{ formatSpeed(transfer.speed) }}</span>
         </p>
       </div>
-      <span class="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]" :class="statusLabelClass">{{ statusLabel }}</span>
+      <span class="rounded-full px-3 py-1 text-[11px] font-medium" :class="statusLabelClass">{{ statusLabel }}</span>
     </div>
 
     <UProgress
@@ -33,11 +33,11 @@ import type { Transfer } from '@blink/types'
 const props = defineProps<{ transfer: Transfer }>()
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'PENDING',
-  sending: 'SENDING',
-  receiving: 'RECEIVING',
-  completed: 'DONE',
-  failed: 'FAILED'
+  pending: 'Pending',
+  sending: 'Sending',
+  receiving: 'Receiving',
+  completed: 'Done',
+  failed: 'Failed'
 }
 
 const statusLabel = computed(() =>

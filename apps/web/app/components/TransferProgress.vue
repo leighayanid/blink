@@ -1,10 +1,10 @@
 <template>
-  <div class="flex h-full flex-col rounded-[1.75rem] border border-black/5 bg-white/55 p-4 dark:border-white/10 dark:bg-white/4">
-    <div class="mb-4 flex gap-2 rounded-full border border-black/5 bg-white/75 p-1 dark:border-white/10 dark:bg-white/5">
+  <div class="flex min-h-[16rem] flex-col rounded-[1.75rem] border border-black/5 bg-white/50 p-4 dark:border-white/10 dark:bg-white/4 xl:h-full xl:min-h-0">
+    <div class="mb-4 flex gap-2 rounded-full border border-black/5 bg-white/70 p-1 dark:border-white/10 dark:bg-white/5">
       <button
         v-for="tab in tabs"
         :key="tab.value"
-        class="relative flex-1 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors"
+        class="relative flex-1 rounded-full px-4 py-2 text-[11px] font-medium tracking-[0.08em] transition-colors"
         :class="activeTab === tab.value
           ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/12 dark:text-primary-300'
           : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'"
@@ -26,9 +26,9 @@
     <div v-if="activeTab === 'active'" class="flex-1 overflow-y-auto">
       <div
         v-if="activeTransfers.length === 0"
-        class="flex h-full min-h-44 items-center justify-center rounded-[1.5rem] border border-dashed border-primary-200/80 bg-primary-50/35 dark:border-primary-500/20 dark:bg-white/3"
+        class="flex min-h-40 items-center justify-center rounded-[1.5rem] border border-dashed border-primary-200/80 bg-primary-50/35 dark:border-primary-500/20 dark:bg-white/3 xl:h-full xl:min-h-44"
       >
-        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">No active transfers</p>
+        <p class="text-sm font-semibold text-neutral-500 dark:text-neutral-400">No active transfers</p>
       </div>
       <div v-else class="flex flex-col gap-3">
         <div
@@ -44,9 +44,9 @@
     <div v-else class="flex-1 overflow-y-auto">
       <div
         v-if="historyTransfers.length === 0"
-        class="flex h-full min-h-44 items-center justify-center rounded-[1.5rem] border border-dashed border-black/10 bg-neutral-50/60 dark:border-white/10 dark:bg-white/3"
+        class="flex min-h-40 items-center justify-center rounded-[1.5rem] border border-dashed border-black/10 bg-neutral-50/60 dark:border-white/10 dark:bg-white/3 xl:h-full xl:min-h-44"
       >
-        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">No history yet</p>
+        <p class="text-sm font-semibold text-neutral-500 dark:text-neutral-400">No history</p>
       </div>
       <div v-else class="flex flex-col gap-3">
         <div
@@ -61,10 +61,10 @@
             color="neutral"
             variant="outline"
             size="xs"
-            class="rounded-full px-4 text-[11px] font-semibold tracking-[0.22em]"
+            class="rounded-full px-4 text-[11px] font-medium"
             @click="store.clearCompleted()"
           >
-            CLEAR HISTORY
+            Clear history
           </UButton>
         </div>
       </div>
@@ -88,8 +88,8 @@ const { activeTransfers, completedTransfers, failedTransfers, activeCount } = st
 const activeTab = ref<'active' | 'history'>('active')
 
 const tabs = [
-  { label: 'ACTIVE', value: 'active' as const },
-  { label: 'HISTORY', value: 'history' as const }
+  { label: 'Active', value: 'active' as const },
+  { label: 'History', value: 'history' as const }
 ]
 
 const historyTransfers = computed(() => [

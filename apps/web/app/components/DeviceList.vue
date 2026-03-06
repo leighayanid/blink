@@ -2,10 +2,10 @@
   <div class="flex flex-col">
     <div
       v-if="devices.length === 0"
-      class="flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-primary-200/80 bg-primary-50/40 px-6 py-12 text-center dark:border-primary-500/20 dark:bg-white/3"
+      class="flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-primary-200/70 bg-primary-50/35 px-6 py-12 text-center dark:border-primary-500/20 dark:bg-white/3"
     >
       <UIcon name="i-lucide-globe" class="mb-4 size-10 text-primary-300 dark:text-primary-400/70" />
-      <p class="text-sm font-semibold uppercase tracking-[0.24em] text-neutral-700 dark:text-neutral-200">No devices found</p>
+      <p class="text-sm font-semibold text-neutral-700 dark:text-neutral-200">No devices</p>
       <p class="mt-2 max-w-[15rem] text-sm text-neutral-500 dark:text-neutral-400">Ensure nearby devices are on the same local network.</p>
     </div>
 
@@ -32,11 +32,11 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <UBadge color="neutral" variant="outline" size="xs" class="mb-2 rounded-full text-[11px] font-semibold tracking-[0.2em]">
+            <UBadge color="neutral" variant="outline" size="xs" class="mb-2 rounded-full text-[11px] font-medium">
               {{ getPlatformLabel(device.platform) }}
             </UBadge>
             <p class="truncate text-sm font-semibold text-neutral-950 dark:text-white">{{ device.name }}</p>
-            <p class="mt-1 text-xs uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">{{ getStatusText(device) }}</p>
+            <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{{ getStatusText(device) }}</p>
           </div>
         </div>
 
@@ -46,7 +46,7 @@
           :variant="connectedPeersResolved.has(device.peerId || '') ? 'outline' : 'solid'"
           :loading="getDeviceState(device) === 'connecting'"
           :disabled="!device.peerId"
-          class="w-full rounded-full px-4 text-[11px] font-semibold tracking-[0.22em]"
+          class="w-full rounded-full px-4 text-[11px] font-medium"
           :class="connectedPeersResolved.has(device.peerId || '')
             ? 'border-black/10 bg-white/70 text-neutral-700 dark:border-white/10 dark:bg-white/5 dark:text-neutral-200'
             : 'border-0 bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400'"
@@ -104,10 +104,10 @@ const getDeviceState = (device: Device): ConnectionState | undefined => {
 
 const getStatusText = (device: Device): string => {
   const state = getDeviceState(device)
-  if (state === 'connecting') return 'ESTABLISHING'
-  if (state === 'error') return 'CONNECTION FAILED'
-  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'CONNECTED'
-  return 'AVAILABLE'
+  if (state === 'connecting') return 'Connecting'
+  if (state === 'error') return 'Failed'
+  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'Connected'
+  return 'Available'
 }
 
 const getActionLabel = (device: Device): string => {
