@@ -1,350 +1,431 @@
 <template>
-  <div class="flex flex-col h-screen overflow-hidden bg-white dark:bg-neutral-950">
-    <!-- Three-Column Dashboard -->
-    <div class="flex flex-1 min-h-0">
+  <div class="relative flex h-screen flex-col overflow-hidden bg-light-primary text-light-primary dark:bg-dark-primary dark:text-dark-primary">
+    <div class="pointer-events-none absolute inset-0">
+      <div class="absolute inset-x-0 top-0 h-[26rem] bg-[radial-gradient(circle_at_top,rgba(255,149,0,0.24),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,149,0,0.18),transparent_60%)]" />
+      <div class="absolute left-[-10rem] top-1/3 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.18),transparent_68%)] blur-3xl dark:bg-[radial-gradient(circle,rgba(255,140,66,0.14),transparent_68%)]" />
+      <div class="absolute bottom-[-7rem] right-[-6rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(255,149,0,0.18),transparent_70%)] blur-3xl dark:bg-[radial-gradient(circle,rgba(255,149,0,0.14),transparent_70%)]" />
+      <div class="app-grid absolute inset-0 opacity-45 dark:opacity-25" />
+    </div>
 
-      <!-- LEFT COLUMN: Identity & Discovery -->
-      <div
-        class="flex flex-col w-full md:w-72 shrink-0 border-r border-neutral-200 dark:border-neutral-800 overflow-y-auto"
-        :class="{ 'hidden md:flex': activeMobileTab !== 'discover' }"
-      >
-        <!-- App Header -->
-        <div class="relative px-5 py-5 border-b border-neutral-200 dark:border-neutral-800 text-center shrink-0">
-          <ClientOnly>
-            <UButton
-              :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              class="absolute top-4 right-4"
-              @click="toggleTheme"
-            />
-            <template #fallback>
-              <div class="absolute top-4 right-4 size-7" />
-            </template>
-          </ClientOnly>
-
-          <h1 class="text-4xl font-black tracking-tight leading-none">BLINK</h1>
-          <p class="text-xs font-mono text-neutral-400 tracking-widest mt-1.5 mb-3">SECURE LOCAL FILE SHARING</p>
-          <UBadge color="success" variant="soft" class="font-mono text-xs gap-1.5">
-            <span class="size-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
-            ONLINE
-          </UBadge>
-        </div>
-
-        <!-- Local Device -->
-        <div class="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-          <p class="text-xs font-mono font-bold text-neutral-400 tracking-widest mb-3">LOCAL DEVICE</p>
-          <div v-if="localDevice" class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <UBadge color="neutral" variant="outline" class="font-mono font-bold text-xs shrink-0">
-                {{ getPlatformLabel(localDevice.platform) }}
-              </UBadge>
-              <div class="min-w-0">
-                <p class="font-bold text-sm truncate">{{ localDevice.name }}</p>
-                <p class="text-xs text-neutral-400">{{ localDevice.platform }}</p>
-              </div>
-            </div>
-            <UBadge
-              :color="isConnected ? 'success' : 'neutral'"
-              variant="soft"
-              class="font-mono text-xs shrink-0"
-            >
-              {{ isConnected ? 'LIVE' : 'OFFLINE' }}
-            </UBadge>
-          </div>
-        </div>
-
-        <!-- Discovered Devices -->
-        <div class="px-5 py-4 flex-1">
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-xs font-mono font-bold text-neutral-400 tracking-widest">DISCOVERED</p>
-            <UBadge color="neutral" variant="soft" class="font-mono text-xs">{{ devices.length }}</UBadge>
-          </div>
-          <DeviceList
-            :devices="devices"
-            :selected-device="selectedDevice"
-            :connected-peers="connectedPeers"
-            :connection-states="connectionStates"
-            @select="handleDeviceSelect"
-            @connect="handleDeviceConnect"
-          />
-        </div>
-      </div>
-
-      <!-- CENTER COLUMN: Transfer -->
-      <div
-        class="flex flex-col flex-1 min-w-0 overflow-y-auto"
-        :class="{ 'hidden md:flex': activeMobileTab !== 'transfer' }"
-      >
-        <!-- File Upload -->
-        <div class="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
-          <p class="text-xs font-mono font-bold text-neutral-400 tracking-widest mb-3">TRANSFER FILES</p>
-          <FileUploader
-            :disabled="connectedPeers.size === 0"
-            :connected-count="connectedPeers.size"
-            @files-selected="handleFilesSelected"
-          />
-        </div>
-
-        <!-- Transfer Queue -->
-        <div class="px-5 py-4 flex-1 flex flex-col min-h-0">
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-xs font-mono font-bold text-neutral-400 tracking-widest">QUEUE</p>
-            <UBadge v-if="transfers.length > 0" color="neutral" variant="soft" class="font-mono text-xs">
-              {{ transfers.length }}
-            </UBadge>
-          </div>
-          <TransferProgress :embedded="true" class="flex-1 min-h-0" />
-        </div>
-      </div>
-
-      <!-- RIGHT COLUMN: Active Connections -->
-      <div
-        class="flex flex-col w-full md:w-72 shrink-0 border-l border-neutral-200 dark:border-neutral-800 overflow-y-auto"
-        :class="{ 'hidden md:flex': activeMobileTab !== 'network' }"
-      >
-        <div class="px-5 py-4 flex-1">
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-xs font-mono font-bold text-neutral-400 tracking-widest">NETWORK</p>
-            <UBadge color="neutral" variant="soft" class="font-mono text-xs">{{ connectedPeers.size }}</UBadge>
-          </div>
-
-          <div class="mb-3 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/70">
-            <div class="flex items-center justify-between mb-2">
-              <p class="text-[10px] font-mono font-bold text-neutral-400 tracking-widest">PAIRING CODE</p>
-              <UButton
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                class="font-mono font-bold text-[10px] tracking-wider"
-                @click="regeneratePairCode"
-              >
-                NEW
-              </UButton>
-            </div>
-            <p class="text-xl font-mono font-black tracking-[0.25em]">{{ localPairCode }}</p>
-            <p class="text-[11px] text-neutral-500 mt-1">
-              Share this 6-digit code with the sender to trust their device.
-            </p>
-            <div class="mt-3 flex items-center justify-between gap-2">
-              <p class="text-[10px] font-mono font-bold text-neutral-400 tracking-widest">
-                AUTO-ACCEPT TRUSTED FILES
-              </p>
-              <UButton
-                size="xs"
-                :color="autoAcceptTrustedFiles ? 'success' : 'neutral'"
-                :variant="autoAcceptTrustedFiles ? 'soft' : 'outline'"
-                class="font-mono font-bold text-[10px] tracking-wider"
-                @click="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
-              >
-                {{ autoAcceptTrustedFiles ? 'ON' : 'OFF' }}
-              </UButton>
+    <main class="relative z-10 flex min-h-0 flex-1 flex-col p-3 md:p-4">
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-black/5 bg-white/70 shadow-[0_24px_90px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-white/6">
+        <div class="hidden items-center justify-between border-b border-black/5 px-6 py-4 md:flex dark:border-white/10">
+          <div class="flex items-center gap-4">
+            <div>
+              <p class="font-orbitron text-lg font-black uppercase tracking-[0.32em] text-neutral-950 dark:text-white">Blink</p>
+              <p class="text-sm text-neutral-500 dark:text-neutral-400">Direct local file transfer with trusted device pairing.</p>
             </div>
           </div>
 
-          <!-- Empty state -->
+          <div class="flex items-center gap-3">
+            <div class="rounded-full border border-black/5 bg-white/80 px-4 py-2 text-sm text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-300">
+              <span class="font-semibold text-neutral-950 dark:text-white">{{ connectedPeers.size }}</span>
+              active connection{{ connectedPeers.size === 1 ? '' : 's' }}
+            </div>
+            <div class="rounded-full border border-black/5 bg-white/80 px-4 py-2 text-sm text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-300">
+              <span class="font-semibold text-neutral-950 dark:text-white">{{ transfers.length }}</span>
+              transfer{{ transfers.length === 1 ? '' : 's' }} tracked
+            </div>
+          </div>
+        </div>
+
+        <div class="flex min-h-0 flex-1 gap-3 p-3 md:p-4">
           <div
-            v-if="connectedPeers.size === 0 && !hasConnectingDevices"
-            class="flex flex-col items-center justify-center h-48 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl"
+            class="flex w-full flex-col overflow-y-auto rounded-[1.75rem] border border-black/5 bg-white/82 shadow-[0_18px_60px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-black/12 md:w-80 md:shrink-0"
+            :class="{ 'hidden md:flex': activeMobileTab !== 'discover' }"
           >
-            <UIcon name="i-lucide-wifi-off" class="size-8 text-neutral-300 dark:text-neutral-600 mb-3" />
-            <p class="text-xs font-mono text-neutral-400 tracking-widest">NO ACTIVE CONNECTIONS</p>
-          </div>
-
-          <div v-else class="flex flex-col gap-3">
-            <!-- Connecting devices -->
-            <div
-              v-for="device in connectingDevices"
-              :key="'connecting-' + device.id"
-              class="flex items-center justify-between p-3 rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50/50 dark:bg-blue-950/20"
-            >
-              <div class="flex items-center gap-2 min-w-0">
-                <UBadge color="neutral" variant="outline" class="font-mono font-bold text-xs shrink-0">
-                  {{ getPlatformLabel(device.platform) }}
-                </UBadge>
-                <span class="text-sm font-medium truncate">{{ device.name }}</span>
-              </div>
-              <span class="text-xs font-mono text-neutral-400 shrink-0 ml-2">...</span>
-            </div>
-
-            <!-- Connected devices -->
-            <div
-              v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))"
-              :key="device.id"
-              class="p-3 rounded-xl border transition-colors"
-              :class="targetPeerForSend === device.peerId
-                ? 'border-neutral-900 dark:border-white bg-neutral-900 dark:bg-white'
-                : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900'"
-            >
-              <div class="flex items-center gap-2 mb-2.5">
-                <UBadge
+            <div class="relative border-b border-black/5 px-5 py-5 dark:border-white/10">
+              <ClientOnly>
+                <UButton
+                  :icon="isDark ? 'i-lucide-sun-medium' : 'i-lucide-moon-star'"
                   color="neutral"
                   variant="outline"
-                  class="font-mono font-bold text-xs shrink-0"
-                  :class="targetPeerForSend === device.peerId ? 'border-neutral-400 text-neutral-400' : ''"
-                >
-                  {{ getPlatformLabel(device.platform) }}
-                </UBadge>
-                <div class="flex-1 min-w-0">
-                  <p
-                    class="text-sm font-semibold truncate"
-                    :class="targetPeerForSend === device.peerId
-                      ? 'text-white dark:text-neutral-900'
-                      : 'text-neutral-900 dark:text-white'"
-                  >
-                    {{ device.name }}
-                  </p>
-                  <p
-                    class="text-xs font-mono"
-                    :class="targetPeerForSend === device.peerId ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-400'"
-                  >
-                    {{ isTrustedPeer(device.peerId) ? 'TRUSTED CONNECTION' : 'ACTIVE' }}
+                  size="xs"
+                  class="absolute right-4 top-4 rounded-full"
+                  @click="toggleTheme"
+                />
+                <template #fallback>
+                  <div class="absolute right-4 top-4 size-7 rounded-full border border-neutral-200 dark:border-neutral-700" />
+                </template>
+              </ClientOnly>
+
+              <div class="flex items-start gap-3 pr-12">
+                <div>
+                  <h1 class="font-orbitron text-2xl font-black uppercase tracking-[0.28em] text-neutral-950 dark:text-white">Blink</h1>
+                  <p class="mt-1 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
+                    Trusted local sharing across your devices.
                   </p>
                 </div>
               </div>
 
-              <div class="mb-2.5">
-                <UBadge
-                  :color="isTrustedPeer(device.peerId) ? 'success' : 'neutral'"
-                  variant="soft"
-                  class="font-mono text-[10px] tracking-wider"
-                >
-                  {{ isTrustedPeer(device.peerId) ? 'TRUSTED' : 'UNTRUSTED' }}
+              <div class="mt-4 flex items-center gap-2">
+                <UBadge color="success" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium tracking-[0.22em]">
+                  <span class="mr-1.5 inline-block size-1.5 rounded-full bg-green-500" />
+                  SESSION ONLINE
+                </UBadge>
+              </div>
+            </div>
+
+            <div class="px-5 py-4">
+              <div class="rounded-[1.5rem] border border-primary-200/70 bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-4 dark:border-primary-500/20 dark:from-primary-500/10 dark:via-white/5 dark:to-white/0">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-700 dark:text-primary-300">Local Device</p>
+                    <div v-if="localDevice" class="mt-2">
+                      <p class="text-base font-semibold text-neutral-950 dark:text-white">{{ localDevice.name }}</p>
+                      <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ localDevice.platform }}</p>
+                    </div>
+                  </div>
+                  <UBadge
+                    :color="isConnected ? 'success' : 'neutral'"
+                    variant="soft"
+                    class="rounded-full px-3 py-1 text-[11px] font-medium tracking-[0.2em]"
+                  >
+                    {{ isConnected ? 'LIVE' : 'OFFLINE' }}
+                  </UBadge>
+                </div>
+
+                <div v-if="localDevice" class="mt-4 flex items-center gap-2">
+                  <span class="inline-flex rounded-full border border-black/5 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-300">
+                    {{ getPlatformLabel(localDevice.platform) }}
+                  </span>
+                  <span class="text-xs text-neutral-500 dark:text-neutral-400">Ready for nearby discovery</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-1 flex-col px-5 pb-5 min-h-0">
+              <div class="mb-3 flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-400">Discovered Devices</p>
+                <UBadge color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
+                  {{ devices.length }}
+                </UBadge>
+              </div>
+              <DeviceList
+                :devices="devices"
+                :selected-device="selectedDevice"
+                :connected-peers="connectedPeers"
+                :connection-states="connectionStates"
+                @select="handleDeviceSelect"
+                @connect="handleDeviceConnect"
+              />
+            </div>
+          </div>
+
+          <div
+            class="flex min-w-0 flex-1 flex-col overflow-y-auto rounded-[1.75rem] border border-black/5 bg-white/80 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-black/12"
+            :class="{ 'hidden md:flex': activeMobileTab !== 'transfer' }"
+          >
+            <div class="border-b border-black/5 px-5 py-5 dark:border-white/10 sm:px-6">
+              <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-2xl">
+                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-700 dark:text-primary-300">Transfer Workspace</p>
+                  <h2 class="mt-2 text-2xl font-semibold text-neutral-950 dark:text-white">Send files with a clearer handoff flow.</h2>
+                  <p class="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
+                    Select a trusted device, drop files, and monitor transfer state without leaving the workspace.
+                  </p>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-3 lg:min-w-[24rem] lg:max-w-[30rem] lg:flex-1">
+                  <div class="rounded-[1.25rem] border border-black/5 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">Target</p>
+                    <p class="mt-1 truncate text-sm font-semibold text-neutral-950 dark:text-white">{{ targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'No device selected' }}</p>
+                  </div>
+                  <div class="rounded-[1.25rem] border border-black/5 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">Trusted</p>
+                    <p class="mt-1 text-sm font-semibold text-neutral-950 dark:text-white">{{ trustedPeerIds.length }} device{{ trustedPeerIds.length === 1 ? '' : 's' }}</p>
+                  </div>
+                  <div class="rounded-[1.25rem] border border-black/5 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">Queue</p>
+                    <p class="mt-1 text-sm font-semibold text-neutral-950 dark:text-white">{{ transfers.length }} item{{ transfers.length === 1 ? '' : 's' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-b border-black/5 px-5 py-5 dark:border-white/10 sm:px-6">
+              <div class="mb-3 flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-400">Transfer Files</p>
+                <div class="rounded-full border border-black/5 bg-white/80 px-3 py-1 text-[11px] text-neutral-500 dark:border-white/10 dark:bg-white/5 dark:text-neutral-400">
+                  {{ connectedPeers.size === 0 ? 'Connect a device to begin' : connectedPeers.size + ' destination' + (connectedPeers.size === 1 ? '' : 's') + ' available' }}
+                </div>
+              </div>
+              <FileUploader
+                :disabled="connectedPeers.size === 0"
+                :connected-count="connectedPeers.size"
+                @files-selected="handleFilesSelected"
+              />
+            </div>
+
+            <div class="flex min-h-0 flex-1 flex-col px-5 py-5 sm:px-6">
+              <div class="mb-3 flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-400">Transfer Queue</p>
+                <UBadge v-if="transfers.length > 0" color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
+                  {{ transfers.length }}
+                </UBadge>
+              </div>
+              <TransferProgress :embedded="true" class="flex-1 min-h-0" />
+            </div>
+          </div>
+
+          <div
+            class="flex w-full flex-col overflow-y-auto rounded-[1.75rem] border border-black/5 bg-white/82 shadow-[0_18px_60px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-black/12 md:w-80 md:shrink-0"
+            :class="{ 'hidden md:flex': activeMobileTab !== 'network' }"
+          >
+            <div class="flex flex-1 flex-col px-5 py-5 min-h-0">
+              <div class="mb-4 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-700 dark:text-primary-300">Network Trust</p>
+                  <h3 class="mt-1 text-xl font-semibold text-neutral-950 dark:text-white">Active connections</h3>
+                </div>
+                <UBadge color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
+                  {{ connectedPeers.size }}
                 </UBadge>
               </div>
 
-              <div v-if="device.peerId && !isTrustedPeer(device.peerId)" class="flex gap-2 mb-2.5">
-                <UInput
-                  :model-value="pairCodeInputs[device.peerId] || ''"
-                  placeholder="ENTER CODE"
-                  size="xs"
-                  inputmode="numeric"
-                  maxlength="6"
-                  class="flex-1"
-                  @update:model-value="updatePairCodeInput(device.peerId, String($event ?? ''))"
-                  @keydown.enter.prevent="pairWithPeer(device.peerId)"
-                />
-                <UButton
-                  size="xs"
-                  color="primary"
-                  variant="solid"
-                  class="font-mono font-bold text-xs tracking-wider"
-                  :loading="isPairingPeer(device.peerId)"
-                  @click="pairWithPeer(device.peerId)"
-                >
-                  PAIR
-                </UButton>
+              <div class="mb-4 rounded-[1.5rem] border border-primary-200/70 bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-4 dark:border-primary-500/20 dark:from-primary-500/10 dark:via-white/5 dark:to-white/0">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-700 dark:text-primary-300">Pairing code</p>
+                    <p class="mt-2 font-orbitron text-2xl font-black tracking-[0.28em] text-neutral-950 dark:text-white">{{ localPairCode }}</p>
+                  </div>
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="outline"
+                    class="rounded-full border-primary-200 bg-white/70 px-3 text-[11px] font-semibold tracking-[0.22em] text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300"
+                    @click="regeneratePairCode"
+                  >
+                    Refresh
+                  </UButton>
+                </div>
+                <p class="mt-3 text-sm leading-6 text-neutral-600 dark:text-neutral-300">
+                  Share this code to approve a new device before the first transfer.
+                </p>
+                <div class="mt-4 flex items-center justify-between gap-3 rounded-[1rem] border border-black/5 bg-white/70 px-3 py-3 dark:border-white/10 dark:bg-white/5">
+                  <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">Trusted auto-accept</p>
+                    <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Skip prompts for verified devices.</p>
+                  </div>
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    :variant="autoAcceptTrustedFiles ? 'solid' : 'outline'"
+                    class="rounded-full px-3 text-[11px] font-semibold tracking-[0.2em]"
+                    :class="autoAcceptTrustedFiles
+                      ? 'border-0 bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400'
+                      : 'border-primary-200 bg-white/70 text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300'"
+                    @click="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
+                  >
+                    {{ autoAcceptTrustedFiles ? 'ON' : 'OFF' }}
+                  </UButton>
+                </div>
               </div>
 
-              <div class="flex gap-2">
-                <UButton
-                  v-if="connectedPeers.size > 1"
-                  size="xs"
-                  color="neutral"
-                  variant="ghost"
-                  class="font-mono font-bold text-xs tracking-wider"
-                  :class="targetPeerForSend === device.peerId ? 'text-neutral-400 dark:text-neutral-600 hover:text-neutral-300' : ''"
-                  @click="targetPeerForSend = device.peerId ?? null"
+              <div
+                v-if="connectedPeers.size === 0 && !hasConnectingDevices"
+                class="flex h-52 flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-primary-200/80 bg-primary-50/40 text-center dark:border-primary-500/20 dark:bg-white/3"
+              >
+                <UIcon name="i-lucide-wifi-off" class="mb-3 size-8 text-primary-300 dark:text-primary-400/70" />
+                <p class="text-sm font-semibold uppercase tracking-[0.24em] text-neutral-600 dark:text-neutral-300">No active connections</p>
+                <p class="mt-2 max-w-[14rem] text-sm text-neutral-500 dark:text-neutral-400">Connect to a nearby device to open a direct transfer session.</p>
+              </div>
+
+              <div v-else class="flex flex-col gap-3">
+                <div
+                  v-for="device in connectingDevices"
+                  :key="'connecting-' + device.id"
+                  class="flex items-center justify-between rounded-[1.25rem] border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-800/40 dark:bg-sky-950/20"
                 >
-                  {{ targetPeerForSend === device.peerId ? 'SELECTED' : 'SELECT' }}
-                </UButton>
-                <UButton
-                  v-if="device.peerId && isTrustedPeer(device.peerId)"
-                  size="xs"
-                  color="warning"
-                  variant="outline"
-                  class="font-mono font-bold text-xs tracking-wider"
-                  @click="untrustPeer(device.peerId)"
+                  <div class="flex min-w-0 items-center gap-3">
+                    <UBadge color="neutral" variant="outline" class="rounded-full text-[11px] font-semibold tracking-[0.2em]">
+                      {{ getPlatformLabel(device.platform) }}
+                    </UBadge>
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold text-neutral-900 dark:text-white">{{ device.name }}</p>
+                      <p class="text-xs text-sky-700 dark:text-sky-300">Establishing secure channel…</p>
+                    </div>
+                  </div>
+                  <span class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600 dark:text-sky-300">Connecting</span>
+                </div>
+
+                <div
+                  v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))"
+                  :key="device.id"
+                  class="rounded-[1.5rem] border p-4 transition-colors"
+                  :class="targetPeerForSend === device.peerId
+                    ? 'border-primary-300 bg-primary-50/80 dark:border-primary-500/30 dark:bg-primary-500/10'
+                    : 'border-black/5 bg-white/80 dark:border-white/10 dark:bg-white/5'"
                 >
-                  UNTRUST
-                </UButton>
-                <UButton
-                  size="xs"
-                  color="neutral"
-                  variant="outline"
-                  class="font-mono font-bold text-xs tracking-wider"
-                  @click="handleDeviceDisconnect(device)"
-                >
-                  DISCONNECT
-                </UButton>
+                  <div class="mb-3 flex items-center gap-3">
+                    <UBadge
+                      color="neutral"
+                      variant="outline"
+                      class="rounded-full text-[11px] font-semibold tracking-[0.2em]"
+                    >
+                      {{ getPlatformLabel(device.platform) }}
+                    </UBadge>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-semibold text-neutral-950 dark:text-white">{{ device.name }}</p>
+                      <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                        {{ isTrustedPeer(device.peerId) ? 'Trusted device ready for faster approvals' : 'Connected and awaiting trust approval' }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mb-3 flex flex-wrap items-center gap-2">
+                    <UBadge
+                      :color="isTrustedPeer(device.peerId) ? 'success' : 'neutral'"
+                      variant="soft"
+                      class="rounded-full px-3 py-1 text-[11px] font-medium tracking-[0.2em]"
+                    >
+                      {{ isTrustedPeer(device.peerId) ? 'TRUSTED' : 'UNTRUSTED' }}
+                    </UBadge>
+                    <span
+                      v-if="targetPeerForSend === device.peerId"
+                      class="rounded-full border border-primary-200 bg-white/70 px-3 py-1 text-[11px] font-semibold tracking-[0.2em] text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300"
+                    >
+                      SEND TARGET
+                    </span>
+                  </div>
+
+                  <div v-if="device.peerId && !isTrustedPeer(device.peerId)" class="mb-3 flex gap-2">
+                    <UInput
+                      :model-value="pairCodeInputs[device.peerId] || ''"
+                      placeholder="ENTER CODE"
+                      size="xs"
+                      inputmode="numeric"
+                      maxlength="6"
+                      class="flex-1"
+                      @update:model-value="updatePairCodeInput(device.peerId, String($event ?? ''))"
+                      @keydown.enter.prevent="pairWithPeer(device.peerId)"
+                    />
+                    <UButton
+                      size="xs"
+                      color="neutral"
+                      variant="solid"
+                      class="rounded-full border-0 bg-primary-600 px-4 text-xs font-semibold tracking-[0.2em] text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400"
+                      :loading="isPairingPeer(device.peerId)"
+                      @click="pairWithPeer(device.peerId)"
+                    >
+                      Pair
+                    </UButton>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2">
+                    <UButton
+                      v-if="connectedPeers.size > 1"
+                      size="xs"
+                      color="neutral"
+                      variant="outline"
+                      class="rounded-full px-3 text-[11px] font-semibold tracking-[0.2em]"
+                      :class="targetPeerForSend === device.peerId
+                        ? 'border-primary-200 bg-white/70 text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300'
+                        : ''"
+                      @click="targetPeerForSend = device.peerId ?? null"
+                    >
+                      {{ targetPeerForSend === device.peerId ? 'SELECTED' : 'SELECT' }}
+                    </UButton>
+                    <UButton
+                      v-if="device.peerId && isTrustedPeer(device.peerId)"
+                      size="xs"
+                      color="warning"
+                      variant="outline"
+                      class="rounded-full px-3 text-[11px] font-semibold tracking-[0.2em]"
+                      @click="untrustPeer(device.peerId)"
+                    >
+                      Untrust
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      color="neutral"
+                      variant="outline"
+                      class="rounded-full px-3 text-[11px] font-semibold tracking-[0.2em]"
+                      @click="handleDeviceDisconnect(device)"
+                    >
+                      Disconnect
+                    </UButton>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- Mobile Bottom Navigation -->
-    <nav class="md:hidden flex shrink-0 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 pb-safe">
+    <nav class="md:hidden relative z-10 flex shrink-0 border-t border-primary-200/50 bg-[rgba(255,248,231,0.92)] px-2 py-2 backdrop-blur-xl dark:border-primary-500/15 dark:bg-[rgba(22,22,42,0.92)] pb-safe">
       <button
         v-for="tab in mobileTabs"
         :key="tab.value"
-        class="relative flex flex-col items-center justify-center gap-1 flex-1 py-3 text-xs font-mono font-bold tracking-widest transition-colors"
+        class="relative flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-3 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors"
         :class="activeMobileTab === tab.value
-          ? 'text-neutral-900 dark:text-white'
-          : 'text-neutral-400'"
+          ? 'bg-white/80 text-primary-700 shadow-[0_12px_28px_rgba(255,149,0,0.12)] dark:bg-primary-500/14 dark:text-primary-300'
+          : 'text-neutral-600 dark:text-neutral-400'"
         @click="activeMobileTab = tab.value as typeof activeMobileTab"
       >
         <UIcon :name="tab.icon" class="size-5" />
         <span>{{ tab.label }}</span>
         <span
           v-if="tab.value === 'network' && connectedPeers.size > 0"
-          class="absolute top-2 right-[22%] size-4 flex items-center justify-center bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[9px] rounded-full font-mono leading-none"
+          class="absolute right-[18%] top-2 flex size-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-semibold text-white dark:bg-primary-500 dark:text-neutral-950"
         >{{ connectedPeers.size }}</span>
       </button>
     </nav>
 
     <UModal :open="isIncomingFileModalOpen" :close="false" :prevent-close="true">
       <template #header>
-        <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-download" class="size-5 text-neutral-500" />
-          <h3 class="text-sm font-bold tracking-wide">INCOMING FILE</h3>
+        <div class="flex items-center gap-3">
+          <div class="flex size-9 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">
+            <UIcon name="i-lucide-download" class="size-5" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">Incoming transfer</p>
+            <h3 class="text-sm font-semibold text-neutral-950 dark:text-white">Approve file receipt</h3>
+          </div>
         </div>
       </template>
 
-      <div v-if="currentIncomingFile" class="space-y-3">
-        <p class="text-sm text-neutral-600 dark:text-neutral-300">
-          <span class="font-semibold">{{ currentIncomingFile.peerId }}</span>
-          wants to send:
+      <div v-if="currentIncomingFile" class="space-y-4">
+        <p class="text-sm leading-6 text-neutral-600 dark:text-neutral-300">
+          <span class="font-semibold text-neutral-950 dark:text-white">{{ currentIncomingFile.peerId }}</span>
+          wants to send a file to this device.
         </p>
-        <div class="rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
-          <p class="font-semibold break-all">{{ currentIncomingFile.metadata.name }}</p>
-          <p class="text-xs text-neutral-500 mt-1">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
+        <div class="rounded-[1.25rem] border border-primary-200/80 bg-primary-50/70 p-4 dark:border-primary-500/20 dark:bg-primary-500/10">
+          <p class="break-all text-base font-semibold text-neutral-950 dark:text-white">{{ currentIncomingFile.metadata.name }}</p>
+          <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
         </div>
-        <p class="text-xs text-neutral-500">
-          Accept to start receiving. Decline to cancel this transfer.
+        <p class="text-xs leading-5 text-neutral-500 dark:text-neutral-400">
+          Accept to start receiving immediately. Decline to cancel this transfer request.
         </p>
-        <p v-if="incomingFileQueue.length > 1" class="text-xs text-neutral-500">
+        <p v-if="incomingFileQueue.length > 1" class="text-xs text-neutral-500 dark:text-neutral-400">
           {{ incomingFileQueue.length - 1 }} more file request(s) waiting.
         </p>
       </div>
 
       <template #footer>
         <div class="flex w-full justify-end gap-2">
-          <UButton color="neutral" variant="outline" @click="declineIncomingFile">
-            DECLINE
+          <UButton color="neutral" variant="outline" class="rounded-full px-4" @click="declineIncomingFile">
+            Decline
           </UButton>
-          <UButton color="success" @click="acceptIncomingFile">
-            ACCEPT
+          <UButton color="success" class="rounded-full px-4" @click="acceptIncomingFile">
+            Accept
           </UButton>
         </div>
       </template>
     </UModal>
 
-    <!-- Footer (desktop only) -->
-    <footer class="hidden md:flex justify-center items-center py-2.5 text-xs font-mono text-neutral-400 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
+    <footer class="relative z-10 hidden shrink-0 items-center justify-center border-t border-black/5 py-2.5 text-xs text-neutral-500 dark:border-white/10 dark:text-neutral-400 md:flex">
       CREATED BY
       <a
         href="https://leighdinaya.dev"
         target="_blank"
         rel="noopener"
-        class="font-bold text-neutral-700 dark:text-neutral-300 ml-1 hover:underline"
+        class="ml-1 font-semibold text-neutral-800 hover:underline dark:text-neutral-200"
       >LEIGH DINAYA</a>
     </footer>
   </div>
 </template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useStorage } from '@vueuse/core'
@@ -769,3 +850,19 @@ onUnmounted(() => {
   destroy()
 })
 </script>
+
+<style scoped>
+.app-grid {
+  background-image:
+    linear-gradient(to right, rgb(15 23 42 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 23 42 / 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at top, black 24%, rgb(0 0 0 / 0.8) 55%, transparent 100%);
+}
+
+.dark .app-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+}
+</style>

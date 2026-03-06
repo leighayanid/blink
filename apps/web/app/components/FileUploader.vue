@@ -1,21 +1,22 @@
 <template>
   <div class="flex flex-col gap-4">
-    <!-- Drop Zone -->
     <div
-      class="relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200"
+      class="relative overflow-hidden rounded-[1.75rem] border-2 border-dashed p-10 text-center transition-all duration-200"
       :class="[
         isDragging
-          ? 'border-neutral-900 dark:border-white bg-neutral-50 dark:bg-neutral-900 scale-[1.01]'
-          : 'border-neutral-200 dark:border-neutral-700',
+          ? 'border-primary-400 bg-primary-50/80 scale-[1.01] dark:border-primary-400/60 dark:bg-primary-500/12'
+          : 'border-primary-200/80 bg-primary-50/35 dark:border-primary-500/20 dark:bg-white/3',
         disabled
-          ? 'opacity-50 cursor-not-allowed bg-neutral-50 dark:bg-neutral-900 border-solid'
-          : 'hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-900/50'
+          ? 'cursor-not-allowed opacity-60 border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-white/3'
+          : 'cursor-pointer hover:border-primary-300 hover:bg-primary-50/60 dark:hover:border-primary-500/30 dark:hover:bg-white/5'
       ]"
       @drop.prevent="handleDrop"
       @dragover.prevent="handleDragOver"
       @dragleave.prevent="handleDragLeave"
       @click="!disabled && fileInput?.click()"
     >
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary-100/60 to-transparent dark:from-primary-500/10" />
+
       <input
         ref="fileInput"
         type="file"
@@ -25,49 +26,51 @@
         @change="handleFileSelect"
       />
 
-      <div class="flex flex-col items-center gap-4 pointer-events-none">
+      <div class="relative flex flex-col items-center gap-4">
         <div
-          class="p-4 rounded-full bg-neutral-100 dark:bg-neutral-800 transition-transform"
+          class="flex size-16 items-center justify-center rounded-[1.5rem] border border-black/5 bg-white/80 text-primary-700 shadow-[0_16px_30px_rgba(255,149,0,0.10)] transition-transform dark:border-white/10 dark:bg-white/5 dark:text-primary-300"
           :class="{ 'animate-bounce': isDragging }"
         >
-          <UIcon
-            name="i-lucide-upload"
-            class="size-10 text-neutral-400"
-          />
+          <UIcon name="i-lucide-upload" class="size-9" />
         </div>
         <div>
-          <p class="font-mono font-bold tracking-wider text-sm">{{ dropZoneTitle }}</p>
-          <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{{ dropZoneSubtitle }}</p>
+          <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-900 dark:text-white">{{ dropZoneTitle }}</p>
+          <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{{ dropZoneSubtitle }}</p>
+        </div>
+        <div v-if="!disabled" class="rounded-full border border-black/5 bg-white/70 px-4 py-2 text-[11px] text-neutral-500 dark:border-white/10 dark:bg-white/5 dark:text-neutral-400">
+          {{ connectedCount || 0 }} connected device{{ connectedCount === 1 ? '' : 's' }} available
         </div>
       </div>
     </div>
 
-    <!-- Selected Files -->
     <Transition name="slide-up">
       <div v-if="selectedFiles.length > 0" class="flex flex-col gap-3">
         <div class="flex items-center justify-between">
-          <p class="text-xs font-mono font-bold tracking-widest text-neutral-500">SELECTED FILES</p>
-          <UBadge color="neutral" variant="soft" class="font-mono text-xs">
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500 dark:text-neutral-400">Selected files</p>
+          <UBadge color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
             {{ selectedFiles.length }}
           </UBadge>
         </div>
 
-        <div class="border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden max-h-60 overflow-y-auto">
+        <div class="max-h-60 overflow-y-auto rounded-[1.5rem] border border-black/5 bg-white/80 dark:border-white/10 dark:bg-white/5">
           <div
             v-for="(file, index) in selectedFiles"
             :key="index"
-            class="flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+            class="flex items-center gap-3 border-b border-black/5 px-4 py-3 last:border-b-0 dark:border-white/10"
           >
-            <UIcon name="i-lucide-file" class="size-5 text-neutral-400 shrink-0" />
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium truncate">{{ file.name }}</p>
-              <p class="text-xs font-mono text-neutral-400">{{ formatFileSize(file.size) }}</p>
+            <div class="flex size-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">
+              <UIcon name="i-lucide-file" class="size-5 shrink-0" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-neutral-950 dark:text-white">{{ file.name }}</p>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ formatFileSize(file.size) }}</p>
             </div>
             <UButton
               icon="i-lucide-x"
               color="neutral"
               variant="ghost"
               size="xs"
+              class="rounded-full"
               @click.stop="removeFile(index)"
             />
           </div>
@@ -75,7 +78,7 @@
 
         <div class="flex gap-3">
           <UButton
-            class="flex-1 font-mono font-bold tracking-wider"
+            class="flex-1 rounded-full border-0 bg-primary-600 px-5 font-semibold uppercase tracking-[0.22em] text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400"
             color="neutral"
             variant="solid"
             icon="i-lucide-send"
@@ -85,8 +88,8 @@
           </UButton>
           <UButton
             color="neutral"
-            variant="ghost"
-            class="font-mono text-xs tracking-wider"
+            variant="outline"
+            class="rounded-full px-4 text-[11px] font-semibold tracking-[0.22em]"
             @click="clearFiles"
           >
             CLEAR ALL

@@ -1,74 +1,67 @@
 <template>
-  <div class="flex flex-col h-full">
-    <!-- Tab Bar -->
-    <div class="flex border-b border-neutral-200 dark:border-neutral-700 mb-3 gap-1">
+  <div class="flex h-full flex-col rounded-[1.75rem] border border-black/5 bg-white/55 p-4 dark:border-white/10 dark:bg-white/4">
+    <div class="mb-4 flex gap-2 rounded-full border border-black/5 bg-white/75 p-1 dark:border-white/10 dark:bg-white/5">
       <button
         v-for="tab in tabs"
         :key="tab.value"
-        class="relative pb-2.5 px-1 text-xs font-mono font-bold tracking-widest transition-colors"
+        class="relative flex-1 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors"
         :class="activeTab === tab.value
-          ? 'text-neutral-900 dark:text-white'
-          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'"
+          ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/12 dark:text-primary-300'
+          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'"
         @click="activeTab = tab.value"
       >
         {{ tab.label }}
         <UBadge
           v-if="tab.value === 'active' && activeCount > 0"
           color="neutral"
-          variant="solid"
+          variant="soft"
           size="xs"
-          class="ml-1.5 font-mono text-[10px]"
+          class="ml-1.5 rounded-full text-[10px] font-medium"
         >
           {{ activeCount }}
         </UBadge>
-        <span
-          v-if="activeTab === tab.value"
-          class="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900 dark:bg-white rounded-t-full"
-        />
       </button>
     </div>
 
-    <!-- Active Tab -->
     <div v-if="activeTab === 'active'" class="flex-1 overflow-y-auto">
       <div
         v-if="activeTransfers.length === 0"
-        class="flex items-center justify-center py-10 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-lg"
+        class="flex h-full min-h-44 items-center justify-center rounded-[1.5rem] border border-dashed border-primary-200/80 bg-primary-50/35 dark:border-primary-500/20 dark:bg-white/3"
       >
-        <p class="text-xs font-mono text-neutral-400 tracking-widest">NO ACTIVE TRANSFERS</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">No active transfers</p>
       </div>
       <div v-else class="flex flex-col gap-3">
         <div
           v-for="transfer in activeTransfers"
           :key="transfer.id"
-          class="p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900"
+          class="rounded-[1.5rem] border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-white/5"
         >
           <TransferItem :transfer="transfer" />
         </div>
       </div>
     </div>
 
-    <!-- History Tab -->
     <div v-else class="flex-1 overflow-y-auto">
       <div
         v-if="historyTransfers.length === 0"
-        class="flex items-center justify-center py-10 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-lg"
+        class="flex h-full min-h-44 items-center justify-center rounded-[1.5rem] border border-dashed border-black/10 bg-neutral-50/60 dark:border-white/10 dark:bg-white/3"
       >
-        <p class="text-xs font-mono text-neutral-400 tracking-widest">NO HISTORY</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">No history yet</p>
       </div>
       <div v-else class="flex flex-col gap-3">
         <div
           v-for="transfer in historyTransfers"
           :key="transfer.id"
-          class="p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900"
+          class="rounded-[1.5rem] border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-white/5"
         >
           <TransferItem :transfer="transfer" />
         </div>
         <div class="flex justify-center pt-2">
           <UButton
             color="neutral"
-            variant="ghost"
+            variant="outline"
             size="xs"
-            class="font-mono text-xs tracking-wider"
+            class="rounded-full px-4 text-[11px] font-semibold tracking-[0.22em]"
             @click="store.clearCompleted()"
           >
             CLEAR HISTORY
