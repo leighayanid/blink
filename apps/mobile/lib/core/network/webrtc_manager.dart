@@ -20,7 +20,6 @@ class WebRTCManager {
   final Map<String, WebRTCConnectionState> _connectionStates = {};
 
   String? _localPeerId;
-  bool _shouldReconnect = true;
 
   /// Callback wired by main_screen to forward signals through signaling server
   Function(String targetPeer, Map<String, dynamic> signal)? onSendSignal;
@@ -53,7 +52,6 @@ class WebRTCManager {
 
   /// Initialize peer connection
   Future<String> initPeer(String deviceId) async {
-    _shouldReconnect = true;
     _localPeerId = deviceId;
 
     _logger.info('Initializing peer with ID: $deviceId');
@@ -354,7 +352,6 @@ class WebRTCManager {
   /// Destroy all connections
   Future<void> destroy() async {
     _logger.info('Destroying WebRTC manager - disabling reconnect');
-    _shouldReconnect = false;
 
     try {
       for (final channel in _dataChannels.values) {

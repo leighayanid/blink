@@ -5,32 +5,33 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Background Colors
-  static const Color bgPrimary = Color(0xFF0A0A0F);
-  static const Color bgSecondary = Color(0xFF13131A);
-  static const Color bgTertiary = Color(0xFF1A1A24);
+  // Background Colors (Command Center / HUD)
+  static const Color bgPrimary = Color(0xFF050508);
+  static const Color bgSecondary = Color(0xFF0A0A0F);
+  static const Color bgTertiary = Color(0xFF0D0D14);
 
-  // Neon Accent Colors
-  static const Color neonCyan = Color(0xFF00FFFF);
-  static const Color neonGreen = Color(0xFF00FF88);
-  static const Color neonPink = Color(0xFFFF0080);
-  static const Color neonPurple = Color(0xFFBB00FF);
+  // HUD Neon Accent Colors
+  static const Color neonOrange = Color(0xFFFF6B00);
+  static const Color neonCyan = Color(0xFF00F0FF);
+  static const Color neonGreen = Color(0xFF00FF41);
+  static const Color neonRed = Color(0xFFFF003C);
   static const Color neonYellow = Color(0xFFFFFF00);
-  static const Color neonOrange = Color(0xFFFF6600);
+  static const Color neonPurple = Color(0xFF9400D3);
 
-  // Text Colors
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB0B0C0);
-  static const Color textTertiary = Color(0xFF70707A);
+  // Text Colors (HUD Optimized)
+  static const Color textPrimary = Color(0xFFE0E6ED);
+  static const Color textSecondary = Color(0xFFB0B8C1);
+  static const Color textTertiary = Color(0xFF8A92A0);
 
-  // Border Colors
-  static const Color borderPrimary = Color(0xFF2A2A35);
-  static const Color borderStrong = Color(0xFF404050);
+  // Border Colors (Technical HUD)
+  static const Color borderPrimary = Color(0xFF1A1D23);
+  static const Color borderStrong = Color(0xFF2D323A);
+  static const Color borderAccent = neonOrange;
 
   // Status Colors
   static const Color statusOnline = neonGreen;
   static const Color statusConnecting = neonCyan;
-  static const Color statusError = neonPink;
+  static const Color statusError = neonRed;
   static const Color statusOffline = textTertiary;
 
   // Light Theme Overrides (for light mode support)

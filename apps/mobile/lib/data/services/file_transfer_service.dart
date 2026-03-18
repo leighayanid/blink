@@ -6,6 +6,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transfer.dart';
 import '../models/file_metadata.dart';
+import '../../core/utils/logger.dart';
 import 'file_saver.dart';
 
 /// File Transfer Service with chunking
@@ -83,7 +84,7 @@ class FileTransferService {
       });
 
       await channel.send(RTCDataChannelMessage(metaMessage));
-      print('[FileTransfer] Sent metadata for: $fileName');
+      AppLogger.transfer.info('[FileTransfer] Sent metadata for: $fileName');
 
       await Future.delayed(const Duration(milliseconds: 100));
 
@@ -135,10 +136,10 @@ class FileTransferService {
         ),
       );
 
-      print('[FileTransfer] File sent successfully: $fileName');
+      AppLogger.transfer.info('[FileTransfer] File sent successfully: $fileName');
       return transferId;
     } catch (error) {
-      print('[FileTransfer] Error sending file: $error');
+      AppLogger.transfer.info('[FileTransfer] Error sending file: $error');
       _updateTransfer(
         transferId,
         transfer.copyWith(status: TransferStatus.failed),
@@ -152,7 +153,7 @@ class FileTransferService {
     channel.onMessage = (message) {
       _handleIncomingData(message);
     };
-    print('[FileTransfer] Receive handler setup for channel');
+    AppLogger.transfer.info('[FileTransfer] Receive handler setup for channel');
   }
 
   /// Handle incoming data (control messages or file chunks)
@@ -167,7 +168,7 @@ class FileTransferService {
         await _handleBinaryChunk(message.binary);
       }
     } catch (error) {
-      print('[FileTransfer] Error handling incoming data: $error');
+      AppLogger.transfer.info('[FileTransfer] Error handling incoming data: $error');
     }
   }
 
@@ -196,7 +197,7 @@ class FileTransferService {
       );
 
       _addTransfer(transfer);
-      print('[FileTransfer] Receiving file: ${metadata.name}');
+      AppLogger.transfer.info('[FileTransfer] Receiving file: ${metadata.name}');
     } else if (type == 'file-chunk' && transferId != null) {
       final operation = _receiveOperations[transferId];
       if (operation != null) {
@@ -273,12 +274,12 @@ class FileTransferService {
         );
       }
 
-      print(
+      AppLogger.transfer.info(
         '[FileTransfer] File received successfully: ${operation.metadata.name}',
       );
       _receiveOperations.remove(transferId);
     } catch (error) {
-      print('[FileTransfer] Error completing file receive: $error');
+      AppLogger.transfer.info('[FileTransfer] Error completing file receive: $error');
       // Issue 9: cleanup operation and mark as failed
       _receiveOperations.remove(transferId);
       final idx = _activeTransfers.indexWhere((t) => t.id == transferId);

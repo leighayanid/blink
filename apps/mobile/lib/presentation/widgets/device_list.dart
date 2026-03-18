@@ -83,7 +83,7 @@ class DeviceList extends StatelessWidget {
             Icon(
               Icons.public,
               size: AppDimensions.iconHuge,
-              color: AppColors.textTertiary.withOpacity(0.5),
+              color: AppColors.textTertiary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppDimensions.space4),
             Text(

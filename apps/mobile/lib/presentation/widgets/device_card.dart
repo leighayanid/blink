@@ -91,7 +91,7 @@ class DeviceCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppDimensions.space4),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.neonCyan.withOpacity(0.03)
+              ? AppColors.neonCyan.withValues(alpha: 0.03)
               : AppColors.bgSecondary,
           border: Border.all(
             color: _getBorderColor(),

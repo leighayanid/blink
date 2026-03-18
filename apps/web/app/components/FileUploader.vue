@@ -1,21 +1,21 @@
 <template>
   <div class="flex flex-col gap-4">
     <div
-      class="relative overflow-hidden rounded-[1.75rem] border-2 border-dashed p-8 text-center transition-all duration-200 sm:p-10"
+      class="relative overflow-hidden rounded-none border-4 p-8 text-center transition-all duration-200 sm:p-10"
       :class="[
         isDragging
-          ? 'border-primary-400 bg-primary-50/80 scale-[1.01] dark:border-primary-400/60 dark:bg-primary-500/12'
-          : 'border-primary-200/80 bg-primary-50/35 dark:border-primary-500/20 dark:bg-white/3',
+          ? 'border-swiss-orange bg-white dark:bg-swiss-paper-dark scale-[1.01]'
+          : 'border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark',
         disabled
-          ? 'cursor-not-allowed opacity-60 border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-white/3'
-          : 'cursor-pointer hover:border-primary-300 hover:bg-primary-50/60 dark:hover:border-primary-500/30 dark:hover:bg-white/5'
+          ? 'cursor-not-allowed opacity-40 bg-swiss-bg dark:bg-swiss-bg-dark border-swiss-grey'
+          : 'cursor-pointer hover:border-swiss-orange'
       ]"
       @drop.prevent="handleDrop"
       @dragover.prevent="handleDragOver"
       @dragleave.prevent="handleDragLeave"
       @click="!disabled && fileInput?.click()"
     >
-      <div class="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary-100/60 to-transparent dark:from-primary-500/10" />
+      <div v-if="isDragging" class="absolute inset-0 bg-swiss-orange/5 animate-pulse" />
 
       <input
         ref="fileInput"
@@ -28,68 +28,65 @@
 
       <div class="relative flex flex-col items-center gap-4">
         <div
-          class="flex size-15 items-center justify-center rounded-[1.35rem] border border-black/5 bg-white/80 text-primary-700 shadow-[0_12px_24px_rgba(255,149,0,0.08)] transition-transform dark:border-white/10 dark:bg-white/5 dark:text-primary-300 sm:size-16 sm:rounded-[1.5rem]"
+          class="flex size-16 items-center justify-center rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark text-swiss-black dark:text-white transition-transform sm:size-20"
           :class="{ 'animate-bounce': isDragging }"
         >
-          <UIcon name="i-lucide-upload" class="size-9" />
+          <UIcon name="i-lucide-upload" class="size-10" />
         </div>
         <div>
-          <p class="text-sm font-semibold tracking-[0.08em] text-neutral-900 dark:text-white">{{ dropZoneTitle }}</p>
-          <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{{ dropZoneSubtitle }}</p>
+          <p class="text-sm font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">{{ dropZoneTitle }}</p>
+          <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">{{ dropZoneSubtitle }}</p>
         </div>
       </div>
     </div>
 
     <Transition name="slide-up">
-      <div v-if="selectedFiles.length > 0" class="flex flex-col gap-3">
-        <div class="flex items-center justify-between">
-          <p class="text-xs font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400">Selected</p>
-          <UBadge color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
-            {{ selectedFiles.length }}
-          </UBadge>
+      <div v-if="selectedFiles.length > 0" class="flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b-2 border-swiss-black dark:border-white pb-2">
+          <p class="text-[10px] font-black uppercase tracking-[0.4em] text-swiss-black dark:text-white">READY_FOR_TRANSMISSION</p>
+          <span class="text-xs font-black text-swiss-black dark:text-white">[{{ selectedFiles.length }}]</span>
         </div>
 
-        <div class="max-h-60 overflow-y-auto rounded-[1.5rem] border border-black/5 bg-white/80 dark:border-white/10 dark:bg-white/5">
+        <div class="max-h-60 overflow-y-auto rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
           <div
             v-for="(file, index) in selectedFiles"
             :key="index"
-            class="flex items-center gap-3 border-b border-black/5 px-4 py-3 last:border-b-0 dark:border-white/10"
+            class="flex items-center gap-4 border-b border-swiss-border dark:border-white/10 px-4 py-3 last:border-b-0"
           >
-            <div class="flex size-10 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-none border border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark text-swiss-black dark:text-white">
               <UIcon name="i-lucide-file" class="size-5 shrink-0" />
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-neutral-950 dark:text-white">{{ file.name }}</p>
-              <p class="text-xs text-neutral-500 dark:text-neutral-400">{{ formatFileSize(file.size) }}</p>
+              <p class="truncate text-xs font-black uppercase tracking-tighter text-swiss-black dark:text-white">{{ file.name }}</p>
+              <p class="text-[9px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">{{ formatFileSize(file.size) }}</p>
             </div>
             <UButton
               icon="i-lucide-x"
               color="neutral"
               variant="ghost"
               size="xs"
-              class="rounded-full"
+              class="rounded-none hover:bg-swiss-orange hover:text-white transition-colors text-swiss-black dark:text-white"
               @click.stop="removeFile(index)"
             />
           </div>
         </div>
 
-        <div class="flex gap-3">
+        <div class="flex gap-2">
           <UButton
-            class="flex-1 rounded-full border-0 bg-primary-600 px-5 font-medium text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400"
+            class="flex-1 rounded-none border-0 bg-swiss-black dark:bg-white py-6 text-sm font-black uppercase tracking-widest text-white dark:text-swiss-black hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all"
             color="neutral"
             variant="solid"
-            icon="i-lucide-send"
             @click="sendFiles"
           >
-            Send {{ selectedFiles.length }} file{{ selectedFiles.length > 1 ? 's' : '' }}
+            INITIATE_TRANSFER
           </UButton>
           <UButton
             color="neutral"
             variant="outline"
-            class="rounded-full px-4 text-[11px] font-medium"
+            class="rounded-none border-2 border-swiss-black dark:border-white px-8 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white"
             @click="clearFiles"
           >
-            Clear
+            CLEAR
           </UButton>
         </div>
       </div>

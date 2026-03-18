@@ -27,6 +27,7 @@ class AppDimensions {
   static const double iconMedium = 20.0;
   static const double iconLarge = 24.0;
   static const double iconXLarge = 32.0;
+  static const double iconExtraLarge = 40.0;
   static const double iconHuge = 48.0;
 
   // Device Card

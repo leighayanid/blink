@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../data/models/device.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../core/utils/logger.dart';
 import '../providers/device_provider.dart';
 import '../providers/webrtc_provider.dart';
 import '../providers/transfer_provider.dart';
@@ -280,7 +282,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       await Future.delayed(const Duration(milliseconds: 500));
       _showSuccess('Refreshed device list');
     } catch (error) {
-      print('[MainScreen] Error refreshing devices: $error');
+      AppLogger.ui.error('Error refreshing devices: $error');
       _showError('Failed to refresh devices');
     }
   }
@@ -377,7 +379,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           Icon(
             Icons.cloud_upload_outlined,
             size: AppDimensions.iconLarge,
-            color: AppColors.textTertiary.withOpacity(0.5),
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: AppDimensions.space2),
           Text(
@@ -390,7 +392,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           Text(
             'Select files above to start transferring',
             style: AppTextStyles.caption.copyWith(
-              color: AppColors.textTertiary.withOpacity(0.7),
+              color: AppColors.textTertiary.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -600,7 +602,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           Icon(
             Icons.hub_outlined,
             size: AppDimensions.iconLarge,
-            color: AppColors.textTertiary.withOpacity(0.5),
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: AppDimensions.space2),
           Text(
@@ -614,7 +616,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  Widget _buildConnectedItem(device) {
+  Widget _buildConnectedItem(Device device) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.space4),
       decoration: BoxDecoration(
@@ -697,7 +699,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  Future<void> _handleDeviceConnect(device) async {
+  Future<void> _handleDeviceConnect(Device device) async {
     if (device.peerId == null) return;
 
     try {
@@ -710,12 +712,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ref.read(deviceProvider.notifier).addConnectedPeer(device.peerId!);
       _showSuccess('Connected to ${device.name}');
     } catch (error) {
-      print('[MainScreen] Error connecting to device: $error');
+      AppLogger.ui.error('Error connecting to device: $error');
       _showError('Failed to connect to ${device.name}');
     }
   }
 
-  Future<void> _handleDeviceDisconnect(device) async {
+  Future<void> _handleDeviceDisconnect(Device device) async {
     if (device.peerId == null) return;
 
     final confirmed = await _showConfirmDialog(
@@ -731,7 +733,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ref.read(deviceProvider.notifier).removeConnectedPeer(device.peerId!);
       _showSuccess('Disconnected from ${device.name}');
     } catch (error) {
-      print('[MainScreen] Error disconnecting from device: $error');
+      AppLogger.ui.error('Error disconnecting from device: $error');
       _showError('Failed to disconnect from ${device.name}');
     }
   }
@@ -761,7 +763,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return result ?? false;
   }
 
-  Future<void> _handleFilesSelected(files) async {
+  Future<void> _handleFilesSelected(List<PlatformFile> files) async {
     final deviceState = ref.read(deviceProvider);
     final fileTransferService = ref.read(fileTransferServiceProvider);
     final webrtcManager = ref.read(webrtcManagerProvider);
@@ -775,8 +777,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     try {
       for (final platformFile in files) {
         if (platformFile.bytes != null && platformFile.name != null) {
-          print(
-            '[MainScreen] Sending file: ${platformFile.name} (${platformFile.size} bytes)',
+          AppLogger.ui.info(
+            'Sending file: ${platformFile.name} (${platformFile.size} bytes)',
           );
 
           for (final peerId in connectedPeers) {
@@ -791,7 +793,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 fileSize: platformFile.size!,
                 channel: dataChannel,
                 onProgress: (progress) {
-                  print('[MainScreen] Transfer progress: $progress%');
+                  AppLogger.ui.info('Transfer progress: $progress%');
                 },
               );
             }
@@ -803,7 +805,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         }
       }
     } catch (error) {
-      print('[MainScreen] Error sending files: $error');
+      AppLogger.ui.error('Error sending files: $error');
       _showError('Failed to send file: $error');
     }
   }

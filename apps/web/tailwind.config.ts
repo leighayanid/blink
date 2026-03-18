@@ -7,196 +7,118 @@ export default {
     './app/**/*.{js,vue,ts}',
     './components/**/*.{js,vue,ts}',
     './pages/**/*.{js,vue,ts}',
+    './app/app.vue',
+    './app/pages/**/*.vue',
+    './app/components/**/*.vue',
+    './app/layouts/**/*.vue',
   ],
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // Synthwave Neon Colors
-        neon: {
-          pink: '#FF00FF',
-          'pink-light': '#FF66FF',
-          'pink-dark': '#CC00CC',
-          cyan: '#00FFFF',
-          'cyan-light': '#66FFFF',
-          'cyan-dark': '#00CCCC',
-          purple: '#9400D3',
-          'purple-light': '#A855F7',
-          'purple-dark': '#7B22B8',
-          yellow: '#FFFF00',
-          green: '#00FF7F',
+        // Swiss Minimalism / Bauhaus Palette
+        swiss: {
+          bg: '#F5F5F5',
+          'bg-dark': '#1A1A1A',
+          paper: '#FFFFFF',
+          'paper-dark': '#262626',
+          black: '#000000',
+          'black-soft': '#1A1A1A',
+          orange: '#FF6B00',
+          'orange-light': '#FF8533',
+          red: '#E63946',
+          grey: '#666666',
+          'grey-light': '#CCCCCC',
+          border: '#000000',
+          'border-dark': '#FFFFFF',
         },
-        // Synthwave Background Colors
-        synth: {
-          black: '#0A0A0F',
-          'dark-purple': '#0D0D1A',
-          purple: '#16162A',
-          'light-purple': '#1E1E3F',
-          card: '#1A1A2E',
+        // HUD / Command Center Colors
+        hud: {
+          bg: '#050508',
+          'bg-soft': '#0A0A0F',
+          'bg-card': '#0D0D14',
+          orange: '#FF6B00',
+          'orange-glow': '#FF8533',
+          cyan: '#00F0FF',
+          'cyan-glow': '#33F3FF',
+          green: '#00FF41',
+          'green-glow': '#33FF67',
+          red: '#FF003C',
+          text: '#E0E6ED',
+          'text-muted': '#8A92A0',
+          border: '#1A1D23',
+          'border-active': '#2D323A',
         },
-        // Status Colors (Neon variants)
-        status: {
-          success: '#00FF7F',
-          error: '#FF3366',
-          warning: '#FFD700',
-          info: '#00FFFF',
-        },
-        // Keep original colors for light mode fallback
+        // Legacy colors kept for compatibility
         primary: {
           50: '#FFF9F0',
           100: '#FFEFDE',
           200: '#FFD580',
           300: '#FFE6B3',
           400: '#FFB84D',
-          500: '#FFA500',
-          600: '#FF9500',
-          700: '#FF8C42',
-          800: '#FF7A3D',
-          900: '#FF6B00',
+          500: '#FF6B00',
+          600: '#E66000',
+          700: '#CC5500',
+          800: '#B34A00',
+          900: '#994000',
         },
-        secondary: {
-          50: '#FFF5EE',
-          100: '#FFEAD0',
-          500: '#FF8C42',
-          600: '#FF7A3D',
-          700: '#E57C2C',
-          900: '#9B4A1A',
-        },
-        accent: {
-          50: '#FFFEF5',
-          100: '#FFFCE8',
-          500: '#FFD700',
-          600: '#FFC107',
-          700: '#E5B800',
-        },
-        neutral: {
-          0: '#FFFFFF',
-          50: '#FFFAF0',
-          100: '#FFF8E7',
-          200: '#F5F5F5',
-          300: '#E8E8E8',
-          400: '#BDBDBD',
-          500: '#9E9E9E',
-          600: '#757575',
-          700: '#616161',
-          800: '#424242',
-          850: '#2D3E52',
-          900: '#212121',
-          950: '#121212',
-        },
-        dark: {
-          primary: '#0A0A0F',
-          secondary: '#16162A',
-          tertiary: '#1E1E3F',
-          text: '#F5F7FA',
-          muted: '#8A92A0',
-        },
-        light: {
-          primary: '#FFFAF0',
-          secondary: '#FFFFFF',
-          tertiary: '#FFF8E7',
-          text: '#2C3E50',
-          muted: '#95A5A6',
-        },
-      },
-      backgroundColor: {
-        'light-primary': '#FFFAF0',
-        'light-secondary': '#FFFFFF',
-        'light-tertiary': '#FFF8E7',
-        'dark-primary': '#0A0A0F',
-        'dark-secondary': '#16162A',
-        'dark-tertiary': '#1E1E3F',
-      },
-      textColor: {
-        'light-primary': '#2C3E50',
-        'light-secondary': '#7F8C8D',
-        'light-muted': '#95A5A6',
-        'dark-primary': '#F5F7FA',
-        'dark-secondary': '#B0B8C1',
-        'dark-muted': '#8A92A0',
-      },
-      boxShadow: {
-        sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
-        md: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        lg: 'var(--shadow-lg)',
-        'primary-glow': '0 0 20px rgba(255, 165, 0, 0.3)',
-        'primary-glow-dark': '0 0 20px rgba(255, 165, 0, 0.2)',
-        // Neon glow shadows
-        'neon-pink': '0 0 10px #FF00FF, 0 0 20px #FF00FF, 0 0 40px #FF00FF',
-        'neon-pink-sm': '0 0 5px #FF00FF, 0 0 10px #FF00FF',
-        'neon-cyan': '0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 40px #00FFFF',
-        'neon-cyan-sm': '0 0 5px #00FFFF, 0 0 10px #00FFFF',
-        'neon-purple': '0 0 10px #9400D3, 0 0 20px #9400D3, 0 0 40px #9400D3',
-        'neon-green': '0 0 10px #00FF7F, 0 0 20px #00FF7F, 0 0 40px #00FF7F',
-        'neon-red': '0 0 10px #FF3366, 0 0 20px #FF3366',
-      },
-      transitionDuration: {
-        300: '300ms',
       },
       fontFamily: {
         orbitron: ['Orbitron', 'sans-serif'],
+        swiss: ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      borderWidth: {
+        DEFAULT: '1px',
+        '0': '0',
+        '2': '2px',
+        '3': '3px',
+        '4': '4px',
+        '6': '6px',
+        '8': '8px',
+      },
+      boxShadow: {
+        'hud-orange': '0 0 15px rgba(255, 107, 0, 0.3), inset 0 0 10px rgba(255, 107, 0, 0.1)',
+        'hud-cyan': '0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.1)',
+        'hud-green': '0 0 15px rgba(0, 255, 65, 0.2), inset 0 0 10px rgba(0, 255, 65, 0.1)',
       },
       animation: {
-        'neon-pulse': 'neonPulse 2s ease-in-out infinite',
-        'scanline': 'scanline 8s linear infinite',
-        'flicker': 'flicker 3s ease-in-out infinite',
-        'text-glow': 'textGlow 2s ease-in-out infinite',
-        'border-pulse': 'borderPulse 2s ease-in-out infinite',
-        'gradient-shift': 'gradientShift 3s ease infinite',
+        'crt-flicker': 'crtFlicker 0.15s infinite',
+        'terminal-scan': 'terminalScan 4s linear infinite',
+        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'glitch': 'glitch 1s linear infinite',
+        'radar': 'radar 4s linear infinite',
       },
       keyframes: {
-        neonPulse: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.7' },
+        crtFlicker: {
+          '0%': { opacity: '0.97' },
+          '100%': { opacity: '1' },
         },
-        scanline: {
+        terminalScan: {
           '0%': { transform: 'translateY(-100%)' },
           '100%': { transform: 'translateY(100%)' },
         },
-        flicker: {
-          '0%, 100%': { opacity: '1' },
-          '41%': { opacity: '1' },
-          '42%': { opacity: '0.8' },
-          '43%': { opacity: '1' },
-          '45%': { opacity: '0.7' },
-          '46%': { opacity: '1' },
+        glitch: {
+          '0%, 100%': { transform: 'translate(0)' },
+          '20%': { transform: 'translate(-2px, 2px)' },
+          '40%': { transform: 'translate(-2px, -2px)' },
+          '60%': { transform: 'translate(2px, 2px)' },
+          '80%': { transform: 'translate(2px, -2px)' },
         },
-        textGlow: {
-          '0%, 100%': {
-            textShadow: '0 0 10px #FF00FF, 0 0 20px #FF00FF',
-          },
-          '50%': {
-            textShadow: '0 0 20px #00FFFF, 0 0 40px #00FFFF',
-          },
-        },
-        borderPulse: {
-          '0%, 100%': {
-            borderColor: '#FF00FF',
-            boxShadow: '0 0 5px #FF00FF',
-          },
-          '50%': {
-            borderColor: '#00FFFF',
-            boxShadow: '0 0 15px #00FFFF',
-          },
-        },
-        gradientShift: {
-          '0%, 100%': { backgroundPosition: '0% 50%' },
-          '50%': { backgroundPosition: '100% 50%' },
+        radar: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
         },
       },
       backgroundImage: {
-        'grid-pattern': `linear-gradient(rgba(255, 0, 255, 0.03) 1px, transparent 1px),
-                         linear-gradient(90deg, rgba(255, 0, 255, 0.03) 1px, transparent 1px)`,
-        'synth-gradient': 'linear-gradient(135deg, #0A0A0F 0%, #16162A 50%, #1E1E3F 100%)',
-        'neon-gradient': 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)',
-        'neon-gradient-alt': 'linear-gradient(135deg, #9400D3 0%, #FF00FF 50%, #00FFFF 100%)',
+        'hud-grid': 'linear-gradient(rgba(26, 29, 35, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(26, 29, 35, 0.5) 1px, transparent 1px)',
+        'hud-scanlines': 'repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0px, rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px)',
       },
     },
   },
   plugins: [
     plugin(function({ addUtilities }) {
       addUtilities({
-        // Text glow utilities
         '.text-glow-pink': {
           textShadow: '0 0 10px #FF00FF, 0 0 20px #FF00FF, 0 0 30px #FF00FF',
         },
@@ -206,7 +128,6 @@ export default {
         '.text-glow-purple': {
           textShadow: '0 0 10px #9400D3, 0 0 20px #9400D3',
         },
-        // Gradient text
         '.text-gradient-neon': {
           background: 'linear-gradient(90deg, #FF00FF, #00FFFF, #FF00FF)',
           backgroundSize: '200% auto',
@@ -214,7 +135,6 @@ export default {
           '-webkit-text-fill-color': 'transparent',
           backgroundClip: 'text',
         },
-        // Border glow utilities
         '.border-glow-pink': {
           borderColor: '#FF00FF',
           boxShadow: '0 0 10px #FF00FF, inset 0 0 10px rgba(255, 0, 255, 0.1)',
@@ -223,14 +143,12 @@ export default {
           borderColor: '#00FFFF',
           boxShadow: '0 0 10px #00FFFF, inset 0 0 10px rgba(0, 255, 255, 0.1)',
         },
-        // Glass effect for synthwave
         '.glass-synth': {
           background: 'rgba(22, 22, 42, 0.8)',
           backdropFilter: 'blur(12px)',
           '-webkit-backdrop-filter': 'blur(12px)',
           border: '1px solid rgba(255, 0, 255, 0.2)',
         },
-        // Grid background
         '.bg-grid': {
           backgroundImage: `linear-gradient(rgba(255, 0, 255, 0.05) 1px, transparent 1px),
                            linear-gradient(90deg, rgba(255, 0, 255, 0.05) 1px, transparent 1px)`,

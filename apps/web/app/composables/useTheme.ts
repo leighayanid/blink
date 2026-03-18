@@ -25,13 +25,13 @@ export function useTheme() {
   }
 
   const themeClasses = computed(() => ({
-    bgPrimary: isDark.value ? 'bg-dark-primary' : 'bg-light-primary',
-    bgSecondary: isDark.value ? 'bg-dark-secondary' : 'bg-light-secondary',
-    bgTertiary: isDark.value ? 'bg-dark-tertiary' : 'bg-light-tertiary',
-    textPrimary: isDark.value ? 'text-dark-primary' : 'text-light-primary',
-    textSecondary: isDark.value ? 'text-dark-secondary' : 'text-light-secondary',
-    textMuted: isDark.value ? 'text-dark-muted' : 'text-light-muted',
-    border: isDark.value ? 'border-neutral-700' : 'border-neutral-200',
+    bgPrimary: isDark.value ? 'bg-swiss-bg-dark' : 'bg-swiss-bg',
+    bgSecondary: isDark.value ? 'bg-swiss-paper-dark' : 'bg-swiss-paper',
+    bgTertiary: isDark.value ? 'bg-swiss-bg-dark' : 'bg-swiss-bg',
+    textPrimary: isDark.value ? 'text-white' : 'text-swiss-black',
+    textSecondary: isDark.value ? 'text-swiss-grey-light' : 'text-swiss-grey',
+    textMuted: isDark.value ? 'text-swiss-grey' : 'text-swiss-grey-light',
+    border: isDark.value ? 'border-swiss-border-dark' : 'border-swiss-black',
   }))
 
   return {

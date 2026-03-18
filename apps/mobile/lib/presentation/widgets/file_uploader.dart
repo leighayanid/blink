@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../core/utils/logger.dart';
 import 'neon_button.dart';
 
 /// File uploader widget
@@ -29,7 +30,7 @@ class FileUploader extends StatelessWidget {
         onFilesSelected(result.files);
       }
     } catch (error) {
-      print('[FileUploader] Error picking files: $error');
+      AppLogger.ui.error('Error picking files', error);
     }
   }
 
@@ -51,11 +52,11 @@ class FileUploader extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            Icons.upload_file,
-            size: AppDimensions.iconHuge,
+            Icons.cloud_upload_outlined,
+            size: AppDimensions.iconExtraLarge,
             color: disabled
-                ? AppColors.textTertiary.withOpacity(0.5)
-                : AppColors.textSecondary,
+                ? AppColors.textTertiary.withValues(alpha: 0.5)
+                : AppColors.neonCyan,
           ),
           const SizedBox(height: AppDimensions.space4),
           Text(

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100">
+  <div class="min-h-screen bg-swiss-bg dark:bg-swiss-bg-dark text-swiss-black dark:text-white transition-colors duration-300">
     <slot />
   </div>
 </template>

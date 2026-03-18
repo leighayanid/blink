@@ -43,32 +43,38 @@ export const useTransfersStore = defineStore('transfers', {
       const index = this.activeTransfers.findIndex(t => t.id === transferId)
       if (index !== -1) {
         const transfer = this.activeTransfers[index]
-        Object.assign(transfer, updates)
+        if (transfer) {
+          Object.assign(transfer, updates)
 
-        // Move to completed/failed if status changed
-        if (updates.status === 'completed') {
-          this.moveToCompleted(index)
-        } else if (updates.status === 'failed') {
-          this.moveToFailed(index)
+          // Move to completed/failed if status changed
+          if (updates.status === 'completed') {
+            this.moveToCompleted(index)
+          } else if (updates.status === 'failed') {
+            this.moveToFailed(index)
+          }
         }
       }
     },
 
     moveToCompleted(index: number) {
-      const [transfer] = this.activeTransfers.splice(index, 1)
-      // Add to beginning of list (newest first)
-      this.completedTransfers.unshift(transfer)
-      // Limit history to 50 items
-      if (this.completedTransfers.length > 50) {
-        this.completedTransfers.pop()
+      const transfer = this.activeTransfers.splice(index, 1)[0]
+      if (transfer) {
+        // Add to beginning of list (newest first)
+        this.completedTransfers.unshift(transfer)
+        // Limit history to 50 items
+        if (this.completedTransfers.length > 50) {
+          this.completedTransfers.pop()
+        }
       }
     },
 
     moveToFailed(index: number) {
-      const [transfer] = this.activeTransfers.splice(index, 1)
-      this.failedTransfers.unshift(transfer)
-      if (this.failedTransfers.length > 50) {
-        this.failedTransfers.pop()
+      const transfer = this.activeTransfers.splice(index, 1)[0]
+      if (transfer) {
+        this.failedTransfers.unshift(transfer)
+        if (this.failedTransfers.length > 50) {
+          this.failedTransfers.pop()
+        }
       }
     },
 

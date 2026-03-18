@@ -28,12 +28,13 @@ export interface FileMetadata {
 }
 
 /** Describes the JSON control frame sent before each binary chunk. */
-export interface ChunkDescriptor {
+export interface ChunkData {
   type: 'file-meta' | 'file-chunk' | 'file-complete'
   transferId: string
   chunkIndex?: number
   totalChunks?: number
   metadata?: FileMetadata
+  data?: Uint8Array | ArrayBuffer | string
 }
 
 export interface SignalingMessage {

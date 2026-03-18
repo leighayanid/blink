@@ -14,7 +14,7 @@ class NeonEffects {
   }) {
     return [
       BoxShadow(
-        color: color.withOpacity(opacity),
+        color: color.withValues(alpha: opacity),
         blurRadius: blurRadius,
         spreadRadius: 0,
       ),
@@ -33,7 +33,7 @@ class NeonEffects {
 
     return [
       BoxShadow(
-        color: color.withOpacity(opacity),
+        color: color.withValues(alpha: opacity),
         blurRadius: blur,
         spreadRadius: animationValue * 4,
       ),
@@ -134,7 +134,7 @@ class NeonEffects {
   }) {
     return [
       Shadow(
-        color: color.withOpacity(opacity),
+        color: color.withValues(alpha: opacity),
         blurRadius: blurRadius,
       ),
     ];

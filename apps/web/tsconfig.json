@@ -1,5 +1,5 @@
 {
-  "extends": "@blink/config/typescript",
+  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
     "paths": {
@@ -8,6 +8,7 @@
     }
   },
   "include": [
+    ".nuxt/nuxt.d.ts",
     "**/*",
     "../../packages/types/src"
   ]

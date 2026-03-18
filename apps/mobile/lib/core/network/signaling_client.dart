@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../data/models/device.dart';
+import '../utils/logger.dart';
 
 /// Signaling Client for device discovery using raw WebSocket
 /// Protocol matches ws.ts on the Nuxt server
@@ -48,13 +49,13 @@ class SignalingClient {
   /// Initialize local device information
   void initDevice(Device device) {
     _localDevice = device;
-    print('[Signaling] Local device initialized: ${device.name}');
+    AppLogger.signaling.info('Local device initialized: ${device.name}');
   }
 
   /// Connect to signaling server
   Future<void> connect() async {
     if (_isConnected) {
-      print('[Signaling] Already connected');
+      AppLogger.signaling.info('Already connected');
       return;
     }
 
@@ -67,20 +68,20 @@ class SignalingClient {
     _channel = null;
 
     try {
-      print('[Signaling] Connecting to: $serverUrl');
+      AppLogger.signaling.info('Connecting to: $serverUrl');
       _channel = WebSocketChannel.connect(Uri.parse(serverUrl));
 
       _channelSub = _channel!.stream.listen(
         _handleMessage,
         onError: (error) {
-          print('[Signaling] WebSocket error: $error');
+          AppLogger.signaling.error('WebSocket error: $error');
           _isConnected = false;
           _connectionStatusController.add(false);
           _errorController.add('WebSocket error: $error');
           _scheduleReconnect();
         },
         onDone: () {
-          print('[Signaling] WebSocket closed');
+          AppLogger.signaling.info('WebSocket closed');
           _isConnected = false;
           _connectionStatusController.add(false);
           _errorController.add('Disconnected from server');
@@ -88,7 +89,7 @@ class SignalingClient {
         },
       );
     } catch (error) {
-      print('[Signaling] Connection error: $error');
+      AppLogger.signaling.error('Connection error: $error');
       _errorController.add('Failed to connect: $error');
       _scheduleReconnect();
     }
@@ -106,7 +107,7 @@ class SignalingClient {
         _reconnectAttempts = 0;
         _reconnectTimer?.cancel();
         _connectionStatusController.add(true);
-        print('[Signaling] Connected, wsId: $_wsId');
+        AppLogger.signaling.success('Connected, wsId: $_wsId');
         if (_localDevice != null) {
           announceDevice(_localDevice!);
         }
@@ -117,7 +118,7 @@ class SignalingClient {
             final device = Device.fromJson(deviceData);
             _handleDeviceDiscovered(device);
           } catch (e) {
-            print('[Signaling] Error parsing peer-joined device: $e');
+            AppLogger.signaling.error('Error parsing peer-joined device: $e');
           }
         }
       } else if (type == 'peer-left') {
@@ -133,14 +134,14 @@ class SignalingClient {
         }
       }
     } catch (error) {
-      print('[Signaling] Error handling message: $error');
+      AppLogger.signaling.error('Error handling message: $error');
     }
   }
 
   /// Schedule automatic reconnection
   void _scheduleReconnect() {
     if (_reconnectAttempts >= _maxReconnectAttempts) {
-      print('[Signaling] Max reconnect attempts reached');
+      AppLogger.signaling.warning('Max reconnect attempts reached');
       _errorController.add(
         'Unable to connect to server after $_maxReconnectAttempts attempts',
       );
@@ -150,8 +151,8 @@ class SignalingClient {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(_reconnectDelay, () {
       _reconnectAttempts++;
-      print(
-        '[Signaling] Reconnect attempt $_reconnectAttempts/$_maxReconnectAttempts',
+      AppLogger.signaling.info(
+        'Reconnect attempt $_reconnectAttempts/$_maxReconnectAttempts',
       );
       connect();
     });
@@ -160,7 +161,7 @@ class SignalingClient {
   /// Announce this device to the network
   void announceDevice(Device device) {
     if (!_isConnected || _channel == null) {
-      print('[Signaling] Cannot announce: not connected');
+      AppLogger.signaling.warning('Cannot announce: not connected');
       _errorController.add('Cannot announce device: not connected to server');
       return;
     }
@@ -170,9 +171,9 @@ class SignalingClient {
         'type': 'announce',
         'deviceInfo': device.toJson(),
       }));
-      print('[Signaling] Announced device: ${device.name}');
+      AppLogger.signaling.info('Announced device: ${device.name}');
     } catch (error) {
-      print('[Signaling] Error announcing device: $error');
+      AppLogger.signaling.error('Error announcing device: $error');
       _errorController.add('Failed to announce device: $error');
     }
   }
@@ -181,7 +182,7 @@ class SignalingClient {
   void setLocalPeerId(String peerId) {
     if (_localDevice != null) {
       _localDevice = _localDevice!.copyWith(peerId: peerId);
-      print('[Signaling] Local peer ID set: $peerId');
+      AppLogger.signaling.info('Local peer ID set: $peerId');
       if (_isConnected) {
         announceDevice(_localDevice!);
       }
@@ -194,7 +195,7 @@ class SignalingClient {
     required Map<String, dynamic> signal,
   }) {
     if (!_isConnected || _channel == null) {
-      print('[Signaling] Cannot send signal: not connected');
+      AppLogger.signaling.warning('Cannot send signal: not connected');
       _errorController.add('Cannot send signal: not connected to server');
       return;
     }
@@ -205,9 +206,9 @@ class SignalingClient {
         'targetPeer': targetPeer,
         'signal': signal,
       }));
-      print('[Signaling] Signal sent to: $targetPeer');
+      AppLogger.signaling.network('Signal sent to: $targetPeer');
     } catch (error) {
-      print('[Signaling] Error sending signal: $error');
+      AppLogger.signaling.error('Error sending signal: $error');
       _errorController.add('Failed to send signal: $error');
     }
   }
@@ -223,10 +224,10 @@ class SignalingClient {
 
     if (existingIndex != -1) {
       _discoveredDevices[existingIndex] = device;
-      print('[Signaling] Device updated: ${device.name}');
+      AppLogger.signaling.info('Device updated: ${device.name}');
     } else {
       _discoveredDevices.add(device);
-      print('[Signaling] New device discovered: ${device.name}');
+      AppLogger.signaling.info('New device discovered: ${device.name}');
     }
 
     _devicesController.add(List.from(_discoveredDevices));
@@ -235,13 +236,13 @@ class SignalingClient {
   /// Handle device left
   void _handleDeviceLeft(String peerId) {
     _discoveredDevices.removeWhere((device) => device.peerId == peerId);
-    print('[Signaling] Device removed: $peerId');
+    AppLogger.signaling.info('Device removed: $peerId');
     _devicesController.add(List.from(_discoveredDevices));
   }
 
   /// Disconnect from signaling server
   Future<void> disconnect() async {
-    print('[Signaling] Disconnecting from server');
+    AppLogger.signaling.info('Disconnecting from server');
 
     _reconnectTimer?.cancel();
     _reconnectTimer = null;

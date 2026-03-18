@@ -7,12 +7,13 @@ import 'app_colors.dart';
 class AppTextStyles {
   AppTextStyles._();
 
-  // Font Families
+  // Font Families (HUD / Command Center)
+  static TextStyle get brand => GoogleFonts.orbitron();
   static TextStyle get mono => GoogleFonts.jetBrainsMono();
-  static TextStyle get sans => GoogleFonts.inter();
+  static TextStyle get sans => mono; // Default everything else to mono for HUD look
 
-  // Display Styles (Large titles)
-  static TextStyle get displayLarge => sans.copyWith(
+  // Display Styles (Large titles - HUD)
+  static TextStyle get displayLarge => brand.copyWith(
         fontSize: 48,
         fontWeight: FontWeight.w900,
         letterSpacing: -2.4,
@@ -20,7 +21,7 @@ class AppTextStyles {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get displayMedium => sans.copyWith(
+  static TextStyle get displayMedium => brand.copyWith(
         fontSize: 36,
         fontWeight: FontWeight.w900,
         letterSpacing: -1.8,
@@ -28,7 +29,7 @@ class AppTextStyles {
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get displaySmall => sans.copyWith(
+  static TextStyle get displaySmall => brand.copyWith(
         fontSize: 24,
         fontWeight: FontWeight.w800,
         letterSpacing: -1.2,
