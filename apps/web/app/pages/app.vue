@@ -9,27 +9,27 @@
 
     <!-- Header (Swiss Style) -->
     <header class="relative z-10 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-black">
-      <div class="mx-auto flex max-w-[1600px] items-stretch justify-between h-20">
-        <NuxtLink to="/" class="flex items-center px-8 border-r-4 border-swiss-black dark:border-white group no-underline">
+      <div class="mx-auto flex max-w-[1600px] flex-col md:flex-row md:items-stretch md:justify-between">
+        <NuxtLink to="/" class="group flex min-h-16 items-center px-5 no-underline sm:px-8 md:border-r-4 md:border-swiss-black dark:border-white">
           <span class="font-black text-3xl uppercase tracking-tighter text-swiss-black dark:text-white group-hover:bg-swiss-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-swiss-black transition-all px-2">BLINK</span>
         </NuxtLink>
 
-        <div class="flex-1 flex items-center px-8 gap-8">
+        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 border-t-4 border-swiss-black px-5 py-4 dark:border-white sm:px-8 md:border-t-0">
            <div class="flex items-center gap-2">
              <span class="size-4 bg-swiss-orange" />
-             <span class="text-xs font-black uppercase tracking-widest text-swiss-black dark:text-white">NODE_ACTIVE</span>
+             <span class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-swiss-black dark:text-white">NODE_ACTIVE</span>
            </div>
-           <div class="h-6 w-px bg-swiss-black dark:bg-white" />
-           <div class="text-xs font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">
+           <div class="hidden h-6 w-px bg-swiss-black dark:bg-white sm:block" />
+           <div class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">
              PEERS_CONNECTED: <span class="text-swiss-black dark:text-white font-black">{{ connectedPeers.size }}</span>
            </div>
         </div>
 
-        <div class="flex items-stretch border-l-4 border-swiss-black dark:border-white">
+        <div class="flex items-stretch border-t-4 border-swiss-black dark:border-white md:border-l-4 md:border-t-0">
           <UButton
             color="neutral"
             variant="ghost"
-            class="rounded-none px-10 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all"
+            class="min-h-14 w-full rounded-none px-6 sm:px-10 text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all"
             @click="toggleTheme"
           >
             THEME_SWAP
@@ -39,25 +39,25 @@
     </header>
 
     <main class="flex-1 flex flex-col min-h-0 relative z-10">
-      <div class="flex-1 flex max-w-[1600px] mx-auto w-full min-h-0 border-x-4 border-swiss-black dark:border-white bg-white/40 dark:bg-swiss-black/40 backdrop-blur-[1px]">
+      <div class="mx-auto flex w-full max-w-[1600px] flex-1 min-h-0 flex-col border-y-4 border-swiss-black bg-white/40 backdrop-blur-[1px] dark:border-white dark:bg-swiss-black/40 sm:border-x-4 sm:border-y-0 xl:flex-row">
         <!-- Sidebar: Nodes -->
-        <div class="w-80 border-r-4 border-swiss-black dark:border-white flex flex-col min-h-0" :class="{ 'hidden xl:flex': activeMobileTab !== 'discover' }">
-          <div class="p-6 border-b-4 border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
-            <h2 class="text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">AVAILABLE_NODES</h2>
+        <div class="min-h-0 w-full shrink-0 flex-col border-b-4 border-swiss-black dark:border-white xl:w-80 xl:border-b-0 xl:border-r-4" :class="activeMobileTab !== 'discover' ? 'hidden xl:flex' : 'flex'">
+          <div class="p-5 sm:p-6 border-b-4 border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
+            <h2 class="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">AVAILABLE_NODES</h2>
           </div>
           
-          <div class="p-6 border-b-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
-            <div v-if="localDevice" class="bg-white dark:bg-swiss-paper-dark border-2 border-swiss-black dark:border-white p-4">
+          <div class="p-4 sm:p-6 border-b-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
+            <div v-if="localDevice" class="bg-white dark:bg-swiss-paper-dark border-2 border-swiss-black dark:border-white p-4 sm:p-5">
                <span class="block text-[10px] font-black text-swiss-orange uppercase mb-2">ORIGIN</span>
-               <p class="text-2xl font-black leading-none uppercase tracking-tighter text-swiss-black dark:text-white">{{ localDevice.name }}</p>
+               <p class="text-xl sm:text-2xl font-black leading-none uppercase tracking-tighter text-swiss-black dark:text-white break-words">{{ localDevice.name }}</p>
                <p class="text-[11px] font-bold text-swiss-grey dark:text-swiss-grey-light mt-2 uppercase tracking-widest">{{ localDevice.platform }}</p>
                
-               <div class="mt-6 pt-4 border-t border-swiss-border dark:border-white/20 flex items-end justify-between">
+               <div class="mt-6 flex flex-col gap-4 border-t border-swiss-border pt-4 dark:border-white/20 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <span class="block text-[9px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">AUTH_CODE</span>
-                    <span class="text-4xl font-black tracking-tighter text-swiss-black dark:text-white">{{ localPairCode }}</span>
+                    <span class="text-3xl sm:text-4xl font-black tracking-tighter text-swiss-black dark:text-white">{{ localPairCode }}</span>
                   </div>
-                  <UButton variant="ghost" size="xs" class="p-0 text-swiss-orange font-black hover:bg-transparent" @click="regeneratePairCode">REFRESH</UButton>
+                  <UButton variant="ghost" size="xs" class="self-start p-0 text-swiss-orange font-black hover:bg-transparent sm:self-auto" @click="regeneratePairCode">REFRESH</UButton>
                </div>
             </div>
           </div>
@@ -75,16 +75,16 @@
         </div>
 
         <!-- Center: Interface -->
-        <div class="flex-1 flex flex-col min-h-0" :class="{ 'hidden xl:flex': activeMobileTab !== 'transfer' }">
-          <div class="p-8 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
-             <div class="flex justify-between items-end">
+        <div class="min-h-0 flex-1 flex-col" :class="activeMobileTab !== 'transfer' ? 'hidden xl:flex' : 'flex'">
+          <div class="p-5 sm:p-6 lg:p-8 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
+             <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                   <h1 class="text-7xl font-black uppercase tracking-tighter leading-[0.8] text-swiss-black dark:text-white">INTERFACE</h1>
-                   <p class="text-xs font-bold uppercase tracking-[0.3em] text-swiss-grey dark:text-swiss-grey-light mt-6">P2P_LOCAL_MESH_PROTOCOL</p>
+                   <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.8] text-swiss-black dark:text-white">INTERFACE</h1>
+                   <p class="mt-4 sm:mt-6 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-swiss-grey dark:text-swiss-grey-light">P2P_LOCAL_MESH_PROTOCOL</p>
                 </div>
-                <div class="text-right">
+                <div class="text-left lg:text-right">
                    <span class="block text-[10px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">TARGET_NODE</span>
-                   <span class="text-3xl font-black uppercase tracking-tighter text-swiss-orange">
+                   <span class="block break-words text-2xl sm:text-3xl font-black uppercase tracking-tighter text-swiss-orange">
                      {{ targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'NO_SELECTION' }}
                    </span>
                 </div>
@@ -92,7 +92,7 @@
           </div>
 
           <!-- Upload Area -->
-          <div class="p-10 border-b-4 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
+          <div class="p-4 sm:p-6 lg:p-10 border-b-4 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
             <FileUploader
               :disabled="connectedPeers.size === 0"
               :connected-count="connectedPeers.size"
@@ -101,58 +101,48 @@
           </div>
 
           <!-- Queue -->
-          <div class="flex-1 flex flex-col min-h-0 p-8 bg-white/40 dark:bg-swiss-black/40">
-            <div class="flex items-center justify-between border-b-4 border-swiss-black dark:border-white pb-4 mb-8">
-               <h3 class="text-sm font-black uppercase tracking-[0.4em] text-swiss-black dark:text-white">TRANSMISSION_QUEUE</h3>
+          <div class="flex-1 flex flex-col min-h-0 p-4 sm:p-6 lg:p-8 bg-white/40 dark:bg-swiss-black/40">
+            <div class="mb-6 sm:mb-8 flex items-center justify-between gap-4 border-b-4 border-swiss-black dark:border-white pb-4">
+               <h3 class="text-xs sm:text-sm font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-swiss-black dark:text-white">TRANSMISSION_QUEUE</h3>
                <span class="text-sm font-black bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-3 py-1">[{{ transfers.length }}]</span>
             </div>
             <TransferProgress :embedded="true" class="flex-1 min-h-0" />
           </div>
         </div>
 
-        <!-- Right: Status -->
-        <div class="hidden 2xl:flex w-80 flex-col border-l-4 border-swiss-black dark:border-white bg-swiss-bg/40 dark:bg-swiss-bg-dark/40 min-h-0">
-           <div class="p-6 border-b-4 border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
-              <h2 class="text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">TELEMETRY_DATA</h2>
-           </div>
-           
-           <div class="p-8 space-y-12">
-              <!-- Geometric Visualizer -->
-              <div class="aspect-square w-full border-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark flex items-center justify-center relative overflow-hidden shadow-[8px_8px_0px_0px_#000] dark:shadow-[8px_8px_0px_0px_#fff]">
-                 <div class="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-[0.05] dark:opacity-[0.1]">
-                    <div v-for="i in 36" :key="i" class="border border-swiss-black dark:border-white" />
-                 </div>
-                 <div class="size-[70%] border-[6px] border-swiss-black dark:border-white rounded-none rotate-45 relative z-10" />
-                 <div class="size-[35%] bg-swiss-orange rounded-none -rotate-45 absolute z-20 animate-pulse" />
-                 <div class="absolute bottom-4 right-4 text-[8px] font-mono text-swiss-grey dark:text-swiss-grey-light uppercase tracking-[0.2em]">Live_Stream</div>
-              </div>
+        <!-- Mobile: Network -->
+        <div v-show="activeMobileTab === 'network'" class="w-full border-t-4 border-swiss-black dark:border-white xl:hidden">
+          <NetworkPanel
+            :local-pair-code="localPairCode"
+            :auto-accept-trusted-files="autoAcceptTrustedFiles"
+            :connected-peer-count="connectedPeers.size"
+            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'NO_SELECTION'"
+            @refresh-pair-code="regeneratePairCode"
+            @toggle-auto-accept="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
+          />
+        </div>
 
-              <div class="space-y-8">
-                 <div class="flex justify-between items-center border-b-2 border-swiss-black dark:border-white pb-3">
-                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">AUTO_AUTH</span>
-                    <span class="text-[11px] font-black uppercase tracking-widest" :class="autoAcceptTrustedFiles ? 'text-swiss-orange' : 'text-swiss-black dark:text-white'">{{ autoAcceptTrustedFiles ? 'ENABLED' : 'DISABLED' }}</span>
-                 </div>
-                 <div class="flex justify-between items-center border-b-2 border-swiss-black dark:border-white pb-3">
-                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">ENCRYPTION</span>
-                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-orange">SECURE_TUNNEL</span>
-                 </div>
-                 <div class="flex justify-between items-center border-b-2 border-swiss-black dark:border-white pb-3">
-                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">PROTOCOL</span>
-                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-black dark:text-white">WebRTC_P2P</span>
-                 </div>
-              </div>
-           </div>
+        <!-- Desktop: Status -->
+        <div class="hidden 2xl:flex w-80 min-h-0 flex-col border-l-4 border-swiss-black dark:border-white">
+          <NetworkPanel
+            :local-pair-code="localPairCode"
+            :auto-accept-trusted-files="autoAcceptTrustedFiles"
+            :connected-peer-count="connectedPeers.size"
+            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'NO_SELECTION'"
+            @refresh-pair-code="regeneratePairCode"
+            @toggle-auto-accept="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
+          />
         </div>
       </div>
     </main>
 
     <!-- Mobile Nav (Swiss Style) -->
-    <nav class="xl:hidden flex border-t border-swiss-border bg-white h-16 items-stretch">
+    <nav class="sticky bottom-0 z-20 flex h-16 items-stretch border-t-4 border-swiss-black bg-white/95 backdrop-blur-sm dark:border-white dark:bg-swiss-black/95 xl:hidden">
       <button
         v-for="tab in mobileTabs"
         :key="tab.value"
-        class="flex-1 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em]"
-        :class="activeMobileTab === tab.value ? 'bg-swiss-black text-white' : 'text-swiss-black'"
+        class="flex flex-1 items-center justify-center px-2 text-[10px] font-black uppercase tracking-[0.2em]"
+        :class="activeMobileTab === tab.value ? 'bg-swiss-black text-white dark:bg-white dark:text-swiss-black' : 'text-swiss-black dark:text-white'"
         @click="activeMobileTab = tab.value as typeof activeMobileTab"
       >
         {{ tab.label }}
@@ -170,8 +160,8 @@
       }"
     >
       <template #content>
-        <div class="p-8 bg-white dark:bg-swiss-black text-swiss-black dark:text-white w-full max-w-lg text-left">
-          <h2 class="text-4xl font-black uppercase tracking-tighter mb-8 border-b-4 border-swiss-black dark:border-white pb-4">INCOMING_DATA</h2>
+        <div class="w-full max-w-lg bg-white p-6 text-left text-swiss-black dark:bg-swiss-black dark:text-white sm:p-8">
+          <h2 class="mb-6 border-b-4 border-swiss-black pb-4 text-3xl font-black uppercase tracking-tighter dark:border-white sm:mb-8 sm:text-4xl">INCOMING_DATA</h2>
           <div v-if="currentIncomingFile" class="border-b-2 border-swiss-black dark:border-white/20 py-6 mb-8">
              <p class="text-sm font-bold uppercase tracking-widest mb-4">Node <span class="font-black underline">{{ currentIncomingFile.peerId }}</span> is requesting transfer.</p>
              <div class="bg-swiss-bg dark:bg-swiss-bg-dark p-6 border-2 border-swiss-black dark:border-white">
@@ -179,9 +169,9 @@
                 <p class="text-xs font-bold text-swiss-grey dark:text-swiss-grey-light mt-4 uppercase tracking-[0.2em]">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
              </div>
           </div>
-          <div class="flex gap-4">
-             <UButton class="flex-1 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black py-6 font-black uppercase tracking-widest hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all" @click="acceptIncomingFile">ACCEPT</UButton>
-             <UButton variant="outline" class="flex-1 rounded-none border-4 border-swiss-black dark:border-white text-swiss-black dark:text-white py-6 font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all" @click="declineIncomingFile">DECLINE</UButton>
+          <div class="flex flex-col gap-4 sm:flex-row">
+             <UButton class="flex-1 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all" @click="acceptIncomingFile">ACCEPT</UButton>
+             <UButton variant="outline" class="flex-1 rounded-none border-4 border-swiss-black dark:border-white text-swiss-black dark:text-white py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all" @click="declineIncomingFile">DECLINE</UButton>
           </div>
         </div>
       </template>
@@ -199,10 +189,10 @@ import { useWebRTC } from '../composables/useWebRTC'
 import { useFileTransfer, type IncomingFilePrompt } from '../composables/useFileTransfer'
 import { useTheme } from '../composables/useTheme'
 
-const { devices, localDevice, isConnected, connect, disconnect, initDevice, setLocalPeerId } = useDeviceDiscovery()
+const { devices, localDevice, connect, disconnect, initDevice, setLocalPeerId } = useDeviceDiscovery()
 const { initPeer, connectToPeer, connections, connectionStates, onConnection, destroy } = useWebRTC()
 const { transfers, sendFile, receiveFile } = useFileTransfer()
-const { isDark, toggleTheme } = useTheme()
+const { toggleTheme } = useTheme()
 const toast = useToast()
 
 const selectedDevice = ref<Device | null>(null)

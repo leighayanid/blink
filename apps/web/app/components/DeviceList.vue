@@ -17,8 +17,8 @@
         :class="getCardClass(device)"
         @click="$emit('select', device)"
       >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
             <!-- Geometric Status Indicator -->
             <div 
               class="size-3 border border-swiss-black dark:border-white rotate-45 shrink-0"
@@ -39,7 +39,7 @@
             size="xs"
             :loading="getDeviceState(device) === 'connecting'"
             :disabled="!device.peerId"
-            class="rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-4 text-[9px] font-black uppercase tracking-widest hover:bg-swiss-orange transition-all"
+            class="w-full shrink-0 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-4 text-[9px] font-black uppercase tracking-widest hover:bg-swiss-orange transition-all sm:w-auto"
             @click.stop="$emit('connect', device)"
           >
             {{ getActionLabel(device) }}

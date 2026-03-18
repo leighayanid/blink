@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4">
     <div
-      class="relative overflow-hidden rounded-none border-4 p-8 text-center transition-all duration-200 sm:p-10"
+      class="relative overflow-hidden rounded-none border-4 p-6 text-center transition-all duration-200 sm:p-8 lg:p-10"
       :class="[
         isDragging
           ? 'border-swiss-orange bg-white dark:bg-swiss-paper-dark scale-[1.01]'
@@ -28,13 +28,13 @@
 
       <div class="relative flex flex-col items-center gap-4">
         <div
-          class="flex size-16 items-center justify-center rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark text-swiss-black dark:text-white transition-transform sm:size-20"
+          class="flex size-14 items-center justify-center rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark text-swiss-black dark:text-white transition-transform sm:size-16 lg:size-20"
           :class="{ 'animate-bounce': isDragging }"
         >
-          <UIcon name="i-lucide-upload" class="size-10" />
+          <UIcon name="i-lucide-upload" class="size-8 sm:size-9 lg:size-10" />
         </div>
         <div>
-          <p class="text-sm font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">{{ dropZoneTitle }}</p>
+          <p class="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">{{ dropZoneTitle }}</p>
           <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">{{ dropZoneSubtitle }}</p>
         </div>
       </div>
@@ -51,7 +51,7 @@
           <div
             v-for="(file, index) in selectedFiles"
             :key="index"
-            class="flex items-center gap-4 border-b border-swiss-border dark:border-white/10 px-4 py-3 last:border-b-0"
+            class="flex items-start gap-3 border-b border-swiss-border dark:border-white/10 px-4 py-3 last:border-b-0 sm:items-center sm:gap-4"
           >
             <div class="flex size-10 shrink-0 items-center justify-center rounded-none border border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark text-swiss-black dark:text-white">
               <UIcon name="i-lucide-file" class="size-5 shrink-0" />
@@ -65,15 +65,15 @@
               color="neutral"
               variant="ghost"
               size="xs"
-              class="rounded-none hover:bg-swiss-orange hover:text-white transition-colors text-swiss-black dark:text-white"
+              class="shrink-0 rounded-none hover:bg-swiss-orange hover:text-white transition-colors text-swiss-black dark:text-white"
               @click.stop="removeFile(index)"
             />
           </div>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row">
           <UButton
-            class="flex-1 rounded-none border-0 bg-swiss-black dark:bg-white py-6 text-sm font-black uppercase tracking-widest text-white dark:text-swiss-black hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all"
+            class="flex-1 rounded-none border-0 bg-swiss-black dark:bg-white py-5 sm:py-6 text-sm font-black uppercase tracking-widest text-white dark:text-swiss-black hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all"
             color="neutral"
             variant="solid"
             @click="sendFiles"
@@ -83,7 +83,7 @@
           <UButton
             color="neutral"
             variant="outline"
-            class="rounded-none border-2 border-swiss-black dark:border-white px-8 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white"
+            class="w-full rounded-none border-2 border-swiss-black dark:border-white px-8 py-4 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white sm:w-auto"
             @click="clearFiles"
           >
             CLEAR

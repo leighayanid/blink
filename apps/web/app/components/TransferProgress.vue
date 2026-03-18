@@ -1,10 +1,10 @@
 <template>
-  <div class="flex min-h-[16rem] flex-col rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark p-6 xl:h-full xl:min-h-0">
-    <div class="mb-6 flex border-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark p-1">
+  <div class="flex min-h-[14rem] flex-col rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark p-4 sm:p-6 xl:h-full xl:min-h-0">
+    <div class="mb-4 sm:mb-6 flex border-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark p-1">
       <button
         v-for="tab in tabs"
         :key="tab.value"
-        class="relative flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+        class="relative flex-1 px-2 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
         :class="activeTab === tab.value
           ? 'bg-swiss-black dark:bg-white text-white dark:text-swiss-black'
           : 'text-swiss-black dark:text-white hover:bg-white dark:hover:bg-swiss-black'"
@@ -58,7 +58,7 @@
           <UButton
             color="neutral"
             variant="outline"
-            class="rounded-none border-2 border-swiss-black dark:border-white px-6 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white"
+            class="w-full rounded-none border-2 border-swiss-black dark:border-white px-6 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white sm:w-auto"
             @click="store.clearCompleted()"
           >
             PURGE_HISTORY

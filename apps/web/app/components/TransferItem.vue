@@ -1,21 +1,23 @@
 <template>
   <div class="w-full rounded-none border-b border-swiss-border dark:border-white/10 bg-white dark:bg-swiss-paper-dark p-4">
-    <div class="flex items-center gap-4">
-      <!-- Geometric Status Indicator -->
-      <div class="flex size-10 shrink-0 items-center justify-center rounded-none border-2 border-swiss-black dark:border-white" :class="statusBubbleClass">
-        <UIcon
-          :name="statusIcon"
-          class="size-5"
-          :class="statusIconClass"
-        />
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+      <div class="flex min-w-0 items-center gap-3 sm:flex-1 sm:gap-4">
+        <!-- Geometric Status Indicator -->
+        <div class="flex size-10 shrink-0 items-center justify-center rounded-none border-2 border-swiss-black dark:border-white" :class="statusBubbleClass">
+          <UIcon
+            :name="statusIcon"
+            class="size-5"
+            :class="statusIconClass"
+          />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-xs font-black uppercase tracking-tighter text-swiss-black dark:text-white">{{ transfer.fileName }}</p>
+          <p class="mt-1 text-[9px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">
+            {{ formatFileSize(transfer.fileSize) }}<span v-if="transfer.speed"> · {{ formatSpeed(transfer.speed) }}</span>
+          </p>
+        </div>
       </div>
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-xs font-black uppercase tracking-tighter text-swiss-black dark:text-white">{{ transfer.fileName }}</p>
-        <p class="text-[9px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light mt-1">
-          {{ formatFileSize(transfer.fileSize) }}<span v-if="transfer.speed"> · {{ formatSpeed(transfer.speed) }}</span>
-        </p>
-      </div>
-      <span class="rounded-none border border-swiss-black dark:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest" :class="statusLabelClass">{{ statusLabel }}</span>
+      <span class="self-start rounded-none border border-swiss-black dark:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest sm:self-auto" :class="statusLabelClass">{{ statusLabel }}</span>
     </div>
 
     <!-- Swiss Progress Bar -->

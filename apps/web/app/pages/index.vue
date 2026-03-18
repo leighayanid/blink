@@ -9,30 +9,30 @@
 
     <!-- Header / Navigation (Strict Grid) -->
     <header class="relative z-10 border-b border-swiss-border">
-      <div class="mx-auto flex max-w-[1400px] items-stretch justify-between h-20">
-        <NuxtLink to="/" class="flex items-center px-8 border-r border-swiss-border group no-underline">
+      <div class="mx-auto flex max-w-[1400px] flex-wrap items-stretch justify-between">
+        <NuxtLink to="/" class="flex min-h-16 items-center px-5 sm:px-8 border-r border-swiss-border group no-underline">
           <span class="font-black text-3xl uppercase tracking-tighter text-swiss-black group-hover:bg-swiss-black group-hover:text-white transition-all px-2">
             BLINK
           </span>
         </NuxtLink>
 
-        <nav class="hidden md:flex flex-1 items-stretch">
+        <nav class="hidden min-h-16 md:flex flex-1 items-stretch">
           <a
             v-for="link in navigationLinks"
             :key="link.label"
             :href="link.href"
-            class="flex items-center px-10 text-xs font-bold uppercase tracking-[0.2em] border-r border-swiss-border text-swiss-black hover:bg-swiss-black hover:text-white transition-all"
+            class="flex items-center px-6 lg:px-10 text-[10px] lg:text-xs font-bold uppercase tracking-[0.2em] border-r border-swiss-border text-swiss-black hover:bg-swiss-black hover:text-white transition-all"
           >
             {{ link.label }}
           </a>
         </nav>
 
-        <div class="flex items-stretch">
+        <div class="flex min-h-16 items-stretch">
           <UButton
             to="/app"
             color="neutral"
             size="lg"
-            class="rounded-none bg-swiss-orange hover:bg-swiss-black text-white px-12 font-bold uppercase tracking-[0.2em] transition-all"
+            class="rounded-none bg-swiss-orange hover:bg-swiss-black text-white px-6 sm:px-8 lg:px-12 font-bold uppercase tracking-[0.2em] transition-all"
           >
             ENTER
           </UButton>
@@ -44,18 +44,18 @@
       <!-- Hero Section (Typography Centric) -->
       <section class="mx-auto max-w-[1400px] border-b border-swiss-border">
         <div class="grid md:grid-cols-12 gap-0">
-          <div class="md:col-span-8 p-8 md:p-16 md:border-r border-swiss-border">
-            <h1 class="text-7xl md:text-[12rem] font-black uppercase leading-[0.8] tracking-[-0.05em] text-swiss-black">
+          <div class="md:col-span-8 p-6 sm:p-8 md:p-16 md:border-r border-swiss-border">
+            <h1 class="text-5xl sm:text-7xl md:text-[12rem] font-black uppercase leading-[0.8] tracking-[-0.05em] text-swiss-black">
               FAST<br/>DIRECT<br/>FILE
             </h1>
-            <div class="mt-12 flex items-start gap-12">
-               <div class="w-24 h-4 bg-swiss-orange" />
-               <p class="max-w-md text-xl font-medium leading-relaxed text-swiss-black/80">
+            <div class="mt-8 flex flex-col gap-6 sm:mt-12 sm:flex-row sm:items-start sm:gap-12">
+               <div class="w-20 sm:w-24 h-4 bg-swiss-orange" />
+               <p class="max-w-md text-base sm:text-xl font-medium leading-relaxed text-swiss-black/80">
                  Blink is a peer-to-peer file transfer utility built on objective clarity and the speed of your local network.
                </p>
             </div>
           </div>
-          <div class="md:col-span-4 p-8 md:p-16 flex flex-col justify-between bg-swiss-paper">
+          <div class="md:col-span-4 p-6 sm:p-8 md:p-16 flex flex-col justify-between gap-8 bg-swiss-paper">
              <div>
                <p class="text-[10px] font-black uppercase tracking-[0.4em] text-swiss-grey mb-8">STATUS_v1.0.4</p>
                <div class="space-y-4">
@@ -70,7 +70,7 @@
               to="/app"
               color="neutral"
               variant="outline"
-              class="rounded-none border-2 border-swiss-black bg-transparent py-6 text-xl font-black uppercase !text-swiss-black hover:!bg-swiss-black hover:!text-white transition-all text-center"
+              class="w-full rounded-none border-2 border-swiss-black bg-transparent py-5 sm:py-6 text-lg sm:text-xl font-black uppercase !text-swiss-black hover:!bg-swiss-black hover:!text-white transition-all text-center"
              >
                LAUNCH APP
              </UButton>
@@ -80,11 +80,11 @@
 
       <!-- Highlights (Grid Layout) -->
       <section class="mx-auto max-w-[1400px] border-b border-swiss-border bg-swiss-paper">
-        <div class="grid md:grid-cols-3 divide-x divide-swiss-border">
+        <div class="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-swiss-border">
           <div
             v-for="highlight in highlights"
             :key="highlight.title"
-            class="p-12 hover:bg-swiss-bg transition-colors"
+            class="p-6 sm:p-8 md:p-12 hover:bg-swiss-bg transition-colors"
           >
             <span class="block text-4xl font-black text-swiss-orange mb-8 tracking-tighter">
                0{{ highlights.indexOf(highlight) + 1 }}
@@ -98,11 +98,11 @@
       <!-- How it Works (Abstract & Clear) -->
       <section id="how-it-works" class="mx-auto max-w-[1400px] border-b border-swiss-border">
         <div class="grid md:grid-cols-2">
-          <div class="p-16 md:border-r border-swiss-border flex flex-col justify-center">
-            <h2 class="text-6xl font-black uppercase leading-none tracking-tighter text-swiss-black mb-12">
+          <div class="p-6 sm:p-8 md:p-16 md:border-r border-swiss-border flex flex-col justify-center">
+            <h2 class="text-4xl sm:text-5xl md:text-6xl font-black uppercase leading-none tracking-tighter text-swiss-black mb-8 sm:mb-12">
                HOW THE LINK<br/>IS FORMED.
             </h2>
-            <div class="space-y-8">
+            <div class="space-y-6 sm:space-y-8">
               <div v-for="(step, idx) in workflowSteps" :key="step.title" class="flex gap-8">
                 <span class="text-xl font-black text-swiss-orange">/{{ idx + 1 }}</span>
                 <div>
@@ -113,26 +113,26 @@
             </div>
           </div>
           
-          <div class="bg-swiss-black p-16 flex items-center justify-center relative overflow-hidden">
+          <div class="bg-swiss-black p-8 sm:p-12 md:p-16 flex items-center justify-center relative overflow-hidden min-h-[18rem] sm:min-h-[24rem]">
              <!-- Abstract Swiss Graphic -->
-             <div class="relative w-80 h-80">
+             <div class="relative h-48 w-48 sm:h-64 sm:w-64 md:h-80 md:w-80">
                 <div class="absolute inset-0 border-8 border-white rounded-full animate-pulse" />
                 <div class="absolute inset-10 border-4 border-swiss-orange" />
                 <div class="absolute inset-20 bg-white" />
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-white transform -rotate-45" />
              </div>
-             <p class="absolute bottom-8 right-8 text-white font-mono text-[10px] tracking-widest opacity-50 uppercase">Visualizing_Link_Tunnel</p>
+             <p class="absolute bottom-6 right-6 text-right text-white font-mono text-[9px] sm:text-[10px] tracking-widest opacity-50 uppercase">Visualizing_Link_Tunnel</p>
           </div>
         </div>
       </section>
 
       <!-- Call to Action -->
-      <section class="mx-auto max-w-[1400px] p-16 text-center">
-         <h2 class="text-8xl font-black uppercase tracking-tighter text-swiss-black mb-12">READY?</h2>
+      <section class="mx-auto max-w-[1400px] p-8 sm:p-12 md:p-16 text-center">
+         <h2 class="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-swiss-black mb-8 sm:mb-12">READY?</h2>
          <UButton
             to="/app"
             size="xl"
-            class="rounded-none bg-swiss-black px-24 py-8 text-2xl font-black uppercase text-white hover:bg-swiss-orange transition-all"
+            class="w-full sm:w-auto rounded-none bg-swiss-black px-10 sm:px-16 md:px-24 py-6 sm:py-8 text-lg sm:text-2xl font-black uppercase text-white hover:bg-swiss-orange transition-all"
          >
            START TRANSFER
          </UButton>
@@ -141,7 +141,7 @@
 
     <!-- Footer Labels -->
     <footer class="border-t border-swiss-border py-12">
-      <div class="mx-auto max-w-[1400px] px-8 flex justify-between items-center text-[10px] font-black uppercase tracking-[0.4em] text-swiss-grey">
+      <div class="mx-auto flex max-w-[1400px] flex-col items-center gap-3 px-6 text-center text-[10px] font-black uppercase tracking-[0.4em] text-swiss-grey sm:px-8 md:flex-row md:justify-between md:text-left">
         <span>Blink / Local Mesh Network</span>
         <span>Est. 2026</span>
         <span>No Cloud. No upload.</span>
@@ -151,10 +151,6 @@
 </template>
 
 <script setup lang="ts">
-import { useTheme } from '../composables/useTheme'
-
-const { isDark, toggleTheme } = useTheme()
-
 const navigationLinks = [
   { label: 'Principles', href: '#features' },
   { label: 'Process', href: '#how-it-works' },
