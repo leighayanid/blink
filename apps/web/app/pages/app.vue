@@ -1,430 +1,194 @@
 <template>
-  <div class="relative flex h-screen flex-col overflow-hidden bg-light-primary text-light-primary dark:bg-dark-primary dark:text-dark-primary">
-    <div class="pointer-events-none absolute inset-0">
-      <div class="absolute inset-x-0 top-0 h-[26rem] bg-[radial-gradient(circle_at_top,rgba(255,149,0,0.24),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,149,0,0.18),transparent_60%)]" />
-      <div class="absolute left-[-10rem] top-1/3 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(255,215,0,0.18),transparent_68%)] blur-3xl dark:bg-[radial-gradient(circle,rgba(255,140,66,0.14),transparent_68%)]" />
-      <div class="absolute bottom-[-7rem] right-[-6rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(255,149,0,0.18),transparent_70%)] blur-3xl dark:bg-[radial-gradient(circle,rgba(255,149,0,0.14),transparent_70%)]" />
-      <div class="app-grid absolute inset-0 opacity-45 dark:opacity-25" />
+  <div class="relative min-h-screen bg-swiss-bg dark:bg-swiss-bg-dark font-swiss text-swiss-black dark:text-white selection:bg-swiss-black selection:text-white flex flex-col overflow-x-hidden">
+    <!-- Swiss Grid System (Overlay) -->
+    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+       <div class="grid grid-cols-4 md:grid-cols-12 gap-0 h-full w-full opacity-[0.05] dark:opacity-[0.08]">
+         <div v-for="i in 12" :key="i" class="border-r border-swiss-black dark:border-white h-full" />
+       </div>
     </div>
 
-    <main class="relative z-10 flex min-h-0 flex-1 flex-col p-3 md:p-4">
-      <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-black/5 bg-white/68 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-        <div class="hidden items-center justify-between border-b border-black/5 px-6 py-4 xl:flex dark:border-white/10">
-          <div class="flex items-center gap-4">
-            <div>
-              <p class="font-orbitron text-lg font-black uppercase tracking-[0.32em] text-neutral-950 dark:text-white">Blink</p>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400">Local file transfer</p>
+    <!-- Header (Swiss Style) -->
+    <header class="relative z-10 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-black">
+      <div class="mx-auto flex max-w-[1600px] items-stretch justify-between h-20">
+        <NuxtLink to="/" class="flex items-center px-8 border-r-4 border-swiss-black dark:border-white group no-underline">
+          <span class="font-black text-3xl uppercase tracking-tighter text-swiss-black dark:text-white group-hover:bg-swiss-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-swiss-black transition-all px-2">BLINK</span>
+        </NuxtLink>
+
+        <div class="flex-1 flex items-center px-8 gap-8">
+           <div class="flex items-center gap-2">
+             <span class="size-4 bg-swiss-orange" />
+             <span class="text-xs font-black uppercase tracking-widest text-swiss-black dark:text-white">NODE_ACTIVE</span>
+           </div>
+           <div class="h-6 w-px bg-swiss-black dark:bg-white" />
+           <div class="text-xs font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">
+             PEERS_CONNECTED: <span class="text-swiss-black dark:text-white font-black">{{ connectedPeers.size }}</span>
+           </div>
+        </div>
+
+        <div class="flex items-stretch border-l-4 border-swiss-black dark:border-white">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            class="rounded-none px-10 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all"
+            @click="toggleTheme"
+          >
+            THEME_SWAP
+          </UButton>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 flex flex-col min-h-0 relative z-10">
+      <div class="flex-1 flex max-w-[1600px] mx-auto w-full min-h-0 border-x-4 border-swiss-black dark:border-white bg-white/40 dark:bg-swiss-black/40 backdrop-blur-[1px]">
+        <!-- Sidebar: Nodes -->
+        <div class="w-80 border-r-4 border-swiss-black dark:border-white flex flex-col min-h-0" :class="{ 'hidden xl:flex': activeMobileTab !== 'discover' }">
+          <div class="p-6 border-b-4 border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
+            <h2 class="text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">AVAILABLE_NODES</h2>
+          </div>
+          
+          <div class="p-6 border-b-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
+            <div v-if="localDevice" class="bg-white dark:bg-swiss-paper-dark border-2 border-swiss-black dark:border-white p-4">
+               <span class="block text-[10px] font-black text-swiss-orange uppercase mb-2">ORIGIN</span>
+               <p class="text-2xl font-black leading-none uppercase tracking-tighter text-swiss-black dark:text-white">{{ localDevice.name }}</p>
+               <p class="text-[11px] font-bold text-swiss-grey dark:text-swiss-grey-light mt-2 uppercase tracking-widest">{{ localDevice.platform }}</p>
+               
+               <div class="mt-6 pt-4 border-t border-swiss-border dark:border-white/20 flex items-end justify-between">
+                  <div>
+                    <span class="block text-[9px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">AUTH_CODE</span>
+                    <span class="text-4xl font-black tracking-tighter text-swiss-black dark:text-white">{{ localPairCode }}</span>
+                  </div>
+                  <UButton variant="ghost" size="xs" class="p-0 text-swiss-orange font-black hover:bg-transparent" @click="regeneratePairCode">REFRESH</UButton>
+               </div>
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
-            <div class="rounded-full border border-black/5 bg-white/72 px-4 py-2 text-sm text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-300">
-              <span class="font-semibold text-neutral-950 dark:text-white">{{ connectedPeers.size }}</span>
-              active connection{{ connectedPeers.size === 1 ? '' : 's' }}
-            </div>
-            <div class="rounded-full border border-black/5 bg-white/72 px-4 py-2 text-sm text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-300">
-              <span class="font-semibold text-neutral-950 dark:text-white">{{ transfers.length }}</span>
-              transfer{{ transfers.length === 1 ? '' : 's' }} tracked
-            </div>
+          <div class="flex-1 overflow-y-auto p-4 bg-white/60 dark:bg-swiss-black/20">
+            <DeviceList
+              :devices="devices"
+              :selected-device="selectedDevice"
+              :connected-peers="connectedPeers"
+              :connection-states="connectionStates"
+              @select="handleDeviceSelect"
+              @connect="handleDeviceConnect"
+            />
           </div>
         </div>
 
-        <div class="flex min-h-0 flex-1 gap-3 p-3 md:p-4">
-          <div
-            class="flex w-full flex-col overflow-y-auto rounded-[1.75rem] border border-black/5 bg-white/78 shadow-[0_14px_44px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-black/10 xl:w-72 xl:shrink-0 2xl:w-80"
-            :class="{ 'hidden xl:flex': activeMobileTab !== 'discover' }"
-          >
-            <div class="relative border-b border-black/5 px-5 py-5 dark:border-white/10">
-              <ClientOnly>
-                <UButton
-                  :icon="isDark ? 'i-lucide-sun-medium' : 'i-lucide-moon-star'"
-                  color="neutral"
-                  variant="outline"
-                  size="xs"
-                  class="absolute right-4 top-4 rounded-full"
-                  @click="toggleTheme"
-                />
-                <template #fallback>
-                  <div class="absolute right-4 top-4 size-7 rounded-full border border-neutral-200 dark:border-neutral-700" />
-                </template>
-              </ClientOnly>
-
-              <div class="flex items-start gap-3 pr-12">
+        <!-- Center: Interface -->
+        <div class="flex-1 flex flex-col min-h-0" :class="{ 'hidden xl:flex': activeMobileTab !== 'transfer' }">
+          <div class="p-8 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
+             <div class="flex justify-between items-end">
                 <div>
-                  <h1 class="font-orbitron text-2xl font-black uppercase tracking-[0.28em] text-neutral-950 dark:text-white">Blink</h1>
+                   <h1 class="text-7xl font-black uppercase tracking-tighter leading-[0.8] text-swiss-black dark:text-white">INTERFACE</h1>
+                   <p class="text-xs font-bold uppercase tracking-[0.3em] text-swiss-grey dark:text-swiss-grey-light mt-6">P2P_LOCAL_MESH_PROTOCOL</p>
                 </div>
-              </div>
-
-              <div class="mt-4 flex items-center gap-2">
-                <UBadge color="success" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
-                  <span class="mr-1.5 inline-block size-1.5 rounded-full bg-green-500" />
-                  ONLINE
-                </UBadge>
-              </div>
-            </div>
-
-            <div class="px-5 py-4">
-              <div class="rounded-[1.5rem] border border-primary-200/60 bg-gradient-to-br from-primary-50/90 via-white to-secondary-50/70 p-4 dark:border-primary-500/20 dark:from-primary-500/10 dark:via-white/5 dark:to-white/0">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-xs font-medium tracking-[0.08em] text-primary-700 dark:text-primary-300">This device</p>
-                    <div v-if="localDevice" class="mt-2">
-                      <p class="text-base font-semibold text-neutral-950 dark:text-white">{{ localDevice.name }}</p>
-                      <p class="text-sm text-neutral-500 dark:text-neutral-400">{{ localDevice.platform }}</p>
-                    </div>
-                  </div>
-                  <UBadge
-                    :color="isConnected ? 'success' : 'neutral'"
-                    variant="soft"
-                    class="rounded-full px-3 py-1 text-[11px] font-medium"
-                  >
-                    {{ isConnected ? 'LIVE' : 'OFFLINE' }}
-                  </UBadge>
+                <div class="text-right">
+                   <span class="block text-[10px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">TARGET_NODE</span>
+                   <span class="text-3xl font-black uppercase tracking-tighter text-swiss-orange">
+                     {{ targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'NO_SELECTION' }}
+                   </span>
                 </div>
-
-                <div v-if="localDevice" class="mt-4 flex items-center gap-2">
-                  <span class="inline-flex rounded-full border border-black/5 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-neutral-600 dark:border-white/10 dark:bg-white/5 dark:text-neutral-300">
-                    {{ getPlatformLabel(localDevice.platform) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex flex-1 flex-col px-5 pb-5 min-h-0">
-              <div class="mb-3 flex items-center justify-between">
-                <p class="text-xs font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400">Devices</p>
-                <UBadge color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
-                  {{ devices.length }}
-                </UBadge>
-              </div>
-              <DeviceList
-                :devices="devices"
-                :selected-device="selectedDevice"
-                :connected-peers="connectedPeers"
-                :connection-states="connectionStates"
-                @select="handleDeviceSelect"
-                @connect="handleDeviceConnect"
-              />
-            </div>
+             </div>
           </div>
 
-          <div
-            class="flex min-w-0 flex-1 flex-col overflow-y-auto rounded-[1.75rem] border border-black/5 bg-white/76 shadow-[0_16px_48px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-black/10"
-            :class="{ 'hidden xl:flex': activeMobileTab !== 'transfer' }"
-          >
-            <div class="border-b border-black/5 px-5 py-5 dark:border-white/10 sm:px-6">
-              <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                <div class="max-w-2xl">
-                  <p class="text-xs font-medium tracking-[0.08em] text-primary-700 dark:text-primary-300">Transfer</p>
-                  <h2 class="mt-2 text-2xl font-semibold text-neutral-950 dark:text-white">Send files</h2>
-                </div>
-
-                <div class="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:min-w-[24rem] lg:max-w-[30rem] lg:flex-1">
-                  <div class="min-w-[8.75rem] rounded-[1.25rem] border border-black/5 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 sm:min-w-0 sm:px-4">
-                    <div class="flex items-center gap-2">
-                      <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200">
-                        <UIcon name="i-lucide-target" class="size-4" />
-                      </div>
-                      <div class="min-w-0">
-                        <p class="hidden text-[11px] font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400 sm:block">Target</p>
-                        <p class="truncate text-sm font-semibold text-neutral-950 dark:text-white">
-                          {{ targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'No device' }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="min-w-[7.5rem] rounded-[1.25rem] border border-black/5 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 sm:min-w-0 sm:px-4">
-                    <div class="flex items-center gap-2">
-                      <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">
-                        <UIcon name="i-lucide-shield-check" class="size-4" />
-                      </div>
-                      <div class="min-w-0">
-                        <p class="hidden text-[11px] font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400 sm:block">Trusted</p>
-                        <p class="text-sm font-semibold text-neutral-950 dark:text-white">{{ trustedPeerIds.length }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="min-w-[7.5rem] rounded-[1.25rem] border border-black/5 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 sm:min-w-0 sm:px-4">
-                    <div class="flex items-center gap-2">
-                      <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
-                        <UIcon name="i-lucide-list" class="size-4" />
-                      </div>
-                      <div class="min-w-0">
-                        <p class="hidden text-[11px] font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400 sm:block">Queue</p>
-                        <p class="text-sm font-semibold text-neutral-950 dark:text-white">{{ transfers.length }}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="border-b border-black/5 px-5 py-5 dark:border-white/10 sm:px-6">
-              <div class="mb-3 flex items-center justify-between">
-                <p class="text-xs font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400">Files</p>
-                <div class="rounded-full border border-black/5 bg-white/80 px-3 py-1 text-[11px] text-neutral-500 dark:border-white/10 dark:bg-white/5 dark:text-neutral-400">
-                  {{ connectedPeers.size === 0 ? 'Connect a device' : connectedPeers.size + ' destination' + (connectedPeers.size === 1 ? '' : 's') }}
-                </div>
-              </div>
-              <FileUploader
-                :disabled="connectedPeers.size === 0"
-                :connected-count="connectedPeers.size"
-                @files-selected="handleFilesSelected"
-              />
-            </div>
-
-            <div class="flex flex-col px-5 py-5 sm:px-6 xl:min-h-0 xl:flex-1">
-              <div class="mb-3 flex items-center justify-between">
-                <p class="text-xs font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400">Queue</p>
-                <UBadge v-if="transfers.length > 0" color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
-                  {{ transfers.length }}
-                </UBadge>
-              </div>
-              <TransferProgress :embedded="true" class="min-h-[16rem] xl:min-h-0 xl:flex-1" />
-            </div>
+          <!-- Upload Area -->
+          <div class="p-10 border-b-4 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
+            <FileUploader
+              :disabled="connectedPeers.size === 0"
+              :connected-count="connectedPeers.size"
+              @files-selected="handleFilesSelected"
+            />
           </div>
 
-          <div
-            class="flex w-full flex-col overflow-y-auto rounded-[1.75rem] border border-black/5 bg-white/78 shadow-[0_14px_44px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-black/10 xl:w-72 xl:shrink-0 2xl:w-80"
-            :class="{ 'hidden xl:flex': activeMobileTab !== 'network' }"
-          >
-            <div class="flex flex-1 flex-col px-5 py-5 min-h-0">
-              <div class="mb-4 flex items-center justify-between">
-                <div>
-                  <p class="text-xs font-medium tracking-[0.08em] text-primary-700 dark:text-primary-300">Connections</p>
-                  <h3 class="mt-1 text-xl font-semibold text-neutral-950 dark:text-white">Active devices</h3>
-                </div>
-                <UBadge color="neutral" variant="soft" class="rounded-full px-3 py-1 text-[11px] font-medium">
-                  {{ connectedPeers.size }}
-                </UBadge>
-              </div>
-
-              <div class="mb-4 rounded-[1.5rem] border border-primary-200/70 bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-4 dark:border-primary-500/20 dark:from-primary-500/10 dark:via-white/5 dark:to-white/0">
-                <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <p class="text-xs font-medium tracking-[0.08em] text-primary-700 dark:text-primary-300">Pairing code</p>
-                    <p class="mt-2 font-orbitron text-2xl font-black tracking-[0.28em] text-neutral-950 dark:text-white">{{ localPairCode }}</p>
-                  </div>
-                  <UButton
-                    size="xs"
-                    color="neutral"
-                    variant="outline"
-                    class="rounded-full border-primary-200 bg-white/70 px-3 text-[11px] font-medium text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300"
-                    @click="regeneratePairCode"
-                  >
-                    Refresh
-                  </UButton>
-                </div>
-                <p class="mt-3 text-sm leading-6 text-neutral-600 dark:text-neutral-300">Share this to trust a new device.</p>
-                <div class="mt-4 flex items-center justify-between gap-3 rounded-[1rem] border border-black/5 bg-white/70 px-3 py-3 dark:border-white/10 dark:bg-white/5">
-                  <div>
-                    <p class="text-[11px] font-medium tracking-[0.08em] text-neutral-500 dark:text-neutral-400">Auto-accept</p>
-                    <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Trusted devices skip prompts.</p>
-                  </div>
-                  <UButton
-                    size="xs"
-                    color="neutral"
-                    :variant="autoAcceptTrustedFiles ? 'solid' : 'outline'"
-                    class="rounded-full px-3 text-[11px] font-medium"
-                    :class="autoAcceptTrustedFiles
-                      ? 'border-0 bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400'
-                      : 'border-primary-200 bg-white/70 text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300'"
-                    @click="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
-                  >
-                    {{ autoAcceptTrustedFiles ? 'ON' : 'OFF' }}
-                  </UButton>
-                </div>
-              </div>
-
-              <div
-                v-if="connectedPeers.size === 0 && !hasConnectingDevices"
-                class="flex h-52 flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-primary-200/80 bg-primary-50/40 text-center dark:border-primary-500/20 dark:bg-white/3"
-              >
-                <UIcon name="i-lucide-wifi-off" class="mb-3 size-8 text-primary-300 dark:text-primary-400/70" />
-                <p class="text-sm font-semibold text-neutral-600 dark:text-neutral-300">No connections</p>
-                <p class="mt-2 max-w-[14rem] text-sm text-neutral-500 dark:text-neutral-400">Connect a device to start sharing.</p>
-              </div>
-
-              <div v-else class="flex flex-col gap-3">
-                <div
-                  v-for="device in connectingDevices"
-                  :key="'connecting-' + device.id"
-                  class="flex items-center justify-between rounded-[1.25rem] border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-800/40 dark:bg-sky-950/20"
-                >
-                  <div class="flex min-w-0 items-center gap-3">
-                    <UBadge color="neutral" variant="outline" class="rounded-full text-[11px] font-medium">
-                      {{ getPlatformLabel(device.platform) }}
-                    </UBadge>
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-neutral-900 dark:text-white">{{ device.name }}</p>
-                      <p class="text-xs text-sky-700 dark:text-sky-300">Connecting…</p>
-                    </div>
-                  </div>
-                  <span class="text-xs font-medium text-sky-600 dark:text-sky-300">Connecting</span>
-                </div>
-
-                <div
-                  v-for="device in devices.filter(d => connectedPeers.has(d.peerId!))"
-                  :key="device.id"
-                  class="rounded-[1.5rem] border p-4 transition-colors"
-                  :class="targetPeerForSend === device.peerId
-                    ? 'border-primary-300 bg-primary-50/80 dark:border-primary-500/30 dark:bg-primary-500/10'
-                    : 'border-black/5 bg-white/80 dark:border-white/10 dark:bg-white/5'"
-                >
-                  <div class="mb-3 flex items-center gap-3">
-                    <UBadge
-                      color="neutral"
-                      variant="outline"
-                      class="rounded-full text-[11px] font-medium"
-                    >
-                      {{ getPlatformLabel(device.platform) }}
-                    </UBadge>
-                    <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-semibold text-neutral-950 dark:text-white">{{ device.name }}</p>
-                      <p class="text-xs text-neutral-500 dark:text-neutral-400">
-                        {{ isTrustedPeer(device.peerId) ? 'Trusted' : 'Needs trust' }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="mb-3 flex flex-wrap items-center gap-2">
-                    <UBadge
-                      :color="isTrustedPeer(device.peerId) ? 'success' : 'neutral'"
-                      variant="soft"
-                      class="rounded-full px-3 py-1 text-[11px] font-medium"
-                    >
-                      {{ isTrustedPeer(device.peerId) ? 'TRUSTED' : 'UNTRUSTED' }}
-                    </UBadge>
-                    <span
-                      v-if="targetPeerForSend === device.peerId"
-                      class="rounded-full border border-primary-200 bg-white/70 px-3 py-1 text-[11px] font-medium text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300"
-                    >
-                      TARGET
-                    </span>
-                  </div>
-
-                  <div v-if="device.peerId && !isTrustedPeer(device.peerId)" class="mb-3 flex gap-2">
-                    <UInput
-                      :model-value="pairCodeInputs[device.peerId] || ''"
-                      placeholder="ENTER CODE"
-                      size="xs"
-                      inputmode="numeric"
-                      maxlength="6"
-                      class="flex-1"
-                      @update:model-value="updatePairCodeInput(device.peerId, String($event ?? ''))"
-                      @keydown.enter.prevent="pairWithPeer(device.peerId)"
-                    />
-                    <UButton
-                      size="xs"
-                      color="neutral"
-                      variant="solid"
-                      class="rounded-full border-0 bg-primary-600 px-4 text-xs font-medium text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-neutral-950 dark:hover:bg-primary-400"
-                      :loading="isPairingPeer(device.peerId)"
-                      @click="pairWithPeer(device.peerId)"
-                    >
-                      Pair
-                    </UButton>
-                  </div>
-
-                  <div class="flex flex-wrap gap-2">
-                    <UButton
-                      v-if="connectedPeers.size > 1"
-                      size="xs"
-                      color="neutral"
-                      variant="outline"
-                      class="rounded-full px-3 text-[11px] font-medium"
-                      :class="targetPeerForSend === device.peerId
-                        ? 'border-primary-200 bg-white/70 text-primary-700 dark:border-primary-500/30 dark:bg-white/5 dark:text-primary-300'
-                        : ''"
-                      @click="targetPeerForSend = device.peerId ?? null"
-                    >
-                      {{ targetPeerForSend === device.peerId ? 'SELECTED' : 'SELECT' }}
-                    </UButton>
-                    <UButton
-                      v-if="device.peerId && isTrustedPeer(device.peerId)"
-                      size="xs"
-                      color="warning"
-                      variant="outline"
-                      class="rounded-full px-3 text-[11px] font-medium"
-                      @click="untrustPeer(device.peerId)"
-                    >
-                      Untrust
-                    </UButton>
-                    <UButton
-                      size="xs"
-                      color="neutral"
-                      variant="outline"
-                      class="rounded-full px-3 text-[11px] font-medium"
-                      @click="handleDeviceDisconnect(device)"
-                    >
-                      Disconnect
-                    </UButton>
-                  </div>
-                </div>
-              </div>
+          <!-- Queue -->
+          <div class="flex-1 flex flex-col min-h-0 p-8 bg-white/40 dark:bg-swiss-black/40">
+            <div class="flex items-center justify-between border-b-4 border-swiss-black dark:border-white pb-4 mb-8">
+               <h3 class="text-sm font-black uppercase tracking-[0.4em] text-swiss-black dark:text-white">TRANSMISSION_QUEUE</h3>
+               <span class="text-sm font-black bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-3 py-1">[{{ transfers.length }}]</span>
             </div>
+            <TransferProgress :embedded="true" class="flex-1 min-h-0" />
           </div>
+        </div>
+
+        <!-- Right: Status -->
+        <div class="hidden 2xl:flex w-80 flex-col border-l-4 border-swiss-black dark:border-white bg-swiss-bg/40 dark:bg-swiss-bg-dark/40 min-h-0">
+           <div class="p-6 border-b-4 border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
+              <h2 class="text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">TELEMETRY_DATA</h2>
+           </div>
+           
+           <div class="p-8 space-y-12">
+              <!-- Geometric Visualizer -->
+              <div class="aspect-square w-full border-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark flex items-center justify-center relative overflow-hidden shadow-[8px_8px_0px_0px_#000] dark:shadow-[8px_8px_0px_0px_#fff]">
+                 <div class="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-[0.05] dark:opacity-[0.1]">
+                    <div v-for="i in 36" :key="i" class="border border-swiss-black dark:border-white" />
+                 </div>
+                 <div class="size-[70%] border-[6px] border-swiss-black dark:border-white rounded-none rotate-45 relative z-10" />
+                 <div class="size-[35%] bg-swiss-orange rounded-none -rotate-45 absolute z-20 animate-pulse" />
+                 <div class="absolute bottom-4 right-4 text-[8px] font-mono text-swiss-grey dark:text-swiss-grey-light uppercase tracking-[0.2em]">Live_Stream</div>
+              </div>
+
+              <div class="space-y-8">
+                 <div class="flex justify-between items-center border-b-2 border-swiss-black dark:border-white pb-3">
+                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">AUTO_AUTH</span>
+                    <span class="text-[11px] font-black uppercase tracking-widest" :class="autoAcceptTrustedFiles ? 'text-swiss-orange' : 'text-swiss-black dark:text-white'">{{ autoAcceptTrustedFiles ? 'ENABLED' : 'DISABLED' }}</span>
+                 </div>
+                 <div class="flex justify-between items-center border-b-2 border-swiss-black dark:border-white pb-3">
+                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">ENCRYPTION</span>
+                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-orange">SECURE_TUNNEL</span>
+                 </div>
+                 <div class="flex justify-between items-center border-b-2 border-swiss-black dark:border-white pb-3">
+                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">PROTOCOL</span>
+                    <span class="text-[11px] font-black uppercase tracking-widest text-swiss-black dark:text-white">WebRTC_P2P</span>
+                 </div>
+              </div>
+           </div>
         </div>
       </div>
     </main>
 
-    <nav class="xl:hidden relative z-10 flex shrink-0 border-t border-primary-200/50 bg-[rgba(255,248,231,0.92)] px-2 py-2 backdrop-blur-xl dark:border-primary-500/15 dark:bg-[rgba(22,22,42,0.92)] pb-safe">
+    <!-- Mobile Nav (Swiss Style) -->
+    <nav class="xl:hidden flex border-t border-swiss-border bg-white h-16 items-stretch">
       <button
         v-for="tab in mobileTabs"
         :key="tab.value"
-        class="relative flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-3 text-[11px] font-medium tracking-[0.12em] transition-colors"
-        :class="activeMobileTab === tab.value
-          ? 'bg-white/80 text-primary-700 shadow-[0_12px_28px_rgba(255,149,0,0.12)] dark:bg-primary-500/14 dark:text-primary-300'
-          : 'text-neutral-600 dark:text-neutral-400'"
+        class="flex-1 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.2em]"
+        :class="activeMobileTab === tab.value ? 'bg-swiss-black text-white' : 'text-swiss-black'"
         @click="activeMobileTab = tab.value as typeof activeMobileTab"
       >
-        <UIcon :name="tab.icon" class="size-5" />
-        <span>{{ tab.label }}</span>
-        <span
-          v-if="tab.value === 'network' && connectedPeers.size > 0"
-          class="absolute right-[18%] top-2 flex size-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-semibold text-white dark:bg-primary-500 dark:text-neutral-950"
-        >{{ connectedPeers.size }}</span>
+        {{ tab.label }}
       </button>
     </nav>
 
-    <UModal :open="isIncomingFileModalOpen" :close="false" :prevent-close="true">
-      <template #header>
-        <div class="flex items-center gap-3">
-          <div class="flex size-9 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">
-            <UIcon name="i-lucide-download" class="size-5" />
+    <!-- Incoming Modal -->
+    <UModal 
+      :open="isIncomingFileModalOpen" 
+      :close="false" 
+      :prevent-close="true" 
+      :ui="{ 
+        content: 'rounded-none border-4 border-swiss-black dark:border-white',
+        container: 'flex min-h-full items-center justify-center p-4 text-center'
+      }"
+    >
+      <template #content>
+        <div class="p-8 bg-white dark:bg-swiss-black text-swiss-black dark:text-white w-full max-w-lg text-left">
+          <h2 class="text-4xl font-black uppercase tracking-tighter mb-8 border-b-4 border-swiss-black dark:border-white pb-4">INCOMING_DATA</h2>
+          <div v-if="currentIncomingFile" class="border-b-2 border-swiss-black dark:border-white/20 py-6 mb-8">
+             <p class="text-sm font-bold uppercase tracking-widest mb-4">Node <span class="font-black underline">{{ currentIncomingFile.peerId }}</span> is requesting transfer.</p>
+             <div class="bg-swiss-bg dark:bg-swiss-bg-dark p-6 border-2 border-swiss-black dark:border-white">
+                <p class="text-2xl font-black uppercase tracking-tighter break-all">{{ currentIncomingFile.metadata.name }}</p>
+                <p class="text-xs font-bold text-swiss-grey dark:text-swiss-grey-light mt-4 uppercase tracking-[0.2em]">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
+             </div>
           </div>
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">Incoming</p>
-            <h3 class="text-sm font-semibold text-neutral-950 dark:text-white">Approve file</h3>
+          <div class="flex gap-4">
+             <UButton class="flex-1 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black py-6 font-black uppercase tracking-widest hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all" @click="acceptIncomingFile">ACCEPT</UButton>
+             <UButton variant="outline" class="flex-1 rounded-none border-4 border-swiss-black dark:border-white text-swiss-black dark:text-white py-6 font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all" @click="declineIncomingFile">DECLINE</UButton>
           </div>
-        </div>
-      </template>
-
-      <div v-if="currentIncomingFile" class="space-y-4">
-        <p class="text-sm leading-6 text-neutral-600 dark:text-neutral-300"><span class="font-semibold text-neutral-950 dark:text-white">{{ currentIncomingFile.peerId }}</span> is sending a file.</p>
-        <div class="rounded-[1.25rem] border border-primary-200/80 bg-primary-50/70 p-4 dark:border-primary-500/20 dark:bg-primary-500/10">
-          <p class="break-all text-base font-semibold text-neutral-950 dark:text-white">{{ currentIncomingFile.metadata.name }}</p>
-          <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
-        </div>
-        <p v-if="incomingFileQueue.length > 1" class="text-xs text-neutral-500 dark:text-neutral-400">
-          {{ incomingFileQueue.length - 1 }} more file request(s) waiting.
-        </p>
-      </div>
-
-      <template #footer>
-        <div class="flex w-full justify-end gap-2">
-          <UButton color="neutral" variant="outline" class="rounded-full px-4" @click="declineIncomingFile">
-            Decline
-          </UButton>
-          <UButton color="success" class="rounded-full px-4" @click="acceptIncomingFile">
-            Accept
-          </UButton>
         </div>
       </template>
     </UModal>
-
   </div>
 </template>
+
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useStorage } from '@vueuse/core'
@@ -472,9 +236,9 @@ const isIncomingFileModalOpen = computed(() => currentIncomingFile.value !== nul
 const trustedPeerSet = computed(() => new Set(trustedPeerIds.value))
 
 const mobileTabs = [
-  { value: 'discover', label: 'DISCOVER', icon: 'i-lucide-compass' },
-  { value: 'transfer', label: 'TRANSFER', icon: 'i-lucide-plus' },
-  { value: 'network', label: 'NETWORK', icon: 'i-lucide-wifi' }
+  { value: 'discover', label: 'NODES', icon: '' },
+  { value: 'transfer', label: 'INTERFACE', icon: '' },
+  { value: 'network', label: 'NETWORK', icon: '' }
 ]
 
 const connectingDevices = computed(() =>
@@ -779,18 +543,6 @@ onMounted(async () => {
   connect()
 })
 
-const getPlatformLabel = (platform: string): string => {
-  const map: Record<string, string> = {
-    Windows: 'WIN',
-    macOS: 'MAC',
-    Linux: 'LIN',
-    Android: 'AND',
-    iOS: 'IOS',
-    Unknown: 'UNK'
-  }
-  return map[platform] || 'UNK'
-}
-
 const handleDeviceSelect = (device: Device) => {
   selectedDevice.value = device
 }
@@ -849,19 +601,3 @@ onUnmounted(() => {
   destroy()
 })
 </script>
-
-<style scoped>
-.app-grid {
-  background-image:
-    linear-gradient(to right, rgb(15 23 42 / 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(15 23 42 / 0.05) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(circle at top, black 24%, rgb(0 0 0 / 0.8) 55%, transparent 100%);
-}
-
-.dark .app-grid {
-  background-image:
-    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
-}
-</style>

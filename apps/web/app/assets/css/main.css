@@ -1,10 +1,6 @@
 @import 'tailwindcss';
+@config '../../../tailwind.config.ts';
 @import '@nuxt/ui';
-
-/* ─── Custom CSS Variables ─────────────────────────── */
-:root {
-  --font-display: 'Orbitron', sans-serif;
-}
 
 /* ─── Scrollbar ─────────────────────────────────────── */
 ::-webkit-scrollbar {
