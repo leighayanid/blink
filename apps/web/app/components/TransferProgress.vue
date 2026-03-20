@@ -26,7 +26,7 @@
         v-if="activeTransfers.length === 0"
         class="flex min-h-40 items-center justify-center border-2 border-dashed border-swiss-border dark:border-white/20 bg-swiss-bg dark:bg-swiss-bg-dark xl:h-full xl:min-h-44"
       >
-        <p class="text-[10px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">NO_ACTIVE_TRANSFERS</p>
+        <p class="text-[10px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">No transfers in progress</p>
       </div>
       <div v-else class="flex flex-col gap-4">
         <div
@@ -44,7 +44,7 @@
         v-if="historyTransfers.length === 0"
         class="flex min-h-40 items-center justify-center border-2 border-dashed border-swiss-border dark:border-white/20 bg-swiss-bg dark:bg-swiss-bg-dark xl:h-full xl:min-h-44"
       >
-        <p class="text-[10px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">HISTORY_EMPTY</p>
+        <p class="text-[10px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">No past transfers yet</p>
       </div>
       <div v-else class="flex flex-col gap-4">
         <div
@@ -61,7 +61,7 @@
             class="w-full rounded-none border-2 border-swiss-black dark:border-white px-6 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white sm:w-auto"
             @click="store.clearCompleted()"
           >
-            PURGE_HISTORY
+            CLEAR HISTORY
           </UButton>
         </div>
       </div>
@@ -85,8 +85,8 @@ const { activeTransfers, completedTransfers, failedTransfers, activeCount } = st
 const activeTab = ref<'active' | 'history'>('active')
 
 const tabs = [
-  { label: 'Active', value: 'active' as const },
-  { label: 'History', value: 'history' as const }
+  { label: 'In Progress', value: 'active' as const },
+  { label: 'Past', value: 'history' as const }
 ]
 
 const historyTransfers = computed(() => [

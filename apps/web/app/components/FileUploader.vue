@@ -43,7 +43,7 @@
     <Transition name="slide-up">
       <div v-if="selectedFiles.length > 0" class="flex flex-col gap-4">
         <div class="flex items-center justify-between border-b-2 border-swiss-black dark:border-white pb-2">
-          <p class="text-[10px] font-black uppercase tracking-[0.4em] text-swiss-black dark:text-white">READY_FOR_TRANSMISSION</p>
+          <p class="text-[10px] font-black uppercase tracking-[0.4em] text-swiss-black dark:text-white">FILES READY TO SEND</p>
           <span class="text-xs font-black text-swiss-black dark:text-white">[{{ selectedFiles.length }}]</span>
         </div>
 
@@ -78,7 +78,7 @@
             variant="solid"
             @click="sendFiles"
           >
-            INITIATE_TRANSFER
+            SEND FILES
           </UButton>
           <UButton
             color="neutral"
@@ -86,7 +86,7 @@
             class="w-full rounded-none border-2 border-swiss-black dark:border-white px-8 py-4 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white sm:w-auto"
             @click="clearFiles"
           >
-            CLEAR
+            CLEAR LIST
           </UButton>
         </div>
       </div>
@@ -114,14 +114,14 @@ const selectedFiles = ref<File[]>([])
 const isDragging = ref(false)
 
 const dropZoneTitle = computed(() => {
-  if (props.disabled) return 'Connect device'
-  if (isDragging.value) return 'Drop files here'
-  return 'Drop files'
+  if (props.disabled) return 'Connect a device first'
+  if (isDragging.value) return 'Drop files to send'
+  return 'Drop or choose files'
 })
 
 const dropZoneSubtitle = computed(() => {
-  if (props.disabled) return 'Choose a device first'
-  return 'Up to 1GB per file'
+  if (props.disabled) return 'Pick a nearby device before sending'
+  return 'Click to browse or drag files here. Up to 1GB per file.'
 })
 
 const handleDragOver = () => {
@@ -142,7 +142,7 @@ const validateAndAddFiles = (files: File[]) => {
   const validFiles: File[] = []
   files.forEach(file => {
     if (file.size > MAX_FILE_SIZE) {
-      toast.add({ title: `"${file.name}" exceeds the 1GB limit`, color: 'error' })
+      toast.add({ title: `"${file.name}" is larger than 1GB`, color: 'error' })
     } else {
       validFiles.push(file)
     }

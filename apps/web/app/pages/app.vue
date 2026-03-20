@@ -17,11 +17,11 @@
         <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 border-t-4 border-swiss-black px-5 py-4 dark:border-white sm:px-8 md:border-t-0">
            <div class="flex items-center gap-2">
              <span class="size-4 bg-swiss-orange" />
-             <span class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-swiss-black dark:text-white">NODE_ACTIVE</span>
+             <span class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-swiss-black dark:text-white">THIS DEVICE</span>
            </div>
            <div class="hidden h-6 w-px bg-swiss-black dark:bg-white sm:block" />
            <div class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">
-             PEERS_CONNECTED: <span class="text-swiss-black dark:text-white font-black">{{ connectedPeers.size }}</span>
+             CONNECTED DEVICES: <span class="text-swiss-black dark:text-white font-black">{{ connectedPeers.size }}</span>
            </div>
         </div>
 
@@ -32,7 +32,7 @@
             class="min-h-14 w-full rounded-none px-6 sm:px-10 text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all"
             @click="toggleTheme"
           >
-            THEME_SWAP
+            THEME
           </UButton>
         </div>
       </div>
@@ -43,21 +43,21 @@
         <!-- Sidebar: Nodes -->
         <div class="min-h-0 w-full shrink-0 flex-col border-b-4 border-swiss-black dark:border-white xl:w-80 xl:border-b-0 xl:border-r-4" :class="activeMobileTab !== 'discover' ? 'hidden xl:flex' : 'flex'">
           <div class="p-5 sm:p-6 border-b-4 border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
-            <h2 class="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">AVAILABLE_NODES</h2>
+            <h2 class="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">NEARBY DEVICES</h2>
           </div>
           
           <div class="p-4 sm:p-6 border-b-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
             <div v-if="localDevice" class="bg-white dark:bg-swiss-paper-dark border-2 border-swiss-black dark:border-white p-4 sm:p-5">
-               <span class="block text-[10px] font-black text-swiss-orange uppercase mb-2">ORIGIN</span>
+               <span class="block text-[10px] font-black text-swiss-orange uppercase mb-2">YOUR DEVICE</span>
                <p class="text-xl sm:text-2xl font-black leading-none uppercase tracking-tighter text-swiss-black dark:text-white break-words">{{ localDevice.name }}</p>
                <p class="text-[11px] font-bold text-swiss-grey dark:text-swiss-grey-light mt-2 uppercase tracking-widest">{{ localDevice.platform }}</p>
                
                <div class="mt-6 flex flex-col gap-4 border-t border-swiss-border pt-4 dark:border-white/20 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <span class="block text-[9px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">AUTH_CODE</span>
+                    <span class="block text-[9px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">PAIR CODE</span>
                     <span class="text-3xl sm:text-4xl font-black tracking-tighter text-swiss-black dark:text-white">{{ localPairCode }}</span>
                   </div>
-                  <UButton variant="ghost" size="xs" class="self-start p-0 text-swiss-orange font-black hover:bg-transparent sm:self-auto" @click="regeneratePairCode">REFRESH</UButton>
+                  <UButton variant="ghost" size="xs" class="self-start p-0 text-swiss-orange font-black hover:bg-transparent sm:self-auto" @click="regeneratePairCode">NEW CODE</UButton>
                </div>
             </div>
           </div>
@@ -79,13 +79,13 @@
           <div class="p-5 sm:p-6 lg:p-8 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
              <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                   <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.8] text-swiss-black dark:text-white">INTERFACE</h1>
-                   <p class="mt-4 sm:mt-6 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-swiss-grey dark:text-swiss-grey-light">P2P_LOCAL_MESH_PROTOCOL</p>
+                   <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.8] text-swiss-black dark:text-white">SEND FILES</h1>
+                   <p class="mt-4 sm:mt-6 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-swiss-grey dark:text-swiss-grey-light">CONNECT A DEVICE, THEN CHOOSE FILES TO SEND</p>
                 </div>
                 <div class="text-left lg:text-right">
-                   <span class="block text-[10px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">TARGET_NODE</span>
+                   <span class="block text-[10px] font-black text-swiss-grey dark:text-swiss-grey-light uppercase mb-1">SEND TO</span>
                    <span class="block break-words text-2xl sm:text-3xl font-black uppercase tracking-tighter text-swiss-orange">
-                     {{ targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'NO_SELECTION' }}
+                     {{ targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'CHOOSE A DEVICE' }}
                    </span>
                 </div>
              </div>
@@ -103,7 +103,7 @@
           <!-- Queue -->
           <div class="flex-1 flex flex-col min-h-0 p-4 sm:p-6 lg:p-8 bg-white/40 dark:bg-swiss-black/40">
             <div class="mb-6 sm:mb-8 flex items-center justify-between gap-4 border-b-4 border-swiss-black dark:border-white pb-4">
-               <h3 class="text-xs sm:text-sm font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-swiss-black dark:text-white">TRANSMISSION_QUEUE</h3>
+               <h3 class="text-xs sm:text-sm font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-swiss-black dark:text-white">TRANSFERS</h3>
                <span class="text-sm font-black bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-3 py-1">[{{ transfers.length }}]</span>
             </div>
             <TransferProgress :embedded="true" class="flex-1 min-h-0" />
@@ -116,7 +116,7 @@
             :local-pair-code="localPairCode"
             :auto-accept-trusted-files="autoAcceptTrustedFiles"
             :connected-peer-count="connectedPeers.size"
-            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'NO_SELECTION'"
+            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'No device selected'"
             @refresh-pair-code="regeneratePairCode"
             @toggle-auto-accept="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
           />
@@ -128,7 +128,7 @@
             :local-pair-code="localPairCode"
             :auto-accept-trusted-files="autoAcceptTrustedFiles"
             :connected-peer-count="connectedPeers.size"
-            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'NO_SELECTION'"
+            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'No device selected'"
             @refresh-pair-code="regeneratePairCode"
             @toggle-auto-accept="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
           />
@@ -161,16 +161,16 @@
     >
       <template #content>
         <div class="w-full max-w-lg bg-white p-6 text-left text-swiss-black dark:bg-swiss-black dark:text-white sm:p-8">
-          <h2 class="mb-6 border-b-4 border-swiss-black pb-4 text-3xl font-black uppercase tracking-tighter dark:border-white sm:mb-8 sm:text-4xl">INCOMING_DATA</h2>
+          <h2 class="mb-6 border-b-4 border-swiss-black pb-4 text-3xl font-black uppercase tracking-tighter dark:border-white sm:mb-8 sm:text-4xl">INCOMING FILE</h2>
           <div v-if="currentIncomingFile" class="border-b-2 border-swiss-black dark:border-white/20 py-6 mb-8">
-             <p class="text-sm font-bold uppercase tracking-widest mb-4">Node <span class="font-black underline">{{ currentIncomingFile.peerId }}</span> is requesting transfer.</p>
+             <p class="mb-4 text-sm font-bold uppercase tracking-widest"><span class="font-black underline">{{ getDeviceNameByPeerId(currentIncomingFile.peerId) }}</span> wants to send you a file.</p>
              <div class="bg-swiss-bg dark:bg-swiss-bg-dark p-6 border-2 border-swiss-black dark:border-white">
                 <p class="text-2xl font-black uppercase tracking-tighter break-all">{{ currentIncomingFile.metadata.name }}</p>
                 <p class="text-xs font-bold text-swiss-grey dark:text-swiss-grey-light mt-4 uppercase tracking-[0.2em]">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
              </div>
           </div>
           <div class="flex flex-col gap-4 sm:flex-row">
-             <UButton class="flex-1 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all" @click="acceptIncomingFile">ACCEPT</UButton>
+             <UButton class="flex-1 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all" @click="acceptIncomingFile">ACCEPT FILE</UButton>
              <UButton variant="outline" class="flex-1 rounded-none border-4 border-swiss-black dark:border-white text-swiss-black dark:text-white py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all" @click="declineIncomingFile">DECLINE</UButton>
           </div>
         </div>
@@ -226,9 +226,9 @@ const isIncomingFileModalOpen = computed(() => currentIncomingFile.value !== nul
 const trustedPeerSet = computed(() => new Set(trustedPeerIds.value))
 
 const mobileTabs = [
-  { value: 'discover', label: 'NODES', icon: '' },
-  { value: 'transfer', label: 'INTERFACE', icon: '' },
-  { value: 'network', label: 'NETWORK', icon: '' }
+  { value: 'discover', label: 'DEVICES', icon: '' },
+  { value: 'transfer', label: 'SEND', icon: '' },
+  { value: 'network', label: 'STATUS', icon: '' }
 ]
 
 const connectingDevices = computed(() =>
@@ -333,7 +333,7 @@ const resolveIncomingFilePrompt = (accepted: boolean) => {
 
   if (!accepted) {
     toast.add({
-      title: `Declined ${current.metadata.name}`,
+      title: `You declined ${current.metadata.name}`,
       color: 'warning'
     })
   }
@@ -369,19 +369,19 @@ const clearAllPendingPairRequests = () => {
 
 const pairWithPeer = (peerId: string) => {
   if (isTrustedPeer(peerId)) {
-    toast.add({ title: `${getDeviceNameByPeerId(peerId)} is already trusted`, color: 'info' })
+    toast.add({ title: `${getDeviceNameByPeerId(peerId)} is already verified`, color: 'info' })
     return
   }
 
   const connection = connections.value.get(peerId)
   if (!connection || !connection.open) {
-    toast.add({ title: 'Device is not connected', color: 'error' })
+    toast.add({ title: 'Connect the device first', color: 'error' })
     return
   }
 
   const targetCode = normalizePairCode(pairCodeInputs.value[peerId] || '')
   if (targetCode.length !== 6) {
-    toast.add({ title: 'Enter a valid 6-digit pairing code', color: 'warning' })
+    toast.add({ title: 'Enter the 6-digit code from the other device', color: 'warning' })
     return
   }
 
@@ -389,7 +389,7 @@ const pairWithPeer = (peerId: string) => {
   const timeoutId = setTimeout(() => {
     clearPendingPairRequest(requestId)
     toast.add({
-      title: `Pairing timed out with ${getDeviceNameByPeerId(peerId)}`,
+      title: `Pairing timed out for ${getDeviceNameByPeerId(peerId)}`,
       color: 'warning'
     })
   }, PAIR_REQUEST_TIMEOUT_MS)
@@ -405,7 +405,7 @@ const pairWithPeer = (peerId: string) => {
   }))
 
   toast.add({
-    title: `Pair request sent to ${getDeviceNameByPeerId(peerId)}`,
+    title: `Sent a pairing request to ${getDeviceNameByPeerId(peerId)}`,
     color: 'info'
   })
 }
@@ -447,7 +447,7 @@ const setupPairingHandlers = (connection: DataConnection) => {
       }))
 
       toast.add({
-        title: `Paired with ${getDeviceNameByPeerId(connection.peer)}`,
+        title: `${getDeviceNameByPeerId(connection.peer)} is verified`,
         color: 'success'
       })
       return
@@ -463,7 +463,7 @@ const setupPairingHandlers = (connection: DataConnection) => {
 
       if (requesterCode !== localPairCode.value) {
         toast.add({
-          title: `Pairing validation failed with ${getDeviceNameByPeerId(connection.peer)}`,
+          title: `Could not verify ${getDeviceNameByPeerId(connection.peer)}`,
           color: 'error'
         })
         return
@@ -472,7 +472,7 @@ const setupPairingHandlers = (connection: DataConnection) => {
       addTrustedPeer(connection.peer)
       pairCodeInputs.value[connection.peer] = ''
       toast.add({
-        title: `Paired with ${getDeviceNameByPeerId(connection.peer)}`,
+        title: `${getDeviceNameByPeerId(connection.peer)} is verified`,
         color: 'success'
       })
       return
@@ -486,7 +486,7 @@ const setupPairingHandlers = (connection: DataConnection) => {
 
       clearPendingPairRequest(requestId)
       toast.add({
-        title: `Pairing failed with ${getDeviceNameByPeerId(connection.peer)}`,
+        title: `Could not verify ${getDeviceNameByPeerId(connection.peer)}`,
         description: reason,
         color: 'warning'
       })
@@ -540,11 +540,12 @@ const handleDeviceSelect = (device: Device) => {
 const handleDeviceConnect = async (device: Device) => {
   try {
     if (!device.peerId) {
-      toast.add({ title: 'Cannot connect: Device has no peer ID', color: 'error' })
+      toast.add({ title: 'This device is not ready to connect yet', color: 'error' })
       return
     }
     if (connectedPeers.value.has(device.peerId)) {
       targetPeerForSend.value = device.peerId ?? null
+      toast.add({ title: `Ready to send to ${device.name}`, color: 'info' })
       return
     }
     await connectToPeer(device.peerId)
@@ -553,7 +554,7 @@ const handleDeviceConnect = async (device: Device) => {
     toast.add({ title: `Connected to ${device.name}`, color: 'success' })
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
-    toast.add({ title: `Failed to connect to ${device.name}: ${errorMsg}`, color: 'error' })
+    toast.add({ title: `Could not connect to ${device.name}`, description: errorMsg, color: 'error' })
   }
 }
 

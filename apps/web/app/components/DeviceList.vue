@@ -5,8 +5,8 @@
       class="flex flex-col items-center justify-center border-4 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark px-6 py-12 text-center"
     >
       <UIcon name="i-lucide-globe" class="mb-4 size-10 text-swiss-orange" />
-      <p class="text-xs font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">NO_DEVICES_FOUND</p>
-      <p class="mt-4 max-w-[15rem] text-[10px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light leading-relaxed">Ensure nearby devices are on the same local network.</p>
+      <p class="text-xs font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">NO DEVICES FOUND</p>
+      <p class="mt-4 max-w-[15rem] text-[10px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light leading-relaxed">Open Blink on another device and keep both devices on the same network.</p>
     </div>
 
     <div v-else class="flex flex-col border-t-2 border-swiss-black dark:border-white">
@@ -77,15 +77,15 @@ const getDeviceState = (device: Device): ConnectionState | undefined => {
 const getStatusText = (device: Device): string => {
   const state = getDeviceState(device)
   if (state === 'connecting') return 'Connecting'
-  if (state === 'error') return 'Failed'
-  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'Connected'
-  return 'Available'
+  if (state === 'error') return 'Could not connect'
+  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'Connected and ready'
+  return 'Available to connect'
 }
 
 const getActionLabel = (device: Device): string => {
   const state = getDeviceState(device)
   if (state === 'connecting') return 'CONNECTING'
-  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'DISCONNECT'
+  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'SEND HERE'
   return 'CONNECT'
 }
 

@@ -34,7 +34,7 @@
             size="lg"
             class="rounded-none bg-swiss-orange hover:bg-swiss-black text-white px-6 sm:px-8 lg:px-12 font-bold uppercase tracking-[0.2em] transition-all"
           >
-            ENTER
+            OPEN APP
           </UButton>
         </div>
       </div>
@@ -46,12 +46,12 @@
         <div class="grid md:grid-cols-12 gap-0">
           <div class="md:col-span-8 p-6 sm:p-8 md:p-16 md:border-r border-swiss-border">
             <h1 class="text-5xl sm:text-7xl md:text-[12rem] font-black uppercase leading-[0.8] tracking-[-0.05em] text-swiss-black">
-              FAST<br/>DIRECT<br/>FILE
+              SEND<br/>FILES<br/>FAST
             </h1>
             <div class="mt-8 flex flex-col gap-6 sm:mt-12 sm:flex-row sm:items-start sm:gap-12">
                <div class="w-20 sm:w-24 h-4 bg-swiss-orange" />
                <p class="max-w-md text-base sm:text-xl font-medium leading-relaxed text-swiss-black/80">
-                 Blink is a peer-to-peer file transfer utility built on objective clarity and the speed of your local network.
+                 Blink lets you send files straight to another device on the same network. No upload, no cloud, no account.
                </p>
             </div>
           </div>
@@ -79,7 +79,7 @@
       </section>
 
       <!-- Highlights (Grid Layout) -->
-      <section class="mx-auto max-w-[1400px] border-b border-swiss-border bg-swiss-paper">
+      <section id="why-blink" class="mx-auto max-w-[1400px] border-b border-swiss-border bg-swiss-paper">
         <div class="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-swiss-border">
           <div
             v-for="highlight in highlights"
@@ -95,12 +95,12 @@
         </div>
       </section>
 
-      <!-- How it Works (Abstract & Clear) -->
+      <!-- How it Works -->
       <section id="how-it-works" class="mx-auto max-w-[1400px] border-b border-swiss-border">
         <div class="grid md:grid-cols-2">
           <div class="p-6 sm:p-8 md:p-16 md:border-r border-swiss-border flex flex-col justify-center">
             <h2 class="text-4xl sm:text-5xl md:text-6xl font-black uppercase leading-none tracking-tighter text-swiss-black mb-8 sm:mb-12">
-               HOW THE LINK<br/>IS FORMED.
+               SEND IN<br/>3 STEPS.
             </h2>
             <div class="space-y-6 sm:space-y-8">
               <div v-for="(step, idx) in workflowSteps" :key="step.title" class="flex gap-8">
@@ -121,20 +121,20 @@
                 <div class="absolute inset-20 bg-white" />
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-white transform -rotate-45" />
              </div>
-             <p class="absolute bottom-6 right-6 text-right text-white font-mono text-[9px] sm:text-[10px] tracking-widest opacity-50 uppercase">Visualizing_Link_Tunnel</p>
+             <p class="absolute bottom-6 right-6 text-right text-white font-mono text-[9px] sm:text-[10px] tracking-widest opacity-50 uppercase">Direct device link</p>
           </div>
         </div>
       </section>
 
       <!-- Call to Action -->
       <section class="mx-auto max-w-[1400px] p-8 sm:p-12 md:p-16 text-center">
-         <h2 class="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-swiss-black mb-8 sm:mb-12">READY?</h2>
+         <h2 class="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-swiss-black mb-8 sm:mb-12">READY TO SEND?</h2>
          <UButton
             to="/app"
             size="xl"
             class="w-full sm:w-auto rounded-none bg-swiss-black px-10 sm:px-16 md:px-24 py-6 sm:py-8 text-lg sm:text-2xl font-black uppercase text-white hover:bg-swiss-orange transition-all"
          >
-           START TRANSFER
+           OPEN APP
          </UButton>
       </section>
     </main>
@@ -142,7 +142,7 @@
     <!-- Footer Labels -->
     <footer class="border-t border-swiss-border py-12">
       <div class="mx-auto flex max-w-[1400px] flex-col items-center gap-3 px-6 text-center text-[10px] font-black uppercase tracking-[0.4em] text-swiss-grey sm:px-8 md:flex-row md:justify-between md:text-left">
-        <span>Blink / Local Mesh Network</span>
+        <span>Blink / Local file sharing</span>
         <span>Est. 2026</span>
         <span>No Cloud. No upload.</span>
       </div>
@@ -152,62 +152,44 @@
 
 <script setup lang="ts">
 const navigationLinks = [
-  { label: 'Principles', href: '#features' },
-  { label: 'Process', href: '#how-it-works' },
-  { label: 'Launch', href: '/app' }
+  { label: 'Why Blink', href: '#why-blink' },
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Open App', href: '/app' }
 ] as const
 
 const heroStats = [
-  { value: 'P2P', label: 'Peer to Peer' },
-  { value: 'MESH', label: 'Local Discovery' },
-  { value: 'NULL', label: 'Zero Cloud Storage' }
+  { value: 'DIRECT', label: 'Device to device' },
+  { value: 'LOCAL', label: 'Same network' },
+  { value: 'PRIVATE', label: 'No cloud upload' }
 ] as const
 
 const highlights = [
   {
-    title: 'Manual Auth',
-    description: 'Manual 6-digit authentication ensures every peer connection is verified by the operator.'
+    title: 'Easy To Verify',
+    description: 'Use the 6-digit code to make sure you are connecting to the right device.'
   },
   {
-    title: 'Mesh Utility',
-    description: 'Establish high-speed data lanes using your local hardware directly. No external dependencies.'
+    title: 'Direct Transfer',
+    description: 'Files move between devices on your local network instead of being uploaded first.'
   },
   {
-    title: 'Telemetry',
-    description: 'Strict visual feedback for every packet. Every transfer has an objective beginning and end.'
-  }
-] as const
-
-const features = [
-  {
-    icon: 'i-lucide-zap',
-    title: 'Instant',
-    description: 'Built for speed across local subnets.'
-  },
-  {
-    icon: 'i-lucide-lock-keyhole',
-    title: 'Private',
-    description: 'Zero external servers. Zero tracking.'
-  },
-  {
-    icon: 'i-lucide-monitor-smartphone',
-    title: 'Mesh',
-    description: 'Cross-platform device discovery.'
+    title: 'Clear Progress',
+    description: 'See when a transfer starts, how fast it is moving, and when it is done.'
   }
 ] as const
 
 const workflowSteps = [
   {
-    title: 'Discovery',
-    description: 'The grid scans for available localized nodes on your subnet.'
+    title: 'Find A Device',
+    description: 'Open Blink on both devices and make sure they are on the same network.'
   },
   {
-    title: 'Authentication',
-    description: 'Manual validation via 6-digit security sequence.'
+    title: 'Verify It',
+    description: 'Check the 6-digit code before the first transfer so you know it is the right device.'
   },
   {
-    title: 'Transfer',
-    description: 'Objective binary movement via WebRTC p2p tunnel.'
+    title: 'Send Files',
+    description: 'Choose files, send them directly, and watch progress until the transfer finishes.'
   }
 ] as const
 </script>
