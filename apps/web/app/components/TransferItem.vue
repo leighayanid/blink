@@ -3,7 +3,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
       <div class="flex min-w-0 items-center gap-3 sm:flex-1 sm:gap-4">
         <!-- Geometric Status Indicator -->
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-none border-2 border-swiss-black dark:border-white" :class="statusBubbleClass">
+        <div class="flex size-10 shrink-0 items-center justify-center rounded-none border border-swiss-black dark:border-white" :class="statusBubbleClass">
           <UIcon
             :name="statusIcon"
             class="size-5"

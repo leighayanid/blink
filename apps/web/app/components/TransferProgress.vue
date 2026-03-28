@@ -1,6 +1,6 @@
 <template>
-  <div class="flex min-h-[14rem] flex-col rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark p-4 sm:p-6 xl:h-full xl:min-h-0">
-    <div class="mb-4 sm:mb-6 flex border-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark p-1">
+  <div class="flex min-h-[14rem] flex-col rounded-none border border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark p-4 sm:p-6 xl:h-full xl:min-h-0">
+    <div class="mb-4 sm:mb-6 flex border border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark p-1">
       <button
         v-for="tab in tabs"
         :key="tab.value"
@@ -24,7 +24,7 @@
     <div v-if="activeTab === 'active'" class="flex-1 overflow-y-auto">
       <div
         v-if="activeTransfers.length === 0"
-        class="flex min-h-40 items-center justify-center border-2 border-dashed border-swiss-border dark:border-white/20 bg-swiss-bg dark:bg-swiss-bg-dark xl:h-full xl:min-h-44"
+        class="flex min-h-40 items-center justify-center border border-dashed border-swiss-border dark:border-white/20 bg-swiss-bg dark:bg-swiss-bg-dark xl:h-full xl:min-h-44"
       >
         <p class="text-[10px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">No transfers in progress</p>
       </div>
@@ -42,7 +42,7 @@
     <div v-else class="flex-1 overflow-y-auto">
       <div
         v-if="historyTransfers.length === 0"
-        class="flex min-h-40 items-center justify-center border-2 border-dashed border-swiss-border dark:border-white/20 bg-swiss-bg dark:bg-swiss-bg-dark xl:h-full xl:min-h-44"
+        class="flex min-h-40 items-center justify-center border border-dashed border-swiss-border dark:border-white/20 bg-swiss-bg dark:bg-swiss-bg-dark xl:h-full xl:min-h-44"
       >
         <p class="text-[10px] font-black uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">No past transfers yet</p>
       </div>
@@ -58,7 +58,7 @@
           <UButton
             color="neutral"
             variant="outline"
-            class="w-full rounded-none border-2 border-swiss-black dark:border-white px-6 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white sm:w-auto"
+            class="w-full rounded-none border border-swiss-black dark:border-white px-6 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white sm:w-auto"
             @click="store.clearCompleted()"
           >
             CLEAR HISTORY

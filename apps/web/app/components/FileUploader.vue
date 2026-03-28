@@ -1,14 +1,14 @@
 <template>
   <div class="flex flex-col gap-4">
     <div
-      class="relative overflow-hidden rounded-none border-4 p-6 text-center transition-all duration-200 sm:p-8 lg:p-10"
+      class="relative overflow-hidden rounded-none border p-6 text-center transition-all duration-200 sm:p-8 lg:p-10 group"
       :class="[
         isDragging
-          ? 'border-swiss-orange bg-white dark:bg-swiss-paper-dark scale-[1.01]'
+          ? 'border-swiss-orange bg-white dark:bg-swiss-paper-dark scale-[1.01] shadow-lg'
           : 'border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark',
         disabled
           ? 'cursor-not-allowed opacity-40 bg-swiss-bg dark:bg-swiss-bg-dark border-swiss-grey'
-          : 'cursor-pointer hover:border-swiss-orange'
+          : 'cursor-pointer hover:border-swiss-orange hover:-translate-y-1 hover:shadow-md hover:scale-[1.01]'
       ]"
       @drop.prevent="handleDrop"
       @dragover.prevent="handleDragOver"
@@ -28,10 +28,10 @@
 
       <div class="relative flex flex-col items-center gap-4">
         <div
-          class="flex size-14 items-center justify-center rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark text-swiss-black dark:text-white transition-transform sm:size-16 lg:size-20"
+          class="flex size-14 items-center justify-center rounded-none border border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark text-swiss-black dark:text-white transition-all duration-300 sm:size-16 lg:size-20 group-hover:scale-110 group-hover:text-swiss-orange group-hover:border-swiss-orange"
           :class="{ 'animate-bounce': isDragging }"
         >
-          <UIcon name="i-lucide-upload" class="size-8 sm:size-9 lg:size-10" />
+          <UIcon name="i-lucide-upload" class="size-8 sm:size-9 lg:size-10 transition-transform duration-300 group-hover:-translate-y-1" />
         </div>
         <div>
           <p class="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">{{ dropZoneTitle }}</p>
@@ -42,12 +42,12 @@
 
     <Transition name="slide-up">
       <div v-if="selectedFiles.length > 0" class="flex flex-col gap-4">
-        <div class="flex items-center justify-between border-b-2 border-swiss-black dark:border-white pb-2">
+        <div class="flex items-center justify-between border-b border-swiss-black dark:border-white pb-2">
           <p class="text-[10px] font-black uppercase tracking-[0.4em] text-swiss-black dark:text-white">FILES READY TO SEND</p>
           <span class="text-xs font-black text-swiss-black dark:text-white">[{{ selectedFiles.length }}]</span>
         </div>
 
-        <div class="max-h-60 overflow-y-auto rounded-none border-2 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
+        <div class="max-h-60 overflow-y-auto rounded-none border border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
           <div
             v-for="(file, index) in selectedFiles"
             :key="index"
@@ -73,7 +73,7 @@
 
         <div class="flex flex-col gap-2 sm:flex-row">
           <UButton
-            class="flex-1 rounded-none border-0 bg-swiss-black dark:bg-white py-5 sm:py-6 text-sm font-black uppercase tracking-widest text-white dark:text-swiss-black hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all"
+            class="flex-1 rounded-none border-0 bg-swiss-black dark:bg-white py-5 sm:py-6 text-sm font-black uppercase tracking-widest text-white dark:text-swiss-black hover:bg-swiss-orange dark:hover:bg-swiss-orange hover:shadow-sm active:scale-[0.98] transition-all duration-200"
             color="neutral"
             variant="solid"
             @click="sendFiles"
@@ -83,7 +83,7 @@
           <UButton
             color="neutral"
             variant="outline"
-            class="w-full rounded-none border-2 border-swiss-black dark:border-white px-8 py-4 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all text-swiss-black dark:text-white sm:w-auto"
+            class="w-full rounded-none border border-swiss-black dark:border-white px-8 py-4 text-xs font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black active:scale-[0.98] transition-all duration-200 text-swiss-black dark:text-white sm:w-auto"
             @click="clearFiles"
           >
             CLEAR LIST

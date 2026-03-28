@@ -2,18 +2,18 @@
   <div class="flex flex-col">
     <div
       v-if="devices.length === 0"
-      class="flex flex-col items-center justify-center border-4 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark px-6 py-12 text-center"
+      class="flex flex-col items-center justify-center border border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark px-6 py-12 text-center"
     >
       <UIcon name="i-lucide-globe" class="mb-4 size-10 text-swiss-orange" />
       <p class="text-xs font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">NO DEVICES FOUND</p>
       <p class="mt-4 max-w-[15rem] text-[10px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light leading-relaxed">Open Blink on another device and keep both devices on the same network.</p>
     </div>
 
-    <div v-else class="flex flex-col border-t-2 border-swiss-black dark:border-white">
+    <div v-else class="flex flex-col border-t border-swiss-black dark:border-white">
       <div
         v-for="(device, index) in devices"
         :key="device.id"
-        class="group relative cursor-pointer border-b border-swiss-border dark:border-white/20 p-4 transition-colors"
+        class="group relative cursor-pointer border-b border-swiss-border dark:border-white/20 p-4 transition-all duration-200"
         :class="getCardClass(device)"
         @click="$emit('select', device)"
       >
@@ -39,7 +39,7 @@
             size="xs"
             :loading="getDeviceState(device) === 'connecting'"
             :disabled="!device.peerId"
-            class="w-full shrink-0 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-4 text-[9px] font-black uppercase tracking-widest hover:bg-swiss-orange transition-all sm:w-auto"
+            class="w-full shrink-0 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-4 text-[9px] font-black uppercase tracking-widest hover:bg-swiss-orange active:scale-[0.95] transition-all sm:w-auto"
             @click.stop="$emit('connect', device)"
           >
             {{ getActionLabel(device) }}
@@ -97,11 +97,11 @@ const getCardClass = (device: Device): string => {
     return 'bg-swiss-bg dark:bg-swiss-bg-dark opacity-50 animate-pulse'
   }
   if (device.peerId && connectedPeersResolved.value.has(device.peerId)) {
-    return 'bg-white dark:bg-swiss-paper-dark border-l-4 border-l-swiss-orange'
+    return 'bg-white dark:bg-swiss-paper-dark border-l border-l-swiss-orange'
   }
   if (props.selectedDevice?.id === device.id) {
     return 'bg-swiss-bg dark:bg-swiss-bg-dark'
   }
-  return 'bg-white dark:bg-swiss-paper-dark hover:bg-swiss-bg dark:hover:bg-swiss-bg-dark'
+  return 'bg-white dark:bg-swiss-paper-dark hover:bg-swiss-bg dark:hover:bg-swiss-bg-dark hover:-translate-y-[1px] hover:shadow-sm z-10'
 }
 </script>

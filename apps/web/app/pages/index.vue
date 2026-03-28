@@ -70,7 +70,7 @@
               to="/app"
               color="neutral"
               variant="outline"
-              class="w-full rounded-none border-2 border-swiss-black bg-transparent py-5 sm:py-6 text-lg sm:text-xl font-black uppercase !text-swiss-black hover:!bg-swiss-black hover:!text-white transition-all text-center"
+              class="w-full rounded-none border border-swiss-black bg-transparent py-5 sm:py-6 text-lg sm:text-xl font-black uppercase !text-swiss-black hover:!bg-swiss-black hover:!text-white transition-all text-center"
              >
                LAUNCH APP
              </UButton>
@@ -117,7 +117,7 @@
              <!-- Abstract Swiss Graphic -->
              <div class="relative h-48 w-48 sm:h-64 sm:w-64 md:h-80 md:w-80">
                 <div class="absolute inset-0 border-8 border-white rounded-full animate-pulse" />
-                <div class="absolute inset-10 border-4 border-swiss-orange" />
+                <div class="absolute inset-10 border border-swiss-orange" />
                 <div class="absolute inset-20 bg-white" />
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-white transform -rotate-45" />
              </div>

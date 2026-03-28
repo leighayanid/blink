@@ -8,13 +8,13 @@
     </div>
 
     <!-- Header (Swiss Style) -->
-    <header class="relative z-10 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-black">
+    <header class="relative z-10 border-b border-swiss-black dark:border-white bg-white dark:bg-swiss-black">
       <div class="mx-auto flex max-w-[1600px] flex-col md:flex-row md:items-stretch md:justify-between">
-        <NuxtLink to="/" class="group flex min-h-16 items-center px-5 no-underline sm:px-8 md:border-r-4 md:border-swiss-black dark:border-white">
+        <NuxtLink to="/" class="group flex min-h-16 items-center px-5 no-underline sm:px-8 md:border-r md:border-swiss-black dark:border-white">
           <span class="font-black text-3xl uppercase tracking-tighter text-swiss-black dark:text-white group-hover:bg-swiss-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-swiss-black transition-all px-2">BLINK</span>
         </NuxtLink>
 
-        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 border-t-4 border-swiss-black px-5 py-4 dark:border-white sm:px-8 md:border-t-0">
+        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 border-t border-swiss-black px-5 py-4 dark:border-white sm:px-8 md:border-t-0">
            <div class="flex items-center gap-2">
              <span class="size-4 bg-swiss-orange" />
              <span class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-swiss-black dark:text-white">THIS DEVICE</span>
@@ -25,7 +25,7 @@
            </div>
         </div>
 
-        <div class="flex items-stretch border-t-4 border-swiss-black dark:border-white md:border-l-4 md:border-t-0">
+        <div class="flex items-stretch border-t border-swiss-black dark:border-white md:border-l md:border-t-0">
           <UButton
             color="neutral"
             variant="ghost"
@@ -39,15 +39,15 @@
     </header>
 
     <main class="flex-1 flex flex-col min-h-0 relative z-10">
-      <div class="mx-auto flex w-full max-w-[1600px] flex-1 min-h-0 flex-col border-y-4 border-swiss-black bg-white/40 backdrop-blur-[1px] dark:border-white dark:bg-swiss-black/40 sm:border-x-4 sm:border-y-0 xl:flex-row">
+      <div class="mx-auto flex w-full max-w-[1600px] flex-1 min-h-0 flex-col border-y border-swiss-black bg-white/40 backdrop-blur-[1px] dark:border-white dark:bg-swiss-black/40 sm:border-x sm:border-y-0 xl:flex-row">
         <!-- Sidebar: Nodes -->
-        <div class="min-h-0 w-full shrink-0 flex-col border-b-4 border-swiss-black dark:border-white xl:w-80 xl:border-b-0 xl:border-r-4" :class="activeMobileTab !== 'discover' ? 'hidden xl:flex' : 'flex'">
-          <div class="p-5 sm:p-6 border-b-4 border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
+        <div class="min-h-0 w-full shrink-0 flex-col border-b border-swiss-black dark:border-white xl:w-80 xl:border-b-0 xl:border-r" :class="activeMobileTab !== 'discover' ? 'hidden xl:flex' : 'flex'">
+          <div class="p-5 sm:p-6 border-b border-swiss-black dark:border-white bg-swiss-black dark:bg-white">
             <h2 class="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-white dark:text-swiss-black">NEARBY DEVICES</h2>
           </div>
           
-          <div class="p-4 sm:p-6 border-b-2 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
-            <div v-if="localDevice" class="bg-white dark:bg-swiss-paper-dark border-2 border-swiss-black dark:border-white p-4 sm:p-5">
+          <div class="p-4 sm:p-6 border-b border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
+            <div v-if="localDevice" class="bg-white dark:bg-swiss-paper-dark border border-swiss-black dark:border-white p-4 sm:p-5">
                <span class="block text-[10px] font-black text-swiss-orange uppercase mb-2">YOUR DEVICE</span>
                <p class="text-xl sm:text-2xl font-black leading-none uppercase tracking-tighter text-swiss-black dark:text-white break-words">{{ localDevice.name }}</p>
                <p class="text-[11px] font-bold text-swiss-grey dark:text-swiss-grey-light mt-2 uppercase tracking-widest">{{ localDevice.platform }}</p>
@@ -76,10 +76,10 @@
 
         <!-- Center: Interface -->
         <div class="min-h-0 flex-1 flex-col" :class="activeMobileTab !== 'transfer' ? 'hidden xl:flex' : 'flex'">
-          <div class="p-5 sm:p-6 lg:p-8 border-b-4 border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
+          <div class="p-5 sm:p-6 lg:p-8 border-b border-swiss-black dark:border-white bg-white dark:bg-swiss-paper-dark">
              <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                   <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.8] text-swiss-black dark:text-white">SEND FILES</h1>
+                   <h1 class="text-xl sm:text-3xl lg:text-4xl font-black uppercase tracking-tighter leading-[0.8] text-swiss-black dark:text-white">SEND FILES</h1>
                    <p class="mt-4 sm:mt-6 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-swiss-grey dark:text-swiss-grey-light">CONNECT A DEVICE, THEN CHOOSE FILES TO SEND</p>
                 </div>
                 <div class="text-left lg:text-right">
@@ -92,7 +92,7 @@
           </div>
 
           <!-- Upload Area -->
-          <div class="p-4 sm:p-6 lg:p-10 border-b-4 border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
+          <div class="p-4 sm:p-6 lg:p-10 border-b border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark">
             <FileUploader
               :disabled="connectedPeers.size === 0"
               :connected-count="connectedPeers.size"
@@ -102,7 +102,7 @@
 
           <!-- Queue -->
           <div class="flex-1 flex flex-col min-h-0 p-4 sm:p-6 lg:p-8 bg-white/40 dark:bg-swiss-black/40">
-            <div class="mb-6 sm:mb-8 flex items-center justify-between gap-4 border-b-4 border-swiss-black dark:border-white pb-4">
+            <div class="mb-6 sm:mb-8 flex items-center justify-between gap-4 border-b border-swiss-black dark:border-white pb-4">
                <h3 class="text-xs sm:text-sm font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-swiss-black dark:text-white">TRANSFERS</h3>
                <span class="text-sm font-black bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-3 py-1">[{{ transfers.length }}]</span>
             </div>
@@ -111,7 +111,7 @@
         </div>
 
         <!-- Mobile: Network -->
-        <div v-show="activeMobileTab === 'network'" class="w-full border-t-4 border-swiss-black dark:border-white xl:hidden">
+        <div v-show="activeMobileTab === 'network'" class="w-full border-t border-swiss-black dark:border-white xl:hidden">
           <NetworkPanel
             :local-pair-code="localPairCode"
             :auto-accept-trusted-files="autoAcceptTrustedFiles"
@@ -123,7 +123,7 @@
         </div>
 
         <!-- Desktop: Status -->
-        <div class="hidden 2xl:flex w-80 min-h-0 flex-col border-l-4 border-swiss-black dark:border-white">
+        <div class="hidden 2xl:flex w-80 min-h-0 flex-col border-l border-swiss-black dark:border-white">
           <NetworkPanel
             :local-pair-code="localPairCode"
             :auto-accept-trusted-files="autoAcceptTrustedFiles"
@@ -137,7 +137,7 @@
     </main>
 
     <!-- Mobile Nav (Swiss Style) -->
-    <nav class="sticky bottom-0 z-20 flex h-16 items-stretch border-t-4 border-swiss-black bg-white/95 backdrop-blur-sm dark:border-white dark:bg-swiss-black/95 xl:hidden">
+    <nav class="sticky bottom-0 z-20 flex h-16 items-stretch border-t border-swiss-black bg-white/95 backdrop-blur-sm dark:border-white dark:bg-swiss-black/95 xl:hidden">
       <button
         v-for="tab in mobileTabs"
         :key="tab.value"
@@ -155,23 +155,23 @@
       :close="false" 
       :prevent-close="true" 
       :ui="{ 
-        content: 'rounded-none border-4 border-swiss-black dark:border-white',
+        content: 'rounded-none border border-swiss-black dark:border-white',
         container: 'flex min-h-full items-center justify-center p-4 text-center'
       }"
     >
       <template #content>
         <div class="w-full max-w-lg bg-white p-6 text-left text-swiss-black dark:bg-swiss-black dark:text-white sm:p-8">
-          <h2 class="mb-6 border-b-4 border-swiss-black pb-4 text-3xl font-black uppercase tracking-tighter dark:border-white sm:mb-8 sm:text-4xl">INCOMING FILE</h2>
-          <div v-if="currentIncomingFile" class="border-b-2 border-swiss-black dark:border-white/20 py-6 mb-8">
+          <h2 class="mb-6 border-b border-swiss-black pb-4 text-3xl font-black uppercase tracking-tighter dark:border-white sm:mb-8 sm:text-4xl">INCOMING FILE</h2>
+          <div v-if="currentIncomingFile" class="border-b border-swiss-black dark:border-white/20 py-6 mb-8">
              <p class="mb-4 text-sm font-bold uppercase tracking-widest"><span class="font-black underline">{{ getDeviceNameByPeerId(currentIncomingFile.peerId) }}</span> wants to send you a file.</p>
-             <div class="bg-swiss-bg dark:bg-swiss-bg-dark p-6 border-2 border-swiss-black dark:border-white">
+             <div class="bg-swiss-bg dark:bg-swiss-bg-dark p-6 border border-swiss-black dark:border-white">
                 <p class="text-2xl font-black uppercase tracking-tighter break-all">{{ currentIncomingFile.metadata.name }}</p>
                 <p class="text-xs font-bold text-swiss-grey dark:text-swiss-grey-light mt-4 uppercase tracking-[0.2em]">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
              </div>
           </div>
           <div class="flex flex-col gap-4 sm:flex-row">
              <UButton class="flex-1 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-orange dark:hover:bg-swiss-orange transition-all" @click="acceptIncomingFile">ACCEPT FILE</UButton>
-             <UButton variant="outline" class="flex-1 rounded-none border-4 border-swiss-black dark:border-white text-swiss-black dark:text-white py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all" @click="declineIncomingFile">DECLINE</UButton>
+             <UButton variant="outline" class="flex-1 rounded-none border border-swiss-black dark:border-white text-swiss-black dark:text-white py-5 sm:py-6 font-black uppercase tracking-widest hover:bg-swiss-black hover:text-white dark:hover:bg-white dark:hover:text-swiss-black transition-all" @click="declineIncomingFile">DECLINE</UButton>
           </div>
         </div>
       </template>
