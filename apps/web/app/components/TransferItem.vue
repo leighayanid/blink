@@ -1,9 +1,8 @@
 <template>
-  <div class="w-full rounded-none border-b border-swiss-border dark:border-white/10 bg-white dark:bg-swiss-paper-dark p-4">
+  <div class="w-full rounded-app border border-app-border bg-app-surface p-4 dark:border-app-border-dark dark:bg-app-surface-dark">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-      <div class="flex min-w-0 items-center gap-3 sm:flex-1 sm:gap-4">
-        <!-- Geometric Status Indicator -->
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-none border border-swiss-black dark:border-white" :class="statusBubbleClass">
+      <div class="flex min-w-0 items-center gap-3 sm:flex-1">
+        <div class="flex size-10 shrink-0 items-center justify-center rounded-md" :class="statusBubbleClass">
           <UIcon
             :name="statusIcon"
             class="size-5"
@@ -11,21 +10,20 @@
           />
         </div>
         <div class="min-w-0 flex-1">
-          <p class="truncate text-xs font-black uppercase tracking-tighter text-swiss-black dark:text-white">{{ transfer.fileName }}</p>
-          <p class="mt-1 text-[9px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light">
+          <p class="truncate text-sm font-medium text-app-text dark:text-app-text-dark">{{ transfer.fileName }}</p>
+          <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">
             {{ formatFileSize(transfer.fileSize) }}<span v-if="transfer.speed"> · {{ formatSpeed(transfer.speed) }}</span>
           </p>
         </div>
       </div>
-      <span class="self-start rounded-none border border-swiss-black dark:border-white px-3 py-1 text-[9px] font-black uppercase tracking-widest sm:self-auto" :class="statusLabelClass">{{ statusLabel }}</span>
+      <span class="self-start rounded-full px-2.5 py-1 text-xs font-medium sm:self-auto" :class="statusLabelClass">{{ statusLabel }}</span>
     </div>
 
-    <!-- Swiss Progress Bar -->
-    <div class="mt-4 h-2 w-full bg-swiss-bg dark:bg-swiss-bg-dark border border-swiss-border dark:border-white/10">
-      <div 
-        class="h-full bg-swiss-orange transition-all duration-300"
+    <div class="mt-4 h-2 w-full overflow-hidden rounded-full bg-app-surface-muted dark:bg-app-surface-muted-dark">
+      <div
+        class="progress-fill h-full rounded-full transition-all duration-300"
         :style="{ width: `${transfer.progress}%` }"
-        :class="{ 'bg-swiss-black dark:bg-white': transfer.status === 'completed', 'bg-red-600': transfer.status === 'failed' }"
+        :class="[progressClass, { failed: transfer.status === 'failed' }]"
       />
     </div>
   </div>
@@ -46,7 +44,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const statusLabel = computed(() =>
-  STATUS_LABELS[props.transfer.status] ?? props.transfer.status.toUpperCase()
+  STATUS_LABELS[props.transfer.status] ?? props.transfer.status
 )
 
 const statusIcon = computed(() => {
@@ -61,30 +59,31 @@ const statusIcon = computed(() => {
 })
 
 const statusIconClass = computed(() => {
-  if (props.transfer.status === 'failed') return 'text-white dark:text-swiss-black'
-  if (props.transfer.status === 'completed') return 'text-white dark:text-swiss-black'
-  return 'text-swiss-black dark:text-white'
+  if (props.transfer.status === 'failed') return 'text-app-error'
+  if (props.transfer.status === 'completed') return 'text-app-success'
+  if (props.transfer.status === 'pending') return 'text-app-muted dark:text-app-muted-dark'
+  return 'text-app-primary'
 })
 
 const statusBubbleClass = computed(() => {
-  if (props.transfer.status === 'failed') return 'bg-red-600'
-  if (props.transfer.status === 'completed') return 'bg-swiss-black dark:bg-white'
-  if (props.transfer.status === 'pending') return 'bg-swiss-bg dark:bg-swiss-bg-dark'
-  return 'bg-swiss-orange'
+  if (props.transfer.status === 'failed') return 'bg-red-50 dark:bg-red-950/30'
+  if (props.transfer.status === 'completed') return 'bg-green-50 dark:bg-green-950/30'
+  if (props.transfer.status === 'pending') return 'bg-app-surface-muted dark:bg-app-surface-muted-dark'
+  return 'bg-app-primary-soft dark:bg-app-primary-soft-dark'
 })
 
 const statusLabelClass = computed(() => {
-  if (props.transfer.status === 'failed') return 'bg-red-600 text-white'
-  if (props.transfer.status === 'completed') return 'bg-swiss-black dark:bg-white text-white dark:text-swiss-black'
-  if (props.transfer.status === 'pending') return 'bg-swiss-bg dark:bg-swiss-bg-dark text-swiss-grey'
-  return 'bg-white dark:bg-swiss-paper-dark text-swiss-black dark:text-white'
+  if (props.transfer.status === 'failed') return 'bg-red-50 text-app-error dark:bg-red-950/30'
+  if (props.transfer.status === 'completed') return 'bg-green-50 text-app-success dark:bg-green-950/30'
+  if (props.transfer.status === 'pending') return 'bg-app-surface-muted text-app-muted dark:bg-app-surface-muted-dark dark:text-app-muted-dark'
+  return 'bg-app-primary-soft text-app-primary dark:bg-app-primary-soft-dark dark:text-blue-200'
 })
 
-const progressColor = computed(() => {
-  if (props.transfer.status === 'failed') return 'error'
-  if (props.transfer.status === 'completed') return 'success'
-  if (props.transfer.status === 'pending') return 'neutral'
-  return 'warning'
+const progressClass = computed(() => {
+  if (props.transfer.status === 'failed') return 'bg-app-error'
+  if (props.transfer.status === 'completed') return 'bg-app-success'
+  if (props.transfer.status === 'pending') return 'bg-app-muted dark:bg-app-muted-dark'
+  return 'bg-app-primary'
 })
 
 const formatFileSize = (bytes: number): string => {

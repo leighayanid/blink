@@ -8,16 +8,12 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { hid: 'description', name: 'description', content: 'Fast, secure, and peer-to-peer local file sharing directly between devices on your network.' },
         { name: 'format-detection', content: 'telephone=no' },
-        { name: 'theme-color', content: '#000000' }
+        { name: 'theme-color', content: '#F8FAFC' }
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
-        {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap'
-        }
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' }
       ]
     }
   },
@@ -31,7 +27,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt'
   ],
 
-  css: ['~/app/assets/css/main.css'],
+  css: ['~/assets/css/main.css'],
 
   ui: {
     theme: {
@@ -48,10 +44,6 @@ export default defineNuxtConfig({
     experimental: {
       websocket: true
     }
-  },
-
-  alias: {
-    '~': './'
   },
 
   vite: {

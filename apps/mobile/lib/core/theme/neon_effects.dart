@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 
-/// Neon glow effects and custom decorations for BLINK UI
+/// Subtle elevation and border helpers for BLINK UI.
 class NeonEffects {
   NeonEffects._();
 
-  /// Neon glow shadow for containers
+  /// Compatibility helper for older widgets that asked for a glow.
   static List<BoxShadow> neonGlow({
     required Color color,
     double blurRadius = AppDimensions.glowBlurRadius,
@@ -14,14 +14,15 @@ class NeonEffects {
   }) {
     return [
       BoxShadow(
-        color: color.withValues(alpha: opacity),
-        blurRadius: blurRadius,
+        color: Colors.black.withValues(alpha: 0.08),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
         spreadRadius: 0,
       ),
     ];
   }
 
-  /// Pulsing neon glow animation (for connecting state)
+  /// Subtle progress shadow for connecting state.
   static List<BoxShadow> pulsingGlow({
     required Color color,
     required double animationValue, // 0.0 to 1.0
@@ -33,14 +34,14 @@ class NeonEffects {
 
     return [
       BoxShadow(
-        color: color.withValues(alpha: opacity),
-        blurRadius: blur,
-        spreadRadius: animationValue * 4,
+        color: color.withValues(alpha: opacity * 0.18),
+        blurRadius: blur.clamp(4, 12),
+        spreadRadius: 0,
       ),
     ];
   }
 
-  /// Gradient border decoration with neon colors
+  /// Soft gradient decoration kept for compatibility.
   static BoxDecoration gradientBorder({
     required List<Color> colors,
     double borderWidth = 2.0,
@@ -62,7 +63,7 @@ class NeonEffects {
     );
   }
 
-  /// Glowing border decoration
+  /// Thin bordered decoration.
   static BoxDecoration glowingBorder({
     required Color color,
     double borderWidth = 2.0,
@@ -77,11 +78,11 @@ class NeonEffects {
         color: color,
         width: borderWidth,
       ),
-      boxShadow: isGlowing ? neonGlow(color: color) : null,
+      boxShadow: isGlowing ? cardShadow() : null,
     );
   }
 
-  /// Gradient overlay for buttons
+  /// Button background decoration.
   static BoxDecoration gradientOverlay({
     required List<Color> colors,
     double borderRadius = AppDimensions.radiusMedium,
@@ -98,7 +99,7 @@ class NeonEffects {
     );
   }
 
-  /// Status indicator decoration (connecting/connected/error)
+  /// Status indicator decoration.
   static BoxDecoration statusIndicator({
     required Color color,
     bool isPulsing = false,
@@ -110,7 +111,7 @@ class NeonEffects {
         color: AppColors.bgPrimary,
         width: AppDimensions.statusDotBorderWidth,
       ),
-      boxShadow: neonGlow(color: color, blurRadius: 8),
+      boxShadow: null,
     );
   }
 
@@ -126,29 +127,24 @@ class NeonEffects {
     ];
   }
 
-  /// Neon text glow effect
+  /// Compatibility helper. Text no longer glows.
   static List<Shadow> textGlow({
     required Color color,
     double blurRadius = 8.0,
     double opacity = 0.5,
   }) {
-    return [
-      Shadow(
-        color: color.withValues(alpha: opacity),
-        blurRadius: blurRadius,
-      ),
-    ];
+    return const [];
   }
 
-  /// Preset: Cyan glow (for primary elements)
+  /// Preset: primary shadow.
   static List<BoxShadow> get cyanGlow => neonGlow(color: AppColors.neonCyan);
 
-  /// Preset: Green glow (for success/connected state)
+  /// Preset: success shadow.
   static List<BoxShadow> get greenGlow => neonGlow(color: AppColors.neonGreen);
 
-  /// Preset: Pink glow (for error state)
+  /// Preset: error shadow.
   static List<BoxShadow> get pinkGlow => neonGlow(color: AppColors.neonPink);
 
-  /// Preset: Purple glow (for secondary elements)
+  /// Preset: secondary shadow.
   static List<BoxShadow> get purpleGlow => neonGlow(color: AppColors.neonPurple);
 }

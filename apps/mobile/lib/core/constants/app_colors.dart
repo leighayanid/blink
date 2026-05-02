@@ -1,48 +1,56 @@
 import 'package:flutter/material.dart';
 
-/// BLINK App Color Palette - Synthwave/Cyberpunk Theme
-/// Matching the web app's exact color scheme
+/// BLINK app color palette.
+///
+/// The primary tokens define the current calm utility UI. The neon-prefixed
+/// aliases are retained for older widgets while mapping them to the same
+/// restrained palette.
 class AppColors {
   AppColors._();
 
-  // Background Colors (Command Center / HUD)
-  static const Color bgPrimary = Color(0xFF050508);
-  static const Color bgSecondary = Color(0xFF0A0A0F);
-  static const Color bgTertiary = Color(0xFF0D0D14);
+  // Dark theme
+  static const Color bgPrimary = Color(0xFF0F172A);
+  static const Color bgSecondary = Color(0xFF111827);
+  static const Color bgTertiary = Color(0xFF172033);
 
-  // HUD Neon Accent Colors
-  static const Color neonOrange = Color(0xFFFF6B00);
-  static const Color neonCyan = Color(0xFF00F0FF);
-  static const Color neonGreen = Color(0xFF00FF41);
-  static const Color neonRed = Color(0xFFFF003C);
-  static const Color neonYellow = Color(0xFFFFFF00);
-  static const Color neonPurple = Color(0xFF9400D3);
+  static const Color textPrimary = Color(0xFFF8FAFC);
+  static const Color textSecondary = Color(0xFFCBD5E1);
+  static const Color textTertiary = Color(0xFF94A3B8);
 
-  // Text Colors (HUD Optimized)
-  static const Color textPrimary = Color(0xFFE0E6ED);
-  static const Color textSecondary = Color(0xFFB0B8C1);
-  static const Color textTertiary = Color(0xFF8A92A0);
+  static const Color borderPrimary = Color(0xFF253044);
+  static const Color borderStrong = Color(0xFF334155);
+  static const Color borderAccent = primary;
 
-  // Border Colors (Technical HUD)
-  static const Color borderPrimary = Color(0xFF1A1D23);
-  static const Color borderStrong = Color(0xFF2D323A);
-  static const Color borderAccent = neonOrange;
+  // Light theme
+  static const Color bgPrimaryLight = Color(0xFFF8FAFC);
+  static const Color bgSecondaryLight = Color(0xFFFFFFFF);
+  static const Color bgTertiaryLight = Color(0xFFF1F5F9);
 
-  // Status Colors
-  static const Color statusOnline = neonGreen;
-  static const Color statusConnecting = neonCyan;
-  static const Color statusError = neonRed;
+  static const Color textPrimaryLight = Color(0xFF111827);
+  static const Color textSecondaryLight = Color(0xFF475569);
+  static const Color textTertiaryLight = Color(0xFF64748B);
+
+  static const Color borderPrimaryLight = Color(0xFFE2E8F0);
+  static const Color borderStrongLight = Color(0xFFCBD5E1);
+
+  // Shared intent colors
+  static const Color primary = Color(0xFF2563EB);
+  static const Color primarySoft = Color(0xFFEFF6FF);
+  static const Color success = Color(0xFF16A34A);
+  static const Color warning = Color(0xFFD97706);
+  static const Color error = Color(0xFFDC2626);
+
+  static const Color statusOnline = success;
+  static const Color statusConnecting = warning;
+  static const Color statusError = error;
   static const Color statusOffline = textTertiary;
 
-  // Light Theme Overrides (for light mode support)
-  static const Color bgPrimaryLight = Color(0xFFF5F5F7);
-  static const Color bgSecondaryLight = Color(0xFFFFFFFF);
-  static const Color bgTertiaryLight = Color(0xFFE8E8EA);
-
-  static const Color textPrimaryLight = Color(0xFF1A1A1F);
-  static const Color textSecondaryLight = Color(0xFF505058);
-  static const Color textTertiaryLight = Color(0xFF90909A);
-
-  static const Color borderPrimaryLight = Color(0xFFD0D0D8);
-  static const Color borderStrongLight = Color(0xFFA0A0A8);
+  // Compatibility aliases for existing widgets.
+  static const Color neonOrange = warning;
+  static const Color neonCyan = primary;
+  static const Color neonGreen = success;
+  static const Color neonRed = error;
+  static const Color neonPink = error;
+  static const Color neonYellow = warning;
+  static const Color neonPurple = Color(0xFF475569);
 }

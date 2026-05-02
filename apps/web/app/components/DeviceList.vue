@@ -2,44 +2,52 @@
   <div class="flex flex-col">
     <div
       v-if="devices.length === 0"
-      class="flex flex-col items-center justify-center border border-swiss-black dark:border-white bg-swiss-bg dark:bg-swiss-bg-dark px-6 py-12 text-center"
+      class="flex flex-col items-center justify-center rounded-app border border-dashed border-app-border bg-app-surface px-6 py-12 text-center dark:border-app-border-dark dark:bg-app-surface-dark"
     >
-      <UIcon name="i-lucide-globe" class="mb-4 size-10 text-swiss-orange" />
-      <p class="text-xs font-black uppercase tracking-[0.3em] text-swiss-black dark:text-white">NO DEVICES FOUND</p>
-      <p class="mt-4 max-w-[15rem] text-[10px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light leading-relaxed">Open Blink on another device and keep both devices on the same network.</p>
+      <UIcon name="i-lucide-wifi" class="mb-4 size-9 text-app-muted dark:text-app-muted-dark" />
+      <p class="text-sm font-semibold text-app-text dark:text-app-text-dark">No devices found</p>
+      <p class="mt-2 max-w-[17rem] text-sm leading-6 text-app-muted dark:text-app-muted-dark">
+        Open Blink on another device and keep both devices on the same network.
+      </p>
     </div>
 
-    <div v-else class="flex flex-col border-t border-swiss-black dark:border-white">
+    <div v-else class="flex flex-col gap-2">
       <div
-        v-for="(device, index) in devices"
+        v-for="device in devices"
         :key="device.id"
-        class="group relative cursor-pointer border-b border-swiss-border dark:border-white/20 p-4 transition-all duration-200"
+        class="group relative cursor-pointer rounded-app border p-3 transition-colors duration-200"
         :class="getCardClass(device)"
         @click="$emit('select', device)"
       >
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
-            <!-- Geometric Status Indicator -->
-            <div 
-              class="size-3 border border-swiss-black dark:border-white rotate-45 shrink-0"
-              :class="connectedPeersResolved.has(device.peerId || '') ? 'bg-swiss-orange' : 'bg-transparent'"
-            />
-            
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <p class="truncate text-sm font-black uppercase tracking-tighter text-swiss-black dark:text-white">{{ device.name }}</p>
-                <span class="text-[8px] font-bold text-swiss-grey dark:text-swiss-grey-light border border-swiss-grey dark:border-swiss-grey-light px-1 leading-none uppercase">{{ getPlatformLabel(device.platform) }}</span>
+          <div class="flex min-w-0 items-start gap-3 sm:items-center">
+            <div class="relative shrink-0">
+              <div class="flex size-9 items-center justify-center rounded-md bg-app-surface-muted text-app-muted dark:bg-app-surface-muted-dark dark:text-app-muted-dark">
+                <UIcon :name="getPlatformIcon(device.platform)" class="size-4" />
               </div>
-              <p class="text-[9px] font-bold uppercase tracking-widest text-swiss-grey dark:text-swiss-grey-light mt-1">{{ getStatusText(device) }}</p>
+              <span
+                class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full ring-2 ring-app-surface dark:ring-app-surface-dark"
+                :class="getStatusDotClass(device)"
+              />
+            </div>
+
+            <div class="min-w-0">
+              <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <p class="truncate text-sm font-medium text-app-text dark:text-app-text-dark">{{ device.name }}</p>
+                <span class="rounded-full border border-app-border px-2 py-0.5 text-xs text-app-muted dark:border-app-border-dark dark:text-app-muted-dark">
+                  {{ getPlatformLabel(device.platform) }}
+                </span>
+              </div>
+              <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">{{ getStatusText(device) }}</p>
             </div>
           </div>
 
           <UButton
-            variant="ghost"
+            variant="solid"
             size="xs"
             :loading="getDeviceState(device) === 'connecting'"
             :disabled="!device.peerId"
-            class="w-full shrink-0 rounded-none bg-swiss-black dark:bg-white text-white dark:text-swiss-black px-4 text-[9px] font-black uppercase tracking-widest hover:bg-swiss-orange active:scale-[0.95] transition-all sm:w-auto"
+            class="w-full shrink-0 rounded-md bg-app-primary px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 sm:w-auto"
             @click.stop="$emit('connect', device)"
           >
             {{ getActionLabel(device) }}
@@ -54,6 +62,7 @@
 import { computed } from 'vue'
 import type { Device } from '@blink/types'
 import type { ConnectionState } from '../composables/useWebRTC'
+import { getPlatformIcon, getPlatformLabel } from '../utils/platform'
 
 const props = defineProps<{
   devices: Device[]
@@ -78,30 +87,38 @@ const getStatusText = (device: Device): string => {
   const state = getDeviceState(device)
   if (state === 'connecting') return 'Connecting'
   if (state === 'error') return 'Could not connect'
-  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'Connected and ready'
-  return 'Available to connect'
+  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'Ready to receive files'
+  return 'Available nearby'
 }
 
 const getActionLabel = (device: Device): string => {
   const state = getDeviceState(device)
-  if (state === 'connecting') return 'CONNECTING'
-  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'SEND HERE'
-  return 'CONNECT'
+  if (state === 'connecting') return 'Connecting'
+  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'Send here'
+  return 'Connect'
+}
+
+const getStatusDotClass = (device: Device): string => {
+  const state = getDeviceState(device)
+  if (state === 'error') return 'bg-app-error'
+  if (state === 'connecting') return 'bg-app-warning'
+  if (device.peerId && connectedPeersResolved.value.has(device.peerId)) return 'bg-app-success'
+  return 'bg-app-muted dark:bg-app-muted-dark'
 }
 
 const getCardClass = (device: Device): string => {
   if (getDeviceState(device) === 'error') {
-    return 'bg-red-50 dark:bg-red-950/20'
+    return 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20'
   }
   if (getDeviceState(device) === 'connecting') {
-    return 'bg-swiss-bg dark:bg-swiss-bg-dark opacity-50 animate-pulse'
+    return 'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20'
   }
   if (device.peerId && connectedPeersResolved.value.has(device.peerId)) {
-    return 'bg-white dark:bg-swiss-paper-dark border-l border-l-swiss-orange'
+    return 'border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-950/20'
   }
   if (props.selectedDevice?.id === device.id) {
-    return 'bg-swiss-bg dark:bg-swiss-bg-dark'
+    return 'border-app-primary bg-app-primary-soft dark:bg-app-primary-soft-dark'
   }
-  return 'bg-white dark:bg-swiss-paper-dark hover:bg-swiss-bg dark:hover:bg-swiss-bg-dark hover:-translate-y-[1px] hover:shadow-sm z-10'
+  return 'border-app-border bg-app-surface hover:bg-app-surface-muted dark:border-app-border-dark dark:bg-app-surface-dark dark:hover:bg-app-surface-muted-dark'
 }
 </script>

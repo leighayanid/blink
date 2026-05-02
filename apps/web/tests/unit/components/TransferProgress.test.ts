@@ -39,7 +39,7 @@ describe('TransferProgress', () => {
   // ---------------------------------------------------------------------------
   it('shows empty state when no active transfers', () => {
     const wrapper = mountComp()
-    expect(wrapper.text()).toContain('NO ACTIVE TRANSFERS')
+    expect(wrapper.text()).toContain('No transfers in progress')
   })
 
   // ---------------------------------------------------------------------------
@@ -70,22 +70,22 @@ describe('TransferProgress', () => {
   // ---------------------------------------------------------------------------
   it('starts on the ACTIVE tab', () => {
     const wrapper = mountComp()
-    const activeBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('ACTIVE'))
+    const activeBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('Active'))
     expect(activeBtn?.classes()).toContain('active')
   })
 
   it('switches to HISTORY tab on click', async () => {
     const wrapper = mountComp()
-    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('HISTORY'))
+    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('History'))
     await historyBtn?.trigger('click')
     expect(historyBtn?.classes()).toContain('active')
   })
 
-  it('shows "NO HISTORY" when history tab is empty', async () => {
+  it('shows empty history copy when history tab is empty', async () => {
     const wrapper = mountComp()
-    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('HISTORY'))
+    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('History'))
     await historyBtn?.trigger('click')
-    expect(wrapper.text()).toContain('NO HISTORY')
+    expect(wrapper.text()).toContain('No past transfers yet')
   })
 
   // ---------------------------------------------------------------------------
@@ -97,7 +97,7 @@ describe('TransferProgress', () => {
     store.updateTransfer('done1', { status: 'completed', progress: 100 })
 
     const wrapper = mountComp()
-    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('HISTORY'))
+    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('History'))
     await historyBtn?.trigger('click')
     expect(wrapper.text()).toContain('done.pdf')
   })
@@ -108,7 +108,7 @@ describe('TransferProgress', () => {
     store.updateTransfer('fail1', { status: 'failed' })
 
     const wrapper = mountComp()
-    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('HISTORY'))
+    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('History'))
     await historyBtn?.trigger('click')
     expect(wrapper.text()).toContain('broken.zip')
   })
@@ -116,15 +116,15 @@ describe('TransferProgress', () => {
   // ---------------------------------------------------------------------------
   // Clear history button
   // ---------------------------------------------------------------------------
-  it('shows CLEAR HISTORY button in history tab when there are entries', async () => {
+  it('shows Clear history button in history tab when there are entries', async () => {
     const t = makeTransfer({ id: 'clr1' })
     store.addTransfer(t)
     store.updateTransfer('clr1', { status: 'completed' })
 
     const wrapper = mountComp()
-    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('HISTORY'))
+    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('History'))
     await historyBtn?.trigger('click')
-    expect(wrapper.text()).toContain('CLEAR HISTORY')
+    expect(wrapper.text()).toContain('Clear history')
   })
 
   it('clears history when CLEAR HISTORY is clicked', async () => {
@@ -133,11 +133,11 @@ describe('TransferProgress', () => {
     store.updateTransfer('clr2', { status: 'completed' })
 
     const wrapper = mountComp()
-    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('HISTORY'))
+    const historyBtn = wrapper.findAll('.tab-btn').find(b => b.text().includes('History'))
     await historyBtn?.trigger('click')
     const clearBtn = wrapper.find('.clear-btn')
     await clearBtn.trigger('click')
-    expect(wrapper.text()).toContain('NO HISTORY')
+    expect(wrapper.text()).toContain('No past transfers yet')
   })
 
   // ---------------------------------------------------------------------------

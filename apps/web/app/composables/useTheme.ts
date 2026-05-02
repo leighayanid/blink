@@ -25,13 +25,13 @@ export function useTheme() {
   }
 
   const themeClasses = computed(() => ({
-    bgPrimary: isDark.value ? 'bg-swiss-bg-dark' : 'bg-swiss-bg',
-    bgSecondary: isDark.value ? 'bg-swiss-paper-dark' : 'bg-swiss-paper',
-    bgTertiary: isDark.value ? 'bg-swiss-bg-dark' : 'bg-swiss-bg',
-    textPrimary: isDark.value ? 'text-white' : 'text-swiss-black',
-    textSecondary: isDark.value ? 'text-swiss-grey-light' : 'text-swiss-grey',
-    textMuted: isDark.value ? 'text-swiss-grey' : 'text-swiss-grey-light',
-    border: isDark.value ? 'border-swiss-border-dark' : 'border-swiss-black',
+    bgPrimary: isDark.value ? 'bg-app-bg-dark' : 'bg-app-bg',
+    bgSecondary: isDark.value ? 'bg-app-surface-dark' : 'bg-app-surface',
+    bgTertiary: isDark.value ? 'bg-app-surface-muted-dark' : 'bg-app-surface-muted',
+    textPrimary: isDark.value ? 'text-app-text-dark' : 'text-app-text',
+    textSecondary: isDark.value ? 'text-app-muted-dark' : 'text-app-muted',
+    textMuted: isDark.value ? 'text-app-muted-dark' : 'text-app-muted',
+    border: isDark.value ? 'border-app-border-dark' : 'border-app-border',
   }))
 
   return {

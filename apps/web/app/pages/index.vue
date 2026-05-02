@@ -1,150 +1,144 @@
 <template>
-  <div class="relative min-h-screen bg-swiss-bg font-swiss selection:bg-swiss-black selection:text-white overflow-x-hidden">
-    <!-- Swiss Grid System (Overlay) -->
-    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-       <div class="grid grid-cols-4 md:grid-cols-12 gap-0 h-full w-full opacity-[0.03]">
-         <div v-for="i in 12" :key="i" class="border-r border-swiss-black h-full" />
-       </div>
-    </div>
-
-    <!-- Header / Navigation (Strict Grid) -->
-    <header class="relative z-10 border-b border-swiss-border">
-      <div class="mx-auto flex max-w-[1400px] flex-wrap items-stretch justify-between">
-        <NuxtLink to="/" class="flex min-h-16 items-center px-5 sm:px-8 border-r border-swiss-border group no-underline">
-          <span class="font-black text-3xl uppercase tracking-tighter text-swiss-black group-hover:bg-swiss-black group-hover:text-white transition-all px-2">
-            BLINK
-          </span>
+  <div class="min-h-screen bg-app-bg font-app text-app-text selection:bg-app-primary selection:text-white dark:bg-app-bg-dark dark:text-app-text-dark">
+    <header class="border-b border-app-border bg-app-surface/90 backdrop-blur dark:border-app-border-dark dark:bg-app-surface-dark/90">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6 lg:px-8">
+        <NuxtLink to="/" class="text-lg font-semibold text-app-text no-underline dark:text-app-text-dark">
+          Blink
         </NuxtLink>
 
-        <nav class="hidden min-h-16 md:flex flex-1 items-stretch">
+        <nav class="hidden items-center gap-6 text-sm text-app-muted dark:text-app-muted-dark md:flex">
           <a
             v-for="link in navigationLinks"
             :key="link.label"
             :href="link.href"
-            class="flex items-center px-6 lg:px-10 text-[10px] lg:text-xs font-bold uppercase tracking-[0.2em] border-r border-swiss-border text-swiss-black hover:bg-swiss-black hover:text-white transition-all"
+            class="transition-colors hover:text-app-text dark:hover:text-app-text-dark"
           >
             {{ link.label }}
           </a>
         </nav>
 
-        <div class="flex min-h-16 items-stretch">
-          <UButton
-            to="/app"
-            color="neutral"
-            size="lg"
-            class="rounded-none bg-swiss-orange hover:bg-swiss-black text-white px-6 sm:px-8 lg:px-12 font-bold uppercase tracking-[0.2em] transition-all"
-          >
-            OPEN APP
-          </UButton>
-        </div>
+        <UButton
+          to="/app"
+          color="neutral"
+          class="rounded-app bg-app-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Open app
+        </UButton>
       </div>
     </header>
 
-    <main class="relative z-10">
-      <!-- Hero Section (Typography Centric) -->
-      <section class="mx-auto max-w-[1400px] border-b border-swiss-border">
-        <div class="grid md:grid-cols-12 gap-0">
-          <div class="md:col-span-8 p-6 sm:p-8 md:p-16 md:border-r border-swiss-border">
-            <h1 class="text-5xl sm:text-7xl md:text-[12rem] font-black uppercase leading-[0.8] tracking-[-0.05em] text-swiss-black">
-              SEND<br/>FILES<br/>FAST
-            </h1>
-            <div class="mt-8 flex flex-col gap-6 sm:mt-12 sm:flex-row sm:items-start sm:gap-12">
-               <div class="w-20 sm:w-24 h-4 bg-swiss-orange" />
-               <p class="max-w-md text-base sm:text-xl font-medium leading-relaxed text-swiss-black/80">
-                 Blink lets you send files straight to another device on the same network. No upload, no cloud, no account.
-               </p>
-            </div>
-          </div>
-          <div class="md:col-span-4 p-6 sm:p-8 md:p-16 flex flex-col justify-between gap-8 bg-swiss-paper">
-             <div>
-               <p class="text-[10px] font-black uppercase tracking-[0.4em] text-swiss-grey mb-8">STATUS_v1.0.4</p>
-               <div class="space-y-4">
-                 <div v-for="stat in heroStats" :key="stat.value" class="border-b border-swiss-border pb-4">
-                    <span class="block text-2xl font-black">{{ stat.value }}</span>
-                    <span class="block text-[10px] uppercase font-bold text-swiss-grey mt-1">{{ stat.label }}</span>
-                 </div>
-               </div>
-             </div>
-             
-             <UButton
+    <main>
+      <section class="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:px-8">
+        <div>
+          <p class="mb-4 text-sm font-medium text-app-primary">Local file sharing</p>
+          <h1 class="max-w-3xl text-4xl font-semibold leading-tight text-app-text dark:text-app-text-dark sm:text-5xl lg:text-6xl">
+            Send files across your local network
+          </h1>
+          <p class="mt-5 max-w-2xl text-base leading-7 text-app-muted dark:text-app-muted-dark sm:text-lg">
+            Blink transfers files directly between nearby devices. No account, no cloud upload, and a simple pair code before the first transfer.
+          </p>
+
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <UButton
               to="/app"
+              size="lg"
+              class="rounded-app bg-app-primary px-5 py-3 font-medium text-white hover:bg-blue-700"
+            >
+              Open app
+            </UButton>
+            <UButton
+              to="#how-it-works"
               color="neutral"
               variant="outline"
-              class="w-full rounded-none border border-swiss-black bg-transparent py-5 sm:py-6 text-lg sm:text-xl font-black uppercase !text-swiss-black hover:!bg-swiss-black hover:!text-white transition-all text-center"
-             >
-               LAUNCH APP
-             </UButton>
+              size="lg"
+              class="rounded-app border-app-border px-5 py-3 font-medium text-app-text hover:bg-app-surface-muted dark:border-app-border-dark dark:text-app-text-dark dark:hover:bg-app-surface-muted-dark"
+            >
+              See how it works
+            </UButton>
           </div>
         </div>
-      </section>
 
-      <!-- Highlights (Grid Layout) -->
-      <section id="why-blink" class="mx-auto max-w-[1400px] border-b border-swiss-border bg-swiss-paper">
-        <div class="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-swiss-border">
-          <div
-            v-for="highlight in highlights"
-            :key="highlight.title"
-            class="p-6 sm:p-8 md:p-12 hover:bg-swiss-bg transition-colors"
-          >
-            <span class="block text-4xl font-black text-swiss-orange mb-8 tracking-tighter">
-               0{{ highlights.indexOf(highlight) + 1 }}
-            </span>
-            <h3 class="font-black text-2xl uppercase tracking-tighter text-swiss-black mb-4">{{ highlight.title }}</h3>
-            <p class="text-sm font-medium leading-relaxed text-swiss-grey">{{ highlight.description }}</p>
-          </div>
-        </div>
-      </section>
+        <div class="rounded-app border border-app-border bg-app-surface p-4 shadow-soft dark:border-app-border-dark dark:bg-app-surface-dark">
+          <div class="rounded-md border border-app-border bg-app-bg p-4 dark:border-app-border-dark dark:bg-app-bg-dark">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-sm font-medium text-app-text dark:text-app-text-dark">Nearby devices</p>
+                <p class="text-xs text-app-muted dark:text-app-muted-dark">2 ready to connect</p>
+              </div>
+              <span class="flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-app-success dark:bg-green-950/30">
+                <span class="size-2 rounded-full bg-app-success" />
+                Online
+              </span>
+            </div>
 
-      <!-- How it Works -->
-      <section id="how-it-works" class="mx-auto max-w-[1400px] border-b border-swiss-border">
-        <div class="grid md:grid-cols-2">
-          <div class="p-6 sm:p-8 md:p-16 md:border-r border-swiss-border flex flex-col justify-center">
-            <h2 class="text-4xl sm:text-5xl md:text-6xl font-black uppercase leading-none tracking-tighter text-swiss-black mb-8 sm:mb-12">
-               SEND IN<br/>3 STEPS.
-            </h2>
-            <div class="space-y-6 sm:space-y-8">
-              <div v-for="(step, idx) in workflowSteps" :key="step.title" class="flex gap-8">
-                <span class="text-xl font-black text-swiss-orange">/{{ idx + 1 }}</span>
-                <div>
-                   <h4 class="font-black uppercase text-lg text-swiss-black">{{ step.title }}</h4>
-                   <p class="text-sm font-medium text-swiss-grey mt-2 max-w-sm">{{ step.description }}</p>
+            <div class="space-y-3">
+              <div
+                v-for="device in previewDevices"
+                :key="device.name"
+                class="flex items-center justify-between gap-3 rounded-md border border-app-border bg-app-surface px-3 py-3 dark:border-app-border-dark dark:bg-app-surface-dark"
+              >
+                <div class="flex min-w-0 items-center gap-3">
+                  <div class="flex size-9 items-center justify-center rounded-md bg-app-primary-soft text-app-primary dark:bg-app-primary-soft-dark dark:text-blue-200">
+                    <UIcon :name="device.icon" class="size-4" />
+                  </div>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-app-text dark:text-app-text-dark">{{ device.name }}</p>
+                    <p class="text-xs text-app-muted dark:text-app-muted-dark">{{ device.status }}</p>
+                  </div>
                 </div>
+                <span class="text-xs font-medium text-app-primary">Send</span>
               </div>
             </div>
-          </div>
-          
-          <div class="bg-swiss-black p-8 sm:p-12 md:p-16 flex items-center justify-center relative overflow-hidden min-h-[18rem] sm:min-h-[24rem]">
-             <!-- Abstract Swiss Graphic -->
-             <div class="relative h-48 w-48 sm:h-64 sm:w-64 md:h-80 md:w-80">
-                <div class="absolute inset-0 border-8 border-white rounded-full animate-pulse" />
-                <div class="absolute inset-10 border border-swiss-orange" />
-                <div class="absolute inset-20 bg-white" />
-                <div class="absolute top-1/2 left-0 w-full h-1 bg-white transform -rotate-45" />
-             </div>
-             <p class="absolute bottom-6 right-6 text-right text-white font-mono text-[9px] sm:text-[10px] tracking-widest opacity-50 uppercase">Direct device link</p>
+
+            <div class="mt-4 rounded-md border border-dashed border-app-border bg-app-surface px-4 py-6 text-center dark:border-app-border-dark dark:bg-app-surface-dark">
+              <UIcon name="i-lucide-upload" class="mx-auto mb-2 size-5 text-app-primary" />
+              <p class="text-sm font-medium text-app-text dark:text-app-text-dark">Drop files here</p>
+              <p class="mt-1 text-xs text-app-muted dark:text-app-muted-dark">Transfer directly to Leigh's MacBook</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Call to Action -->
-      <section class="mx-auto max-w-[1400px] p-8 sm:p-12 md:p-16 text-center">
-         <h2 class="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-swiss-black mb-8 sm:mb-12">READY TO SEND?</h2>
-         <UButton
-            to="/app"
-            size="xl"
-            class="w-full sm:w-auto rounded-none bg-swiss-black px-10 sm:px-16 md:px-24 py-6 sm:py-8 text-lg sm:text-2xl font-black uppercase text-white hover:bg-swiss-orange transition-all"
-         >
-           OPEN APP
-         </UButton>
+      <section id="why-blink" class="border-y border-app-border bg-app-surface dark:border-app-border-dark dark:bg-app-surface-dark">
+        <div class="mx-auto grid max-w-6xl gap-0 px-5 py-12 sm:px-6 lg:grid-cols-3 lg:px-8">
+          <article
+            v-for="highlight in highlights"
+            :key="highlight.title"
+            class="border-b border-app-border py-6 last:border-b-0 dark:border-app-border-dark lg:border-b-0 lg:border-r lg:px-8 lg:first:pl-0 lg:last:border-r-0 lg:last:pr-0"
+          >
+            <UIcon :name="highlight.icon" class="mb-4 size-5 text-app-primary" />
+            <h2 class="text-lg font-semibold text-app-text dark:text-app-text-dark">{{ highlight.title }}</h2>
+            <p class="mt-2 text-sm leading-6 text-app-muted dark:text-app-muted-dark">{{ highlight.description }}</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="mx-auto max-w-6xl px-5 py-14 sm:px-6 lg:px-8">
+        <div class="max-w-2xl">
+          <p class="mb-3 text-sm font-medium text-app-primary">How it works</p>
+          <h2 class="text-3xl font-semibold text-app-text dark:text-app-text-dark">Three steps, no extra setup</h2>
+        </div>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-3">
+          <article
+            v-for="(step, idx) in workflowSteps"
+            :key="step.title"
+            class="rounded-app border border-app-border bg-app-surface p-5 dark:border-app-border-dark dark:bg-app-surface-dark"
+          >
+            <span class="mb-5 flex size-8 items-center justify-center rounded-full bg-app-primary-soft text-sm font-semibold text-app-primary dark:bg-app-primary-soft-dark dark:text-blue-200">
+              {{ idx + 1 }}
+            </span>
+            <h3 class="font-semibold text-app-text dark:text-app-text-dark">{{ step.title }}</h3>
+            <p class="mt-2 text-sm leading-6 text-app-muted dark:text-app-muted-dark">{{ step.description }}</p>
+          </article>
+        </div>
       </section>
     </main>
 
-    <!-- Footer Labels -->
-    <footer class="border-t border-swiss-border py-12">
-      <div class="mx-auto flex max-w-[1400px] flex-col items-center gap-3 px-6 text-center text-[10px] font-black uppercase tracking-[0.4em] text-swiss-grey sm:px-8 md:flex-row md:justify-between md:text-left">
-        <span>Blink / Local file sharing</span>
-        <span>Est. 2026</span>
-        <span>No Cloud. No upload.</span>
+    <footer class="border-t border-app-border bg-app-surface py-6 dark:border-app-border-dark dark:bg-app-surface-dark">
+      <div class="mx-auto flex max-w-6xl flex-col gap-2 px-5 text-sm text-app-muted dark:text-app-muted-dark sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+        <span>Blink local file sharing</span>
+        <span>No cloud upload</span>
       </div>
     </footer>
   </div>
@@ -153,54 +147,44 @@
 <script setup lang="ts">
 const navigationLinks = [
   { label: 'Why Blink', href: '#why-blink' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Open App', href: '/app' }
+  { label: 'How it works', href: '#how-it-works' },
 ] as const
 
-const heroStats = [
-  { value: 'DIRECT', label: 'Device to device' },
-  { value: 'LOCAL', label: 'Same network' },
-  { value: 'PRIVATE', label: 'No cloud upload' }
+const previewDevices = [
+  { name: "Leigh's MacBook", status: 'Connected and ready', icon: 'i-lucide-laptop' },
+  { name: 'Kitchen iPad', status: 'Available nearby', icon: 'i-lucide-tablet' },
 ] as const
 
 const highlights = [
   {
-    title: 'Easy To Verify',
-    description: 'Use the 6-digit code to make sure you are connecting to the right device.'
+    title: 'Find nearby devices',
+    description: 'Open Blink on the same network and choose the device you want to send to.',
+    icon: 'i-lucide-radar'
   },
   {
-    title: 'Direct Transfer',
-    description: 'Files move between devices on your local network instead of being uploaded first.'
+    title: 'Verify with a pair code',
+    description: 'A short code helps confirm the first connection before files move.',
+    icon: 'i-lucide-shield-check'
   },
   {
-    title: 'Clear Progress',
-    description: 'See when a transfer starts, how fast it is moving, and when it is done.'
+    title: 'Watch transfer progress',
+    description: 'See active transfers, speed, and history in one clear queue.',
+    icon: 'i-lucide-list-checks'
   }
 ] as const
 
 const workflowSteps = [
   {
-    title: 'Find A Device',
-    description: 'Open Blink on both devices and make sure they are on the same network.'
+    title: 'Open Blink on both devices',
+    description: 'Keep both devices on the same local network so they can discover each other.'
   },
   {
-    title: 'Verify It',
-    description: 'Check the 6-digit code before the first transfer so you know it is the right device.'
+    title: 'Choose and verify',
+    description: 'Select the nearby device and compare the pair code before sending.'
   },
   {
-    title: 'Send Files',
-    description: 'Choose files, send them directly, and watch progress until the transfer finishes.'
+    title: 'Send files directly',
+    description: 'Drop files into Blink and follow each transfer until it is complete.'
   }
 ] as const
 </script>
-
-<style scoped>
-@keyframes pulse {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.05); }
-}
-
-.animate-pulse {
-  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-</style>

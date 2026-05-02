@@ -38,7 +38,7 @@ describe('DeviceList', () => {
       global: globalMocks
     })
     expect(wrapper.text()).toContain('No devices')
-    expect(wrapper.text()).toContain('Ensure nearby devices are on the same local network.')
+    expect(wrapper.text()).toContain('Open Blink on another device')
   })
 
   it('renders one card per device', () => {
@@ -96,7 +96,7 @@ describe('DeviceList', () => {
       props: { devices: [makeDevice({ id: 'av', peerId: 'p1' })] },
       global: globalMocks
     })
-    expect(wrapper.text()).toContain('Available')
+    expect(wrapper.text()).toContain('Available nearby')
   })
 
   it('shows "Connected" for a connected peer', () => {
@@ -108,7 +108,7 @@ describe('DeviceList', () => {
       },
       global: globalMocks
     })
-    expect(wrapper.text()).toContain('Connected')
+    expect(wrapper.text()).toContain('Ready to receive files')
   })
 
   it('shows "Connecting" when connection state is "connecting"', () => {
@@ -132,18 +132,18 @@ describe('DeviceList', () => {
       },
       global: globalMocks
     })
-    expect(wrapper.text()).toContain('Failed')
+    expect(wrapper.text()).toContain('Could not connect')
   })
 
-  it('shows "CONNECT" button for unconnected device with peerId', () => {
+  it('shows "Connect" button for unconnected device with peerId', () => {
     const wrapper = mount(DeviceList, {
       props: { devices: [makeDevice({ peerId: 'p1' })] },
       global: globalMocks
     })
-    expect(wrapper.find('.u-button').text()).toBe('CONNECT')
+    expect(wrapper.find('.u-button').text()).toBe('Connect')
   })
 
-  it('shows "DISCONNECT" button for connected device', () => {
+  it('shows "Send here" button for connected device', () => {
     const d = makeDevice({ peerId: 'p-disc' })
     const wrapper = mount(DeviceList, {
       props: {
@@ -152,7 +152,7 @@ describe('DeviceList', () => {
       },
       global: globalMocks
     })
-    expect(wrapper.find('.u-button').text()).toBe('DISCONNECT')
+    expect(wrapper.find('.u-button').text()).toBe('Send here')
   })
 
   it('disables connect button when no peerId', () => {

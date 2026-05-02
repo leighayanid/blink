@@ -12,6 +12,11 @@ const makeTransfer = (overrides: Partial<Transfer> = {}): Transfer => ({
   ...overrides,
 })
 
+const renderedIconName = (wrapper: ReturnType<typeof mount>) => {
+  const stub = wrapper.find('uicon-stub')
+  return (stub.exists() ? stub : wrapper.find('uicon')).attributes('name')
+}
+
 describe('TransferItem', () => {
   // ---------------------------------------------------------------------------
   // File name and size rendering
@@ -44,29 +49,29 @@ describe('TransferItem', () => {
   // ---------------------------------------------------------------------------
   // Status labels
   // ---------------------------------------------------------------------------
-  it('shows SENDING label for sending status', () => {
+  it('shows Sending label for sending status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'sending' }) } })
-    expect(wrapper.text()).toContain('SENDING')
+    expect(wrapper.text()).toContain('Sending')
   })
 
-  it('shows RECEIVING label for receiving status', () => {
+  it('shows Receiving label for receiving status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'receiving' }) } })
-    expect(wrapper.text()).toContain('RECEIVING')
+    expect(wrapper.text()).toContain('Receiving')
   })
 
-  it('shows DONE label for completed status', () => {
+  it('shows Done label for completed status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'completed', progress: 100 }) } })
-    expect(wrapper.text()).toContain('DONE')
+    expect(wrapper.text()).toContain('Done')
   })
 
-  it('shows FAILED label for failed status', () => {
+  it('shows Failed label for failed status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'failed' }) } })
-    expect(wrapper.text()).toContain('FAILED')
+    expect(wrapper.text()).toContain('Failed')
   })
 
-  it('shows PENDING label for pending status', () => {
+  it('shows Pending label for pending status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'pending' }) } })
-    expect(wrapper.text()).toContain('PENDING')
+    expect(wrapper.text()).toContain('Pending')
   })
 
   // ---------------------------------------------------------------------------
@@ -100,29 +105,25 @@ describe('TransferItem', () => {
   })
 
   // ---------------------------------------------------------------------------
-  // SVG icons
+  // Status icons
   // ---------------------------------------------------------------------------
   it('renders a sending icon for "sending" status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'sending' }) } })
-    // polygon is unique to the send (paper-plane) icon
-    expect(wrapper.html()).toContain('polygon')
+    expect(renderedIconName(wrapper)).toBe('i-lucide-send')
   })
 
   it('renders a download icon for "receiving" status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'receiving' }) } })
-    // The receiving icon has a polyline "7 10 12 15 17 10"
-    expect(wrapper.html()).toContain('7 10 12 15 17 10')
+    expect(renderedIconName(wrapper)).toBe('i-lucide-download')
   })
 
   it('renders a check icon for "completed" status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'completed', progress: 100 }) } })
-    // The check icon has a polyline "20 6 9 17 4 12"
-    expect(wrapper.html()).toContain('20 6 9 17 4 12')
+    expect(renderedIconName(wrapper)).toBe('i-lucide-check')
   })
 
   it('renders an X icon for "failed" status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'failed' }) } })
-    // The X icon has a line from (18,6)→(6,18): x1="18" y1="6" x2="6" y2="18"
-    expect(wrapper.html()).toContain('x1="18" y1="6"')
+    expect(renderedIconName(wrapper)).toBe('i-lucide-x')
   })
 })

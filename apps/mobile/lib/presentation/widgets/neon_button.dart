@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_dimensions.dart';
-import '../../core/theme/neon_effects.dart';
 
-/// Neon gradient button with synthwave styling
+/// Compatibility button used by older screens, styled as a simple utility action.
 class NeonButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -27,20 +26,17 @@ class NeonButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = gradientColors ??
-        [
-          AppColors.neonCyan,
-          AppColors.neonPurple,
-        ];
+    final backgroundColor = gradientColors?.first ?? AppColors.primary;
 
     return Container(
       height: isSmall ? 36 : 48,
       decoration: isOutline
           ? null
-          : NeonEffects.gradientOverlay(
-              colors: colors,
-              borderRadius: AppDimensions.radiusMedium,
-              shadows: onPressed != null ? NeonEffects.cyanGlow : null,
+          : BoxDecoration(
+              color: onPressed != null
+                  ? backgroundColor
+                  : AppColors.borderStrong,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             ),
       child: Material(
         color: Colors.transparent,
@@ -97,7 +93,7 @@ class NeonButton extends StatelessWidget {
                           SizedBox(width: AppDimensions.space2),
                         ],
                         Text(
-                          label.toUpperCase(),
+                          label,
                           style: (isSmall
                                   ? AppTextStyles.buttonSmall
                                   : AppTextStyles.button)
