@@ -57,7 +57,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       wsUrl: process.env.WS_URL || 'ws://localhost:3000',
-      signalingServer: process.env.SIGNALING_SERVER || 'http://localhost:3000'
+      signalingServer: process.env.SIGNALING_SERVER || 'http://localhost:3000',
+      signalingRoom: process.env.NUXT_PUBLIC_SIGNALING_ROOM || 'local',
+      signalingAccessToken: process.env.NUXT_PUBLIC_SIGNALING_ACCESS_TOKEN || ''
     }
   },
 

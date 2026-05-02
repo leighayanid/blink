@@ -9,6 +9,8 @@ const localDevice = ref<Device | null>(null)
 const socket = ref<WebSocket | null>(null)
 const isConnected = ref(false)
 const shouldReconnect = ref(true)
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null
+const HEARTBEAT_INTERVAL_MS = 30_000
 
 const generateDeviceId = (): string => {
   // crypto.randomUUID() is available in browsers (secure context) and Node 18+
@@ -87,16 +89,38 @@ const announce = () => {
   }
 }
 
+const stopHeartbeat = () => {
+  if (!heartbeatInterval) return
+  clearInterval(heartbeatInterval)
+  heartbeatInterval = null
+}
+
+const startHeartbeat = () => {
+  stopHeartbeat()
+  heartbeatInterval = setInterval(() => {
+    if (socket.value?.readyState !== WebSocket.OPEN) return
+    socket.value.send(JSON.stringify({ type: 'heartbeat' }))
+  }, HEARTBEAT_INTERVAL_MS)
+}
+
 const connect = () => {
   shouldReconnect.value = true
+
+  const config = useRuntimeConfig()
+  const roomId = (config.public.signalingRoom as string) || 'local'
+  const accessToken = (config.public.signalingAccessToken as string) || ''
+  const query = new URLSearchParams({ room: roomId })
+  if (accessToken) query.set('token', accessToken)
 
   let wsUrl: string
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    wsUrl = `${protocol}//${window.location.host}/ws`
+    wsUrl = `${protocol}//${window.location.host}/ws?${query.toString()}`
   } else {
-    const config = useRuntimeConfig()
-    wsUrl = config.public.wsUrl as string
+    const configuredWsUrl = new URL(config.public.wsUrl as string, 'ws://localhost')
+    configuredWsUrl.searchParams.set('room', roomId)
+    if (accessToken) configuredWsUrl.searchParams.set('token', accessToken)
+    wsUrl = configuredWsUrl.toString()
   }
 
   console.log('[Discovery] Connecting to WebSocket:', wsUrl)
@@ -105,6 +129,7 @@ const connect = () => {
   socket.value.onopen = () => {
     console.log('[Discovery] Connected to signaling server')
     isConnected.value = true
+    startHeartbeat()
     if (localDevice.value?.peerId) {
       announce()
     } else {
@@ -135,6 +160,10 @@ const connect = () => {
             console.log('[Discovery] Removed device with peerId:', data.peerId)
           }
           break
+
+        case 'error':
+          console.warn('[Discovery] Signaling server error:', data.reason || 'Unknown error')
+          break
       }
     } catch (error) {
       console.error('[Discovery] Error parsing message:', error)
@@ -149,6 +178,7 @@ const connect = () => {
   socket.value.onclose = () => {
     console.log('[Discovery] Disconnected from signaling server')
     isConnected.value = false
+    stopHeartbeat()
 
     if (shouldReconnect.value) {
       console.log('[Discovery] Scheduling reconnect...')
@@ -182,6 +212,7 @@ const disconnect = () => {
     socket.value = null
   }
 
+  stopHeartbeat()
   isConnected.value = false
   devices.value = []
   localDevice.value = null

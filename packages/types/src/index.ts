@@ -38,9 +38,12 @@ export interface ChunkData {
 }
 
 export interface SignalingMessage {
-  type: 'announce' | 'signal' | 'peer-joined' | 'peer-left' | 'offer' | 'answer' | 'ice-candidate' | 'init'
+  type: 'announce' | 'signal' | 'peer-joined' | 'peer-left' | 'offer' | 'answer' | 'ice-candidate' | 'init' | 'error' | 'heartbeat' | 'heartbeat-ack'
   deviceInfo?: Device
   peerId?: string
+  roomId?: string
+  reason?: string
+  at?: number
   signal?: unknown
   targetPeer?: string
   fromPeer?: string

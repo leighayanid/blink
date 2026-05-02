@@ -4,7 +4,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // MockPeer — stands in for Nitro's `peer` object in WebSocket handler tests
 // ---------------------------------------------------------------------------
 function makePeer(id: string) {
-  return { id, send: vi.fn() }
+  return {
+    id,
+    send: vi.fn(),
+    close: vi.fn(),
+    request: {
+      url: 'ws://localhost/ws?room=local',
+      headers: {
+        'x-forwarded-for': '127.0.0.1'
+      }
+    }
+  }
 }
 
 function makeMessage(data: object) {
@@ -46,6 +56,9 @@ describe('WebSocket signaling handler', () => {
       )
       expect(peer.send).toHaveBeenCalledWith(
         expect.stringContaining('"peerId":"ws-001"')
+      )
+      expect(peer.send).toHaveBeenCalledWith(
+        expect.stringContaining('"roomId":"local"')
       )
     })
 
@@ -212,48 +225,97 @@ describe('WebSocket signaling handler', () => {
   // message — offer / answer / ice-candidate
   // ---------------------------------------------------------------------------
   describe('message: WebRTC relay (offer/answer/ice-candidate)', () => {
-    it('broadcasts offer to all peers except sender', () => {
+    it('routes offer only to the target peer', () => {
       const p1 = makePeer('rtc-1')
       const p2 = makePeer('rtc-2')
       const p3 = makePeer('rtc-3')
       handler.open(p1)
       handler.open(p2)
       handler.open(p3)
+      handler.message(p2, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'rtc-d2', name: 'RTC 2', platform: 'Linux', peerId: 'rtc-peer-2', timestamp: 1 }
+      }))
       p1.send.mockClear()
       p2.send.mockClear()
       p3.send.mockClear()
 
-      handler.message(p1, makeMessage({ type: 'offer', signal: {} }))
+      handler.message(p1, makeMessage({ type: 'offer', targetPeer: 'rtc-peer-2', signal: {} }))
 
       expect(p1.send).not.toHaveBeenCalled()
       expect(p2.send).toHaveBeenCalled()
-      expect(p3.send).toHaveBeenCalled()
+      expect(p3.send).not.toHaveBeenCalled()
     })
 
-    it('broadcasts answer to all peers except sender', () => {
+    it('routes answer only to the target peer', () => {
       const p1 = makePeer('ans-1')
       const p2 = makePeer('ans-2')
       handler.open(p1)
       handler.open(p2)
+      handler.message(p2, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'ans-d2', name: 'Answer 2', platform: 'Linux', peerId: 'ans-peer-2', timestamp: 1 }
+      }))
       p1.send.mockClear()
       p2.send.mockClear()
 
-      handler.message(p1, makeMessage({ type: 'answer', signal: {} }))
+      handler.message(p1, makeMessage({ type: 'answer', targetPeer: 'ans-peer-2', signal: {} }))
       expect(p1.send).not.toHaveBeenCalled()
       expect(p2.send).toHaveBeenCalled()
     })
 
-    it('broadcasts ice-candidate to all peers except sender', () => {
+    it('routes ice-candidate only to the target peer', () => {
       const p1 = makePeer('ice-1')
       const p2 = makePeer('ice-2')
       handler.open(p1)
       handler.open(p2)
+      handler.message(p2, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'ice-d2', name: 'ICE 2', platform: 'Linux', peerId: 'ice-peer-2', timestamp: 1 }
+      }))
       p1.send.mockClear()
       p2.send.mockClear()
 
-      handler.message(p1, makeMessage({ type: 'ice-candidate', signal: {} }))
+      handler.message(p1, makeMessage({ type: 'ice-candidate', targetPeer: 'ice-peer-2', signal: {} }))
       expect(p2.send).toHaveBeenCalled()
       expect(p1.send).not.toHaveBeenCalled()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // abuse controls
+  // ---------------------------------------------------------------------------
+  describe('abuse controls', () => {
+    it('rejects oversized messages', () => {
+      const peer = makePeer('too-large')
+      handler.open(peer)
+      peer.send.mockClear()
+
+      handler.message(peer, { text: () => 'x'.repeat(20 * 1024) })
+      expect(peer.close).not.toHaveBeenCalled()
+
+      handler.message(peer, { text: () => 'x'.repeat(20 * 1024) })
+      handler.message(peer, { text: () => 'x'.repeat(20 * 1024) })
+      expect(peer.close).toHaveBeenCalled()
+    })
+
+    it('isolates announcements by room', () => {
+      const roomA = makePeer('room-a')
+      const roomB = makePeer('room-b')
+      roomB.request.url = 'ws://localhost/ws?room=other'
+
+      handler.open(roomA)
+      handler.open(roomB)
+      roomA.send.mockClear()
+      roomB.send.mockClear()
+
+      handler.message(roomA, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'room-device', name: 'Room Device', platform: 'Linux', peerId: 'room-peer', timestamp: 1 }
+      }))
+
+      expect(roomA.send).toHaveBeenCalled()
+      expect(roomB.send).not.toHaveBeenCalled()
     })
   })
 
