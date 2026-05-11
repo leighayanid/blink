@@ -53,6 +53,42 @@ describe('TransferProgress', () => {
     expect(wrapper.text()).toContain('active2.txt')
   })
 
+  it('groups active transfers from the same multi-file batch', () => {
+    store.addTransfer(makeTransfer({
+      id: 'batch-1',
+      fileName: 'photo.jpg',
+      fileSize: 100,
+      progress: 50,
+      status: 'receiving',
+      fromDevice: 'Phone',
+      batchId: 'batch-a',
+      batchIndex: 0,
+      batchCount: 2,
+      batchTotalSize: 300
+    }))
+    store.addTransfer(makeTransfer({
+      id: 'batch-2',
+      fileName: 'video.mp4',
+      fileSize: 200,
+      progress: 0,
+      status: 'queued',
+      fromDevice: 'Phone',
+      batchId: 'batch-a',
+      batchIndex: 1,
+      batchCount: 2,
+      batchTotalSize: 300
+    }))
+
+    const wrapper = mountComp()
+    expect(wrapper.find('.batch-transfer').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Receiving 2 files from Phone')
+    expect(wrapper.text()).toContain('0 of 2 complete')
+    expect(wrapper.text()).toContain('50 B of 300 B')
+    expect(wrapper.text()).toContain('photo.jpg')
+    expect(wrapper.text()).toContain('video.mp4')
+    expect(wrapper.text()).toContain('Queued')
+  })
+
   it('shows badge with active transfer count', () => {
     store.addTransfer(makeTransfer({ id: 'b1' }))
     store.addTransfer(makeTransfer({ id: 'b2' }))

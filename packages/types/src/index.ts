@@ -12,12 +12,16 @@ export interface Transfer {
   fileName: string
   fileSize: number
   progress: number
-  status: 'pending' | 'sending' | 'receiving' | 'completed' | 'failed'
+  status: 'queued' | 'pending' | 'sending' | 'receiving' | 'completed' | 'failed'
   speed?: number
   fromDevice?: string
   toDevice?: string
   startTime?: number
   endTime?: number
+  batchId?: string
+  batchIndex?: number
+  batchCount?: number
+  batchTotalSize?: number
 }
 
 export interface FileMetadata {

@@ -208,12 +208,14 @@ import type { Device, FileMetadata } from '@blink/types'
 import type { DataConnection } from 'peerjs'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
-import { useFileTransfer, type FileTransferBatchInfo, type IncomingFilePrompt } from '../composables/useFileTransfer'
+import { useFileTransfer, type FileTransferBatchFile, type FileTransferBatchInfo, type IncomingFilePrompt } from '../composables/useFileTransfer'
 import { useTheme } from '../composables/useTheme'
+import { useTransfersStore } from '../stores/transfers'
 
 const { devices, localDevice, connect, disconnect, initDevice, setLocalPeerId } = useDeviceDiscovery()
 const { initPeer, connectToPeer, connections, connectionStates, onConnection, destroy } = useWebRTC()
 const { transfers, sendFile, receiveFile } = useFileTransfer()
+const transfersStore = useTransfersStore()
 const { toggleTheme } = useTheme()
 const toast = useToast()
 
@@ -241,6 +243,7 @@ type IncomingFileQueueItem = {
 const incomingFileQueue = ref<IncomingFileQueueItem[]>([])
 const incomingFileResolvers = new Map<string, (accepted: boolean) => void>()
 const acceptedIncomingBatches = new Map<string, ReturnType<typeof setTimeout>>()
+const completedIncomingBatchFiles = new Map<string, Set<string>>()
 const pendingPairRequests = new Map<string, { peerId: string; timeoutId: ReturnType<typeof setTimeout> }>()
 const pairingMessageListeners = new WeakSet<DataConnection>()
 const PAIR_REQUEST_TIMEOUT_MS = 30000
@@ -362,11 +365,33 @@ const clearAcceptedIncomingBatches = () => {
     clearTimeout(timeoutId)
   }
   acceptedIncomingBatches.clear()
+  completedIncomingBatchFiles.clear()
 }
 
 const isAcceptedIncomingBatch = (peerId: string, batch?: FileTransferBatchInfo): boolean => {
   const key = getIncomingBatchKey(peerId, batch)
   return !!key && acceptedIncomingBatches.has(key)
+}
+
+const queueRemainingBatchFiles = (peerId: string, batch?: FileTransferBatchInfo) => {
+  if (!batch?.files?.length) return
+
+  for (const file of batch.files) {
+    if (file.transferId === currentIncomingFile.value?.transferId) continue
+
+    transfersStore.addTransfer({
+      id: file.transferId,
+      fileName: file.name,
+      fileSize: file.size,
+      progress: 0,
+      status: 'queued',
+      fromDevice: getDeviceNameByPeerId(peerId),
+      batchId: batch.id,
+      batchIndex: batch.files.findIndex(candidate => candidate.transferId === file.transferId),
+      batchCount: batch.count,
+      batchTotalSize: batch.totalSize
+    })
+  }
 }
 
 const enqueueIncomingFilePrompt = ({ transferId, metadata, connection, batch }: IncomingFilePrompt): Promise<boolean> => {
@@ -401,6 +426,25 @@ const handleIncomingFilePrompt = (incoming: IncomingFilePrompt): Promise<boolean
   return enqueueIncomingFilePrompt(incoming)
 }
 
+const handleFileReceived = (incoming: IncomingFilePrompt) => {
+  const key = getIncomingBatchKey(incoming.connection.peer, incoming.batch)
+  if (!key || !incoming.batch || incoming.batch.count <= 1) return
+
+  const completed = completedIncomingBatchFiles.get(key) ?? new Set<string>()
+  completed.add(incoming.transferId)
+  completedIncomingBatchFiles.set(key, completed)
+
+  if (completed.size >= incoming.batch.count) {
+    completedIncomingBatchFiles.delete(key)
+    forgetAcceptedIncomingBatch(incoming.connection.peer, incoming.batch)
+    toast.add({
+      title: `Received ${incoming.batch.count} files`,
+      description: getDeviceNameByPeerId(incoming.connection.peer),
+      color: 'success'
+    })
+  }
+}
+
 const resolveIncomingFilePrompt = (accepted: boolean) => {
   const current = incomingFileQueue.value.shift()
   if (!current) return
@@ -431,6 +475,7 @@ const acceptIncomingBatch = () => {
   }
 
   rememberAcceptedIncomingBatch(current.peerId, current.batch)
+  queueRemainingBatchFiles(current.peerId, current.batch)
 
   const remainingQueue: IncomingFileQueueItem[] = []
   for (const request of incomingFileQueue.value) {
@@ -447,7 +492,7 @@ const acceptIncomingBatch = () => {
   incomingFileQueue.value = remainingQueue
 
   toast.add({
-    title: `Accepted ${current.batch?.count ?? 1} files`,
+    title: `Receiving ${current.batch?.count ?? 1} files`,
     description: getDeviceNameByPeerId(current.peerId),
     color: 'success'
   })
@@ -630,7 +675,8 @@ onMounted(async () => {
     setupPairingHandlers(conn)
 
     receiveFile(conn, {
-      onIncomingFile: handleIncomingFilePrompt
+      onIncomingFile: handleIncomingFilePrompt,
+      onFileReceived: handleFileReceived
     })
   })
 
@@ -689,16 +735,27 @@ const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
 
   const batchId = files.length > 1 ? `batch-${crypto.randomUUID()}` : null
   const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+  const batchFiles: FileTransferBatchFile[] = batchId
+    ? files.map(file => ({
+        transferId: `transfer-${crypto.randomUUID()}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      }))
+    : []
 
   for (const [index, file] of files.entries()) {
     try {
       await sendFile(file, connection, batchId
         ? {
+            transferId: batchFiles[index]?.transferId,
             batch: {
               id: batchId,
               index,
               count: files.length,
-              totalSize
+              totalSize,
+              files: batchFiles
             }
           }
         : undefined)

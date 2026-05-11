@@ -24,17 +24,26 @@ export const useTransfersStore = defineStore('transfers', {
       if (state.activeTransfers.length === 0) return 0
 
       const total = state.activeTransfers.reduce(
-        (sum, t) => sum + t.progress,
+        (sum, t) => sum + t.fileSize,
         0
       )
-      return total / state.activeTransfers.length
+      if (total === 0) return 0
+
+      const transferred = state.activeTransfers.reduce(
+        (sum, t) => sum + t.fileSize * (t.progress / 100),
+        0
+      )
+      return transferred / total * 100
     }
   },
 
   actions: {
     addTransfer(transfer: Transfer) {
       // Ensure we don't have duplicates
-      if (!this.activeTransfers.find(t => t.id === transfer.id)) {
+      const existing = this.activeTransfers.find(t => t.id === transfer.id)
+      if (existing) {
+        Object.assign(existing, transfer)
+      } else {
         this.activeTransfers.push(transfer)
       }
     },

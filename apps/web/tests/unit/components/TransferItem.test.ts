@@ -74,6 +74,11 @@ describe('TransferItem', () => {
     expect(wrapper.text()).toContain('Pending')
   })
 
+  it('shows Queued label for queued status', () => {
+    const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'queued' }) } })
+    expect(wrapper.text()).toContain('Queued')
+  })
+
   // ---------------------------------------------------------------------------
   // Progress bar
   // ---------------------------------------------------------------------------
@@ -125,5 +130,10 @@ describe('TransferItem', () => {
   it('renders an X icon for "failed" status', () => {
     const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'failed' }) } })
     expect(renderedIconName(wrapper)).toBe('i-lucide-x')
+  })
+
+  it('renders a queue icon for "queued" status', () => {
+    const wrapper = mount(TransferItem, { props: { transfer: makeTransfer({ status: 'queued' }) } })
+    expect(renderedIconName(wrapper)).toBe('i-lucide-list-end')
   })
 })

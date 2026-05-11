@@ -36,6 +36,7 @@ import type { Transfer } from '@blink/types'
 const props = defineProps<{ transfer: Transfer }>()
 
 const STATUS_LABELS: Record<string, string> = {
+  queued: 'Queued',
   pending: 'Pending',
   sending: 'Sending',
   receiving: 'Receiving',
@@ -49,6 +50,7 @@ const statusLabel = computed(() =>
 
 const statusIcon = computed(() => {
   const map: Record<string, string> = {
+    queued: 'i-lucide-list-end',
     sending: 'i-lucide-send',
     receiving: 'i-lucide-download',
     completed: 'i-lucide-check',
@@ -61,28 +63,28 @@ const statusIcon = computed(() => {
 const statusIconClass = computed(() => {
   if (props.transfer.status === 'failed') return 'text-app-error'
   if (props.transfer.status === 'completed') return 'text-app-success'
-  if (props.transfer.status === 'pending') return 'text-app-muted dark:text-app-muted-dark'
+  if (props.transfer.status === 'queued' || props.transfer.status === 'pending') return 'text-app-muted dark:text-app-muted-dark'
   return 'text-app-primary'
 })
 
 const statusBubbleClass = computed(() => {
   if (props.transfer.status === 'failed') return 'bg-red-50 dark:bg-red-950/30'
   if (props.transfer.status === 'completed') return 'bg-green-50 dark:bg-green-950/30'
-  if (props.transfer.status === 'pending') return 'bg-app-surface-muted dark:bg-app-surface-muted-dark'
+  if (props.transfer.status === 'queued' || props.transfer.status === 'pending') return 'bg-app-surface-muted dark:bg-app-surface-muted-dark'
   return 'bg-app-primary-soft dark:bg-app-primary-soft-dark'
 })
 
 const statusLabelClass = computed(() => {
   if (props.transfer.status === 'failed') return 'bg-red-50 text-app-error dark:bg-red-950/30'
   if (props.transfer.status === 'completed') return 'bg-green-50 text-app-success dark:bg-green-950/30'
-  if (props.transfer.status === 'pending') return 'bg-app-surface-muted text-app-muted dark:bg-app-surface-muted-dark dark:text-app-muted-dark'
+  if (props.transfer.status === 'queued' || props.transfer.status === 'pending') return 'bg-app-surface-muted text-app-muted dark:bg-app-surface-muted-dark dark:text-app-muted-dark'
   return 'bg-app-primary-soft text-app-primary dark:bg-app-primary-soft-dark dark:text-blue-200'
 })
 
 const progressClass = computed(() => {
   if (props.transfer.status === 'failed') return 'bg-app-error'
   if (props.transfer.status === 'completed') return 'bg-app-success'
-  if (props.transfer.status === 'pending') return 'bg-app-muted dark:bg-app-muted-dark'
+  if (props.transfer.status === 'queued' || props.transfer.status === 'pending') return 'bg-app-muted dark:bg-app-muted-dark'
   return 'bg-app-primary'
 })
 

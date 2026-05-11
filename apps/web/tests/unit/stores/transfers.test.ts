@@ -29,14 +29,16 @@ describe('useTransfersStore', () => {
       const t = makeTransfer()
       store.addTransfer(t)
       expect(store.activeTransfers).toHaveLength(1)
-      expect(store.activeTransfers[0]).toEqual(t)
+      expect(store.activeTransfers[0]!).toEqual(t)
     })
 
-    it('does not add duplicate transfers', () => {
+    it('updates duplicate active transfers', () => {
       const t = makeTransfer({ id: 'dup' })
       store.addTransfer(t)
-      store.addTransfer(t)
+      store.addTransfer({ ...t, status: 'receiving', progress: 25 })
       expect(store.activeTransfers).toHaveLength(1)
+      expect(store.activeTransfers[0]!.status).toBe('receiving')
+      expect(store.activeTransfers[0]!.progress).toBe(25)
     })
   })
 
@@ -48,7 +50,7 @@ describe('useTransfersStore', () => {
       const t = makeTransfer({ id: 'u1', progress: 0 })
       store.addTransfer(t)
       store.updateTransfer('u1', { progress: 50 })
-      expect(store.activeTransfers[0].progress).toBe(50)
+      expect(store.activeTransfers[0]!.progress).toBe(50)
     })
 
     it('moves to completedTransfers when status becomes "completed"', () => {
@@ -56,8 +58,8 @@ describe('useTransfersStore', () => {
       store.addTransfer(t)
       store.updateTransfer('c1', { status: 'completed', progress: 100 })
       expect(store.activeTransfers).toHaveLength(0)
-      expect(store.completedTransfers[0].id).toBe('c1')
-      expect(store.completedTransfers[0].status).toBe('completed')
+      expect(store.completedTransfers[0]!.id).toBe('c1')
+      expect(store.completedTransfers[0]!.status).toBe('completed')
     })
 
     it('moves to failedTransfers when status becomes "failed"', () => {
@@ -65,7 +67,7 @@ describe('useTransfersStore', () => {
       store.addTransfer(t)
       store.updateTransfer('f1', { status: 'failed' })
       expect(store.activeTransfers).toHaveLength(0)
-      expect(store.failedTransfers[0].id).toBe('f1')
+      expect(store.failedTransfers[0]!.id).toBe('f1')
     })
 
     it('is a no-op for unknown transferId', () => {
@@ -103,7 +105,7 @@ describe('useTransfersStore', () => {
       store.updateTransfer('first', { status: 'completed' })
       store.addTransfer(t2)
       store.updateTransfer('second', { status: 'completed' })
-      expect(store.completedTransfers[0].id).toBe('second')
+      expect(store.completedTransfers[0]!.id).toBe('second')
     })
   })
 
@@ -197,10 +199,15 @@ describe('useTransfersStore', () => {
       expect(store.totalProgress).toBe(0)
     })
 
-    it('totalProgress averages active transfer progress', () => {
+    it('totalProgress weights active transfer progress by file size', () => {
       store.addTransfer(makeTransfer({ id: 'p1', progress: 40 }))
       store.addTransfer(makeTransfer({ id: 'p2', progress: 80 }))
-      expect(store.totalProgress).toBe(60)
+      expect(store.totalProgress).toBeCloseTo(60)
+
+      store.clearAll()
+      store.addTransfer(makeTransfer({ id: 'large', fileSize: 900, progress: 50 }))
+      store.addTransfer(makeTransfer({ id: 'small', fileSize: 100, progress: 100 }))
+      expect(store.totalProgress).toBeCloseTo(55)
     })
   })
 })

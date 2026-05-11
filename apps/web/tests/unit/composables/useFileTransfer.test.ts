@@ -114,20 +114,30 @@ describe('useFileTransfer', () => {
       const conn = createMockConnection()
 
       await sendFile(makeFile('data', 'first.txt'), conn, {
+        transferId: 'planned-1',
         batch: {
           id: 'batch-1',
           index: 0,
           count: 2,
-          totalSize: 12
+          totalSize: 12,
+          files: [
+            { transferId: 'planned-1', name: 'first.txt', size: 4, type: 'text/plain', lastModified: 0 },
+            { transferId: 'planned-2', name: 'second.txt', size: 8, type: 'text/plain', lastModified: 0 }
+          ]
         }
       })
 
       const firstCall = JSON.parse(conn.send.mock.calls[0][0])
+      expect(firstCall.transferId).toBe('planned-1')
       expect(firstCall.batch).toEqual({
         id: 'batch-1',
         index: 0,
         count: 2,
-        totalSize: 12
+        totalSize: 12,
+        files: [
+          { transferId: 'planned-1', name: 'first.txt', size: 4, type: 'text/plain', lastModified: 0 },
+          { transferId: 'planned-2', name: 'second.txt', size: 8, type: 'text/plain', lastModified: 0 }
+        ]
       })
     })
 
@@ -372,7 +382,12 @@ describe('useFileTransfer', () => {
           id: 'batch-rx',
           index: 1,
           count: 3,
-          totalSize: 300
+          totalSize: 300,
+          files: [
+            { transferId: 'batch-rx-0', name: 'first.txt', size: 100, type: 'text/plain', lastModified: 0 },
+            { transferId: 'batch-rx-1', name: 'second.txt', size: 100, type: 'text/plain', lastModified: 0 },
+            { transferId: 'batch-rx-2', name: 'third.txt', size: 100, type: 'text/plain', lastModified: 0 }
+          ]
         },
         metadata: { name: 'second.txt', size: 100, type: 'text/plain', lastModified: 0 }
       }))
@@ -385,8 +400,42 @@ describe('useFileTransfer', () => {
           id: 'batch-rx',
           index: 1,
           count: 3,
-          totalSize: 300
+          totalSize: 300,
+          files: [
+            { transferId: 'batch-rx-0', name: 'first.txt', size: 100, type: 'text/plain', lastModified: 0 },
+            { transferId: 'batch-rx-1', name: 'second.txt', size: 100, type: 'text/plain', lastModified: 0 },
+            { transferId: 'batch-rx-2', name: 'third.txt', size: 100, type: 'text/plain', lastModified: 0 }
+          ]
         }
+      }))
+    })
+
+    it('notifies when a file is received', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile } = useFileTransfer()
+      const conn = createMockConnection()
+      const onFileReceived = vi.fn()
+      receiveFile(conn, { onFileReceived })
+
+      const tid = 'notify-1'
+      conn._emit('data', JSON.stringify({
+        type: 'file-meta',
+        transferId: tid,
+        batch: {
+          id: 'notify-batch',
+          index: 0,
+          count: 2,
+          totalSize: 10
+        },
+        metadata: { name: 'done.txt', size: 5, type: 'text/plain', lastModified: 0 }
+      }))
+      conn._emit('data', JSON.stringify({ type: 'file-complete', transferId: tid }))
+      await new Promise(r => setTimeout(r, 0))
+
+      expect(onFileReceived).toHaveBeenCalledWith(expect.objectContaining({
+        transferId: tid,
+        metadata: expect.objectContaining({ name: 'done.txt' }),
+        batch: expect.objectContaining({ id: 'notify-batch', count: 2 })
       }))
     })
   })

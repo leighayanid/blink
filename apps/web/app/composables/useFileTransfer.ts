@@ -16,6 +16,7 @@ interface ReceiveOperation {
   id: string
   chunks: ArrayBuffer[]
   metadata: FileMetadata | null
+  batch?: FileTransferBatchInfo
   receivedChunks: number
   totalChunks: number
   /** transferId of the metadata frame we're waiting for a binary chunk for */
@@ -37,6 +38,7 @@ export interface IncomingFilePrompt {
 
 interface ReceiveFileOptions {
   onIncomingFile?: (incoming: IncomingFilePrompt) => boolean | Promise<boolean>
+  onFileReceived?: (incoming: IncomingFilePrompt) => void
 }
 
 export interface FileTransferBatchInfo {
@@ -44,10 +46,20 @@ export interface FileTransferBatchInfo {
   index: number
   count: number
   totalSize: number
+  files?: FileTransferBatchFile[]
 }
 
 interface SendFileOptions {
+  transferId?: string
   batch?: FileTransferBatchInfo
+}
+
+export interface FileTransferBatchFile {
+  transferId: string
+  name: string
+  size: number
+  type: string
+  lastModified: number
 }
 
 type DecisionWaiter = {
@@ -158,7 +170,7 @@ export const useFileTransfer = () => {
   }
 
   const sendFile = async (file: File, connection: TransferConnection, options?: SendFileOptions): Promise<string> => {
-    const transferId = generateTransferId()
+    const transferId = options?.transferId ?? generateTransferId()
 
     const transfer: Transfer = {
       id: transferId,
@@ -166,7 +178,11 @@ export const useFileTransfer = () => {
       fileSize: file.size,
       progress: 0,
       status: 'sending',
-      startTime: Date.now()
+      startTime: Date.now(),
+      batchId: options?.batch?.id,
+      batchIndex: options?.batch?.index,
+      batchCount: options?.batch?.count,
+      batchTotalSize: options?.batch?.totalSize
     }
 
     store.addTransfer(transfer)
@@ -303,7 +319,24 @@ export const useFileTransfer = () => {
                   id: message.batch.id,
                   index: message.batch.index,
                   count: message.batch.count,
-                  totalSize: message.batch.totalSize
+                  totalSize: message.batch.totalSize,
+                  files: Array.isArray(message.batch.files)
+                    ? message.batch.files
+                        .filter((file: Record<string, unknown>) =>
+                          typeof file.transferId === 'string'
+                          && typeof file.name === 'string'
+                          && typeof file.size === 'number'
+                          && typeof file.type === 'string'
+                          && typeof file.lastModified === 'number'
+                        )
+                        .map((file: Record<string, unknown>) => ({
+                          transferId: file.transferId as string,
+                          name: file.name as string,
+                          size: file.size as number,
+                          type: file.type as string,
+                          lastModified: file.lastModified as number
+                        }))
+                    : undefined
                 }
               : undefined
 
@@ -341,6 +374,7 @@ export const useFileTransfer = () => {
               id: message.transferId,
               chunks: [],
               metadata,
+              batch,
               receivedChunks: 0,
               totalChunks: 0,
               pendingBinaryTransferId: null
@@ -353,7 +387,11 @@ export const useFileTransfer = () => {
               fileSize: metadata.size,
               progress: 0,
               status: 'receiving',
-              startTime: Date.now()
+              startTime: Date.now(),
+              batchId: batch?.id,
+              batchIndex: batch?.index,
+              batchCount: batch?.count,
+              batchTotalSize: batch?.totalSize
             })
             console.log(`[FileTransfer] Receiving file: ${metadata.name}`)
           }
@@ -386,6 +424,14 @@ export const useFileTransfer = () => {
             })
 
             console.log(`[FileTransfer] File received: ${op.metadata?.name}`)
+            if (op.metadata) {
+              options?.onFileReceived?.({
+                transferId: message.transferId,
+                metadata: op.metadata,
+                connection,
+                batch: op.batch
+              })
+            }
             receiveMap.delete(message.transferId)
           }
 
