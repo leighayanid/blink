@@ -108,6 +108,29 @@ describe('useFileTransfer', () => {
       expect(firstCall.metadata.type).toBe('image/png')
     })
 
+    it('includes batch metadata when sending a multi-file batch', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { sendFile } = useFileTransfer()
+      const conn = createMockConnection()
+
+      await sendFile(makeFile('data', 'first.txt'), conn, {
+        batch: {
+          id: 'batch-1',
+          index: 0,
+          count: 2,
+          totalSize: 12
+        }
+      })
+
+      const firstCall = JSON.parse(conn.send.mock.calls[0][0])
+      expect(firstCall.batch).toEqual({
+        id: 'batch-1',
+        index: 0,
+        count: 2,
+        totalSize: 12
+      })
+    })
+
     it('sends a file-complete message at the end', async () => {
       const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
       const { sendFile } = useFileTransfer()
@@ -332,6 +355,39 @@ describe('useFileTransfer', () => {
 
       expect(transfers.value.some((t: any) => t.id === 'accept-1' && t.status === 'receiving')).toBe(true)
       expect(conn.send).toHaveBeenCalledWith(expect.stringContaining('"type":"file-accept"'))
+    })
+
+    it('passes incoming batch metadata to the prompt callback', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile } = useFileTransfer()
+      const conn = createMockConnection({ autoAcceptMeta: false })
+      const onIncomingFile = vi.fn(() => true)
+
+      receiveFile(conn, { onIncomingFile })
+
+      conn._emit('data', JSON.stringify({
+        type: 'file-meta',
+        transferId: 'batch-rx-1',
+        batch: {
+          id: 'batch-rx',
+          index: 1,
+          count: 3,
+          totalSize: 300
+        },
+        metadata: { name: 'second.txt', size: 100, type: 'text/plain', lastModified: 0 }
+      }))
+
+      await new Promise(r => setTimeout(r, 0))
+
+      expect(onIncomingFile).toHaveBeenCalledWith(expect.objectContaining({
+        transferId: 'batch-rx-1',
+        batch: {
+          id: 'batch-rx',
+          index: 1,
+          count: 3,
+          totalSize: 300
+        }
+      }))
     })
   })
 

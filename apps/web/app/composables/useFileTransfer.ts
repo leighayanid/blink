@@ -32,10 +32,22 @@ export interface IncomingFilePrompt {
   transferId: string
   metadata: FileMetadata
   connection: TransferConnection
+  batch?: FileTransferBatchInfo
 }
 
 interface ReceiveFileOptions {
   onIncomingFile?: (incoming: IncomingFilePrompt) => boolean | Promise<boolean>
+}
+
+export interface FileTransferBatchInfo {
+  id: string
+  index: number
+  count: number
+  totalSize: number
+}
+
+interface SendFileOptions {
+  batch?: FileTransferBatchInfo
 }
 
 type DecisionWaiter = {
@@ -145,7 +157,7 @@ export const useFileTransfer = () => {
     })
   }
 
-  const sendFile = async (file: File, connection: TransferConnection): Promise<string> => {
+  const sendFile = async (file: File, connection: TransferConnection, options?: SendFileOptions): Promise<string> => {
     const transferId = generateTransferId()
 
     const transfer: Transfer = {
@@ -164,6 +176,7 @@ export const useFileTransfer = () => {
       connection.send(JSON.stringify({
         type: 'file-meta',
         transferId,
+        batch: options?.batch,
         metadata: {
           name: file.name,
           size: file.size,
@@ -280,6 +293,19 @@ export const useFileTransfer = () => {
               type: typeof message.metadata.type === 'string' ? message.metadata.type : 'application/octet-stream',
               lastModified: typeof message.metadata.lastModified === 'number' ? message.metadata.lastModified : Date.now()
             }
+            const batch = (
+              typeof message.batch?.id === 'string'
+              && typeof message.batch?.index === 'number'
+              && typeof message.batch?.count === 'number'
+              && typeof message.batch?.totalSize === 'number'
+            )
+              ? {
+                  id: message.batch.id,
+                  index: message.batch.index,
+                  count: message.batch.count,
+                  totalSize: message.batch.totalSize
+                }
+              : undefined
 
             let accepted = true
             if (options?.onIncomingFile) {
@@ -287,7 +313,8 @@ export const useFileTransfer = () => {
                 accepted = await options.onIncomingFile({
                   transferId: message.transferId,
                   metadata,
-                  connection
+                  connection,
+                  batch
                 })
               } catch (error) {
                 console.error('[FileTransfer] Incoming file prompt failed:', error)

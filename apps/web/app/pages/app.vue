@@ -160,19 +160,35 @@
     >
       <template #content>
         <div class="w-full max-w-lg bg-app-surface p-6 text-left text-app-text dark:bg-app-surface-dark dark:text-app-text-dark sm:p-8">
-          <h2 class="text-2xl font-semibold text-app-text dark:text-app-text-dark">Incoming file</h2>
+          <h2 class="text-2xl font-semibold text-app-text dark:text-app-text-dark">{{ hasMultipleIncomingFiles ? 'Incoming files' : 'Incoming file' }}</h2>
           <div v-if="currentIncomingFile" class="my-6 border-y border-app-border py-6 dark:border-app-border-dark">
             <p class="mb-4 text-sm text-app-muted dark:text-app-muted-dark">
               <span class="font-medium text-app-text dark:text-app-text-dark">{{ getDeviceNameByPeerId(currentIncomingFile.peerId) }}</span>
-              wants to send you a file.
+              wants to send you {{ incomingFileRequestLabel }}.
             </p>
             <div class="rounded-app border border-app-border bg-app-bg p-4 dark:border-app-border-dark dark:bg-app-bg-dark">
+              <p v-if="hasMultipleIncomingFiles" class="mb-2 text-xs font-medium text-app-muted dark:text-app-muted-dark">
+                File {{ (currentIncomingFile.batch?.index ?? 0) + 1 }} of {{ currentIncomingFile.batch?.count }}
+              </p>
               <p class="break-all text-lg font-semibold text-app-text dark:text-app-text-dark">{{ currentIncomingFile.metadata.name }}</p>
               <p class="mt-2 text-sm text-app-muted dark:text-app-muted-dark">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
             </div>
           </div>
           <div class="flex flex-col gap-3 sm:flex-row">
-            <UButton class="flex-1 rounded-app bg-app-primary py-3 font-medium text-white hover:bg-blue-700" icon="i-lucide-check" @click="acceptIncomingFile">
+            <UButton
+              v-if="hasMultipleIncomingFiles"
+              class="flex-1 rounded-app bg-app-primary py-3 font-medium text-white hover:bg-blue-700"
+              icon="i-lucide-check-check"
+              @click="acceptIncomingBatch"
+            >
+              Accept all
+            </UButton>
+            <UButton
+              class="flex-1 rounded-app py-3 font-medium"
+              :class="hasMultipleIncomingFiles ? 'border border-app-border bg-app-surface text-app-text hover:bg-app-surface-muted dark:border-app-border-dark dark:bg-app-surface-dark dark:text-app-text-dark dark:hover:bg-app-surface-muted-dark' : 'bg-app-primary text-white hover:bg-blue-700'"
+              icon="i-lucide-check"
+              @click="acceptIncomingFile"
+            >
               Accept file
             </UButton>
             <UButton variant="outline" class="flex-1 rounded-app border-app-border py-3 font-medium text-app-text hover:bg-app-surface-muted dark:border-app-border-dark dark:text-app-text-dark dark:hover:bg-app-surface-muted-dark" @click="declineIncomingFile">
@@ -192,7 +208,7 @@ import type { Device, FileMetadata } from '@blink/types'
 import type { DataConnection } from 'peerjs'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
-import { useFileTransfer, type IncomingFilePrompt } from '../composables/useFileTransfer'
+import { useFileTransfer, type FileTransferBatchInfo, type IncomingFilePrompt } from '../composables/useFileTransfer'
 import { useTheme } from '../composables/useTheme'
 
 const { devices, localDevice, connect, disconnect, initDevice, setLocalPeerId } = useDeviceDiscovery()
@@ -219,17 +235,27 @@ type IncomingFileQueueItem = {
   transferId: string
   metadata: FileMetadata
   peerId: string
+  batch?: FileTransferBatchInfo
 }
 
 const incomingFileQueue = ref<IncomingFileQueueItem[]>([])
 const incomingFileResolvers = new Map<string, (accepted: boolean) => void>()
+const acceptedIncomingBatches = new Map<string, ReturnType<typeof setTimeout>>()
 const pendingPairRequests = new Map<string, { peerId: string; timeoutId: ReturnType<typeof setTimeout> }>()
 const pairingMessageListeners = new WeakSet<DataConnection>()
 const PAIR_REQUEST_TIMEOUT_MS = 30000
+const ACCEPTED_BATCH_WINDOW_MS = 15 * 60 * 1000
 
 const currentIncomingFile = computed(() => incomingFileQueue.value[0] ?? null)
 const isIncomingFileModalOpen = computed(() => currentIncomingFile.value !== null)
 const trustedPeerSet = computed(() => new Set(trustedPeerIds.value))
+const hasMultipleIncomingFiles = computed(() => (currentIncomingFile.value?.batch?.count ?? 1) > 1)
+const incomingFileRequestLabel = computed(() => {
+  const batch = currentIncomingFile.value?.batch
+  if (!batch || batch.count <= 1) return 'a file'
+
+  return `${batch.count} files (${formatBytes(batch.totalSize)})`
+})
 
 const mobileTabs = [
   { value: 'discover', label: 'Devices', icon: 'i-lucide-monitor-smartphone' },
@@ -305,12 +331,51 @@ const regeneratePairCode = () => {
   localPairCode.value = generatePairCode()
 }
 
-const enqueueIncomingFilePrompt = ({ transferId, metadata, connection }: IncomingFilePrompt): Promise<boolean> => {
+const getIncomingBatchKey = (peerId: string, batch?: FileTransferBatchInfo): string | null => {
+  return batch ? `${peerId}:${batch.id}` : null
+}
+
+const rememberAcceptedIncomingBatch = (peerId: string, batch?: FileTransferBatchInfo) => {
+  const key = getIncomingBatchKey(peerId, batch)
+  if (!key) return
+
+  const existing = acceptedIncomingBatches.get(key)
+  if (existing) clearTimeout(existing)
+
+  const timeoutId = setTimeout(() => {
+    acceptedIncomingBatches.delete(key)
+  }, ACCEPTED_BATCH_WINDOW_MS)
+  acceptedIncomingBatches.set(key, timeoutId)
+}
+
+const forgetAcceptedIncomingBatch = (peerId: string, batch?: FileTransferBatchInfo) => {
+  const key = getIncomingBatchKey(peerId, batch)
+  if (!key) return
+
+  const timeoutId = acceptedIncomingBatches.get(key)
+  if (timeoutId) clearTimeout(timeoutId)
+  acceptedIncomingBatches.delete(key)
+}
+
+const clearAcceptedIncomingBatches = () => {
+  for (const timeoutId of acceptedIncomingBatches.values()) {
+    clearTimeout(timeoutId)
+  }
+  acceptedIncomingBatches.clear()
+}
+
+const isAcceptedIncomingBatch = (peerId: string, batch?: FileTransferBatchInfo): boolean => {
+  const key = getIncomingBatchKey(peerId, batch)
+  return !!key && acceptedIncomingBatches.has(key)
+}
+
+const enqueueIncomingFilePrompt = ({ transferId, metadata, connection, batch }: IncomingFilePrompt): Promise<boolean> => {
   return new Promise((resolve) => {
     incomingFileQueue.value.push({
       transferId,
       metadata,
-      peerId: connection.peer
+      peerId: connection.peer,
+      batch
     })
     incomingFileResolvers.set(transferId, resolve)
   })
@@ -323,6 +388,13 @@ const handleIncomingFilePrompt = (incoming: IncomingFilePrompt): Promise<boolean
       description: `Trusted device: ${getDeviceNameByPeerId(incoming.connection.peer)}`,
       color: 'success'
     })
+    return true
+  }
+
+  if (isAcceptedIncomingBatch(incoming.connection.peer, incoming.batch)) {
+    if (incoming.batch && incoming.batch.index >= incoming.batch.count - 1) {
+      forgetAcceptedIncomingBatch(incoming.connection.peer, incoming.batch)
+    }
     return true
   }
 
@@ -347,6 +419,39 @@ const resolveIncomingFilePrompt = (accepted: boolean) => {
 
 const acceptIncomingFile = () => resolveIncomingFilePrompt(true)
 const declineIncomingFile = () => resolveIncomingFilePrompt(false)
+
+const acceptIncomingBatch = () => {
+  const current = currentIncomingFile.value
+  if (!current) return
+
+  const batchKey = getIncomingBatchKey(current.peerId, current.batch)
+  if (!batchKey) {
+    acceptIncomingFile()
+    return
+  }
+
+  rememberAcceptedIncomingBatch(current.peerId, current.batch)
+
+  const remainingQueue: IncomingFileQueueItem[] = []
+  for (const request of incomingFileQueue.value) {
+    if (getIncomingBatchKey(request.peerId, request.batch) !== batchKey) {
+      remainingQueue.push(request)
+      continue
+    }
+
+    const resolve = incomingFileResolvers.get(request.transferId)
+    incomingFileResolvers.delete(request.transferId)
+    resolve?.(true)
+  }
+
+  incomingFileQueue.value = remainingQueue
+
+  toast.add({
+    title: `Accepted ${current.batch?.count ?? 1} files`,
+    description: getDeviceNameByPeerId(current.peerId),
+    color: 'success'
+  })
+}
 
 const rejectAllIncomingPrompts = () => {
   for (const request of incomingFileQueue.value) {
@@ -582,9 +687,21 @@ const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
   const connection = connections.value.get(peerId)
   if (!connection) return
 
-  for (const file of files) {
+  const batchId = files.length > 1 ? `batch-${crypto.randomUUID()}` : null
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+
+  for (const [index, file] of files.entries()) {
     try {
-      await sendFile(file, connection)
+      await sendFile(file, connection, batchId
+        ? {
+            batch: {
+              id: batchId,
+              index,
+              count: files.length,
+              totalSize
+            }
+          }
+        : undefined)
     } catch (error) {
       console.error('Failed to send file:', error)
     }
@@ -593,6 +710,7 @@ const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
 
 onUnmounted(() => {
   rejectAllIncomingPrompts()
+  clearAcceptedIncomingBatches()
   clearAllPendingPairRequests()
   disconnect()
   destroy()
