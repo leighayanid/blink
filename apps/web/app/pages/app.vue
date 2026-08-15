@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-screen flex-col overflow-x-hidden bg-app-bg font-app text-app-text selection:bg-app-primary selection:text-white dark:bg-app-bg-dark dark:text-app-text-dark">
     <header class="border-b border-app-border bg-app-surface/95 backdrop-blur dark:border-app-border-dark dark:bg-app-surface-dark/95">
-      <div class="mx-auto flex max-w-[1600px] flex-col md:flex-row md:items-center md:justify-between">
+      <div class="mx-auto flex w-full max-w-6xl flex-col md:flex-row md:items-center md:justify-between">
         <NuxtLink to="/" class="flex min-h-16 items-center px-5 text-lg font-semibold text-app-text no-underline dark:text-app-text-dark sm:px-8">
           Blink
         </NuxtLink>
@@ -33,7 +33,7 @@
     </header>
 
     <main class="flex min-h-0 flex-1 flex-col">
-      <div class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col bg-app-bg dark:bg-app-bg-dark xl:flex-row">
+      <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col bg-app-bg dark:bg-app-bg-dark xl:flex-row">
         <aside class="min-h-0 w-full shrink-0 flex-col border-b border-app-border bg-app-surface dark:border-app-border-dark dark:bg-app-surface-dark xl:w-80 xl:border-b-0 xl:border-r" :class="activeMobileTab !== 'discover' ? 'hidden xl:flex' : 'flex'">
           <div class="border-b border-app-border p-5 dark:border-app-border-dark sm:p-6">
             <h2 class="text-base font-semibold text-app-text dark:text-app-text-dark">Nearby devices</h2>
@@ -61,6 +61,22 @@
                   New code
                 </UButton>
               </div>
+
+              <div class="mt-4 flex items-center justify-between gap-3 border-t border-app-border pt-4 dark:border-app-border-dark">
+                <div class="min-w-0">
+                  <span class="block text-sm font-medium text-app-text dark:text-app-text-dark">Auto-accept</span>
+                  <span class="block text-xs text-app-muted dark:text-app-muted-dark">Trusted devices only</span>
+                </div>
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  size="xs"
+                  class="shrink-0 rounded-full border-app-border px-3 py-1.5 text-xs font-medium text-app-text hover:bg-app-surface-muted dark:border-app-border-dark dark:text-app-text-dark dark:hover:bg-app-surface-muted-dark"
+                  @click="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
+                >
+                  {{ autoAcceptTrustedFiles ? 'On' : 'Off' }}
+                </UButton>
+              </div>
             </div>
           </div>
 
@@ -77,62 +93,36 @@
         </aside>
 
         <section class="min-h-0 flex-1 flex-col" :class="activeMobileTab !== 'transfer' ? 'hidden xl:flex' : 'flex'">
-          <div class="border-b border-app-border bg-app-surface p-5 dark:border-app-border-dark dark:bg-app-surface-dark sm:p-6 lg:p-8">
-            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <h1 class="text-2xl font-semibold text-app-text dark:text-app-text-dark sm:text-3xl">Send files</h1>
-                <p class="mt-2 text-sm text-app-muted dark:text-app-muted-dark">Connect a nearby device, then choose files to send.</p>
-              </div>
-              <div class="rounded-app border border-app-border bg-app-bg px-4 py-3 dark:border-app-border-dark dark:bg-app-bg-dark lg:min-w-64">
-                <span class="block text-xs font-medium text-app-muted dark:text-app-muted-dark">Send to</span>
-                <span class="mt-1 block break-words text-base font-semibold" :class="targetPeerForSend ? 'text-app-primary' : 'text-app-muted dark:text-app-muted-dark'">
+          <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 p-5 sm:p-8">
+            <div class="text-center">
+              <h1 class="text-2xl font-semibold text-app-text dark:text-app-text-dark sm:text-3xl">Send files</h1>
+              <p class="mt-2 text-sm text-app-muted dark:text-app-muted-dark">Connect a nearby device, then choose files to send.</p>
+              <div class="mt-4 inline-flex max-w-full items-center gap-2 rounded-app border border-app-border bg-app-surface px-4 py-2 dark:border-app-border-dark dark:bg-app-surface-dark">
+                <span class="text-xs font-medium text-app-muted dark:text-app-muted-dark">Send to</span>
+                <span class="truncate text-sm font-semibold" :class="targetPeerForSend ? 'text-app-primary' : 'text-app-muted dark:text-app-muted-dark'">
                   {{ targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'Choose a device' }}
                 </span>
               </div>
             </div>
-          </div>
 
-          <div class="border-b border-app-border bg-app-bg p-4 dark:border-app-border-dark dark:bg-app-bg-dark sm:p-6 lg:p-8">
             <FileUploader
               :disabled="connectedPeers.size === 0"
               :connected-count="connectedPeers.size"
               @files-selected="handleFilesSelected"
             />
-          </div>
 
-          <div class="flex min-h-0 flex-1 flex-col bg-app-bg p-4 dark:bg-app-bg-dark sm:p-6 lg:p-8">
-            <div class="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <h3 class="text-base font-semibold text-app-text dark:text-app-text-dark">Transfers</h3>
-                <p class="text-sm text-app-muted dark:text-app-muted-dark">Active and past transfers appear here.</p>
+            <div class="flex min-h-0 flex-1 flex-col">
+              <div class="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <h3 class="text-base font-semibold text-app-text dark:text-app-text-dark">Transfers</h3>
+                  <p class="text-sm text-app-muted dark:text-app-muted-dark">Active and past transfers appear here.</p>
+                </div>
+                <span class="rounded-full bg-app-surface-muted px-2.5 py-1 text-xs font-medium text-app-muted dark:bg-app-surface-muted-dark dark:text-app-muted-dark">{{ transfers.length }}</span>
               </div>
-              <span class="rounded-full bg-app-surface-muted px-2.5 py-1 text-xs font-medium text-app-muted dark:bg-app-surface-muted-dark dark:text-app-muted-dark">{{ transfers.length }}</span>
+              <TransferProgress :embedded="true" class="min-h-0 flex-1" />
             </div>
-            <TransferProgress :embedded="true" class="min-h-0 flex-1" />
           </div>
         </section>
-
-        <div v-show="activeMobileTab === 'network'" class="w-full border-t border-app-border dark:border-app-border-dark xl:hidden">
-          <NetworkPanel
-            :local-pair-code="localPairCode"
-            :auto-accept-trusted-files="autoAcceptTrustedFiles"
-            :connected-peer-count="connectedPeers.size"
-            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'No device selected'"
-            @refresh-pair-code="regeneratePairCode"
-            @toggle-auto-accept="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
-          />
-        </div>
-
-        <aside class="hidden min-h-0 w-80 flex-col border-l border-app-border dark:border-app-border-dark 2xl:flex">
-          <NetworkPanel
-            :local-pair-code="localPairCode"
-            :auto-accept-trusted-files="autoAcceptTrustedFiles"
-            :connected-peer-count="connectedPeers.size"
-            :target-peer-label="targetPeerForSend ? getDeviceNameByPeerId(targetPeerForSend) : 'No device selected'"
-            @refresh-pair-code="regeneratePairCode"
-            @toggle-auto-accept="autoAcceptTrustedFiles = !autoAcceptTrustedFiles"
-          />
-        </aside>
       </div>
     </main>
 
@@ -213,7 +203,7 @@ import { useTheme } from '../composables/useTheme'
 import { useTransfersStore } from '../stores/transfers'
 
 const { devices, localDevice, connect, disconnect, initDevice, setLocalPeerId } = useDeviceDiscovery()
-const { initPeer, connectToPeer, connections, connectionStates, onConnection, destroy } = useWebRTC()
+const { initPeer, connectToPeer, connections, connectionStates, onConnection, onPeerOpen, destroy } = useWebRTC()
 const { transfers, sendFile, receiveFile } = useFileTransfer()
 const transfersStore = useTransfersStore()
 const { toggleTheme } = useTheme()
@@ -222,7 +212,7 @@ const toast = useToast()
 const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
 const targetPeerForSend = ref<string | null>(null)
-const activeMobileTab = ref<'discover' | 'transfer' | 'network'>('transfer')
+const activeMobileTab = ref<'discover' | 'transfer'>('transfer')
 const trustedPeerIds = useStorage<string[]>('blink-trusted-peer-ids', [])
 const autoAcceptTrustedFiles = useStorage<boolean>('blink-auto-accept-trusted-files', false)
 const localPairCode = useStorage<string>('blink-local-pair-code', generatePairCode())
@@ -262,8 +252,7 @@ const incomingFileRequestLabel = computed(() => {
 
 const mobileTabs = [
   { value: 'discover', label: 'Devices', icon: 'i-lucide-monitor-smartphone' },
-  { value: 'transfer', label: 'Send', icon: 'i-lucide-send' },
-  { value: 'network', label: 'Status', icon: 'i-lucide-radio' }
+  { value: 'transfer', label: 'Send', icon: 'i-lucide-send' }
 ] as const
 
 const connectingDevices = computed(() =>
@@ -680,14 +669,27 @@ onMounted(async () => {
     })
   })
 
-  try {
-    const peerId = await initPeer(localDevice.value?.id)
+  // Runs on every broker open — the initial one, a retry that fell back to a
+  // different ID, and reconnects — so the announced peerId always matches the
+  // ID other devices need to dial.
+  onPeerOpen((peerId) => {
     setLocalPeerId(peerId)
+  })
+
+  // Connect to signaling first: the peer may need a few seconds to come up,
+  // and announce() is re-driven by onPeerOpen once it does.
+  connect()
+
+  try {
+    await initPeer(localDevice.value?.id)
   } catch (error) {
     console.error('Failed to initialize peer:', error)
+    toast.add({
+      title: 'Could not join the peer network',
+      description: 'Other devices will not see this one. Check your connection and reload.',
+      color: 'error'
+    })
   }
-
-  connect()
 })
 
 const handleDeviceSelect = (device: Device) => {

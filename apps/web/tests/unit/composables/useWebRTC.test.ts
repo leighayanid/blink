@@ -109,6 +109,114 @@ describe('useWebRTC', () => {
   })
 
   // ---------------------------------------------------------------------------
+  // initPeer — broker recovery
+  //
+  // The persisted device id is reused as the PeerJS broker id, so the broker
+  // routinely still holds it from a previous session (refresh, second tab,
+  // suspended mobile tab). If that kills init, the device is never announced
+  // and stays invisible to every other device.
+  // ---------------------------------------------------------------------------
+  describe('initPeer broker recovery', () => {
+    let resilientUseWebRTC: typeof import('../../../app/composables/useWebRTC').useWebRTC
+    let PeerCtor: ReturnType<typeof vi.fn>
+    let instances: Array<ReturnType<typeof createMockPeer>>
+
+    const idTaken = () => Object.assign(new Error('ID is taken'), { type: 'unavailable-id' })
+
+    beforeEach(async () => {
+      vi.resetModules()
+      instances = []
+      PeerCtor = vi.fn().mockImplementation((id?: string) => {
+        const instance = createMockPeer(typeof id === 'string' ? id : 'broker-generated')
+        instances.push(instance)
+        return instance
+      })
+      vi.doMock('peerjs', () => ({ default: PeerCtor }))
+      const mod = await import('../../../app/composables/useWebRTC')
+      resilientUseWebRTC = mod.useWebRTC
+    })
+
+    afterEach(() => {
+      resilientUseWebRTC().destroy()
+    })
+
+    it('retries with the same id when the broker reports it as taken', async () => {
+      const { initPeer } = resilientUseWebRTC()
+      const promise = initPeer('device-persisted')
+
+      instances[0]._emit('error', idTaken())
+      await vi.advanceTimersByTimeAsync(1500)
+
+      expect(PeerCtor).toHaveBeenCalledTimes(2)
+      expect(PeerCtor.mock.calls[1]?.[0]).toBe('device-persisted')
+
+      instances[1]._emit('open', 'device-persisted')
+      await expect(promise).resolves.toBe('device-persisted')
+    })
+
+    it('falls back to a broker-generated id on the final attempt', async () => {
+      const { initPeer } = resilientUseWebRTC()
+      const promise = initPeer('device-persisted')
+
+      instances[0]._emit('error', idTaken())
+      await vi.advanceTimersByTimeAsync(1500)
+      instances[1]._emit('error', idTaken())
+      await vi.advanceTimersByTimeAsync(1500)
+
+      expect(PeerCtor).toHaveBeenCalledTimes(3)
+      expect(PeerCtor.mock.calls[2]?.[0]).toBeUndefined()
+
+      instances[2]._emit('open', 'broker-generated')
+      await expect(promise).resolves.toBe('broker-generated')
+    })
+
+    it('rejects once retries are exhausted', async () => {
+      const { initPeer, peerError } = resilientUseWebRTC()
+      const promise = initPeer('device-persisted')
+      const assertion = expect(promise).rejects.toThrow('ID is taken')
+
+      instances[0]._emit('error', idTaken())
+      await vi.advanceTimersByTimeAsync(1500)
+      instances[1]._emit('error', idTaken())
+      await vi.advanceTimersByTimeAsync(1500)
+      instances[2]._emit('error', idTaken())
+
+      await assertion
+      expect(peerError.value).toBe('ID is taken')
+    })
+
+    it('does not re-initialize when an error arrives after the peer is open', async () => {
+      const { initPeer, localPeerId } = resilientUseWebRTC()
+      const promise = initPeer('device-persisted')
+      instances[0]._emit('open', 'device-persisted')
+      await promise
+
+      // A failed dial surfaces as a peer-level error; it must not tear down
+      // the peer that discovery already announced.
+      instances[0]._emit('error', Object.assign(new Error('no such peer'), { type: 'peer-unavailable' }))
+      await vi.advanceTimersByTimeAsync(5000)
+
+      expect(PeerCtor).toHaveBeenCalledTimes(1)
+      expect(localPeerId.value).toBe('device-persisted')
+    })
+
+    it('fires onPeerOpen for every open, including reconnects', async () => {
+      const { initPeer, onPeerOpen } = resilientUseWebRTC()
+      const opened: string[] = []
+      onPeerOpen(id => opened.push(id))
+
+      const promise = initPeer('device-persisted')
+      instances[0]._emit('open', 'device-persisted')
+      await promise
+
+      // PeerJS re-emits 'open' after reconnect()
+      instances[0]._emit('open', 'device-persisted')
+
+      expect(opened).toEqual(['device-persisted', 'device-persisted'])
+    })
+  })
+
+  // ---------------------------------------------------------------------------
   // connectToPeer
   // ---------------------------------------------------------------------------
   describe('connectToPeer', () => {

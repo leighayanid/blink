@@ -8,9 +8,14 @@ const devices = ref<Device[]>([])
 const localDevice = ref<Device | null>(null)
 const socket = ref<WebSocket | null>(null)
 const isConnected = ref(false)
+const lastError = ref<string | null>(null)
 const shouldReconnect = ref(true)
 let heartbeatInterval: ReturnType<typeof setInterval> | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempts = 0
 const HEARTBEAT_INTERVAL_MS = 30_000
+const RECONNECT_BASE_DELAY_MS = 5_000
+const RECONNECT_MAX_DELAY_MS = 60_000
 
 const generateDeviceId = (): string => {
   // crypto.randomUUID() is available in browsers (secure context) and Node 18+
@@ -129,6 +134,8 @@ const connect = () => {
   socket.value.onopen = () => {
     console.log('[Discovery] Connected to signaling server')
     isConnected.value = true
+    lastError.value = null
+    reconnectAttempts = 0
     startHeartbeat()
     if (localDevice.value?.peerId) {
       announce()
@@ -162,7 +169,11 @@ const connect = () => {
           break
 
         case 'error':
-          console.warn('[Discovery] Signaling server error:', data.reason || 'Unknown error')
+          // The server rejects (capacity, bad token, rate limit) by sending
+          // this and then closing, so keep the reason for the UI — otherwise
+          // the page looks healthy while discovery silently never works.
+          lastError.value = data.reason || 'Unknown error'
+          console.warn('[Discovery] Signaling server error:', lastError.value)
           break
       }
     } catch (error) {
@@ -181,12 +192,23 @@ const connect = () => {
     stopHeartbeat()
 
     if (shouldReconnect.value) {
-      console.log('[Discovery] Scheduling reconnect...')
-      setTimeout(() => {
+      // Back off on repeated failures. A server that is rejecting us outright
+      // (at capacity, bad token) would otherwise be hammered every 5s by every
+      // client, which keeps it at capacity.
+      const delay = Math.min(
+        RECONNECT_BASE_DELAY_MS * 2 ** reconnectAttempts,
+        RECONNECT_MAX_DELAY_MS
+      )
+      reconnectAttempts++
+      console.log(`[Discovery] Scheduling reconnect in ${delay}ms...`)
+
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null
         if (!isConnected.value && shouldReconnect.value) {
           connect()
         }
-      }, 5000)
+      }, delay)
     } else {
       console.log('[Discovery] Reconnect disabled, staying disconnected')
     }
@@ -207,6 +229,12 @@ const disconnect = () => {
   console.log('[Discovery] Intentional disconnect - disabling reconnect')
   shouldReconnect.value = false
 
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  reconnectAttempts = 0
+
   if (socket.value) {
     socket.value.close()
     socket.value = null
@@ -214,6 +242,7 @@ const disconnect = () => {
 
   stopHeartbeat()
   isConnected.value = false
+  lastError.value = null
   devices.value = []
   localDevice.value = null
 }
@@ -223,6 +252,7 @@ export const useDeviceDiscovery = () => {
     devices,
     localDevice,
     isConnected,
+    lastError,
     connect,
     disconnect,
     initDevice,

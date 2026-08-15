@@ -104,6 +104,36 @@ describe('WebSocket signaling handler', () => {
       expect(p2Msgs.some((m: any) => m.type === 'peer-joined' && m.deviceInfo.id === 'dev-a')).toBe(true)
     })
 
+    it('retires the previous peerId when a socket re-announces under a new one', () => {
+      const p1 = makePeer('rekey-1')
+      const p2 = makePeer('rekey-2')
+      handler.open(p1)
+      handler.open(p2)
+
+      handler.message(p1, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'dev-rekey', name: 'Rekey', platform: 'Linux', peerId: 'old-peer', timestamp: 1 }
+      }))
+      p2.send.mockClear()
+
+      // Same socket, new broker id (init retry fell back to a generated id)
+      handler.message(p1, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'dev-rekey', name: 'Rekey', platform: 'Linux', peerId: 'new-peer', timestamp: 2 }
+      }))
+
+      const p2Msgs = p2.send.mock.calls.map((c: [string]) => JSON.parse(c[0]))
+      expect(p2Msgs.some((m: any) => m.type === 'peer-left' && m.peerId === 'old-peer')).toBe(true)
+      expect(p2Msgs.some((m: any) => m.type === 'peer-joined' && m.deviceInfo.peerId === 'new-peer')).toBe(true)
+
+      // The stale id must no longer be routable
+      p2.send.mockClear()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      handler.message(p2, makeMessage({ type: 'signal', targetPeer: 'old-peer' }))
+      expect(p1.send).not.toHaveBeenCalledWith(expect.stringContaining('"type":"signal"'))
+      warnSpy.mockRestore()
+    })
+
     it('rejects malformed announce (missing required fields)', () => {
       const peer = makePeer('bad-peer')
       handler.open(peer)

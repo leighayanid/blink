@@ -358,6 +358,20 @@ export default defineWebSocketHandler({
 
           console.log('[WebSocket] Device announced:', deviceInfo.name, 'peerId:', deviceInfo.peerId)
 
+          // A socket only ever has one current peerId. If it re-announces under
+          // a different one (its broker ID changed after a retry or reconnect),
+          // retire the previous entry — otherwise peers keep seeing a stale
+          // device they can never dial.
+          for (const [existingPeerId, existing] of announcedDevices.entries()) {
+            if (existing.wsId !== peer.id || existingPeerId === deviceInfo.peerId) continue
+
+            announcedDevices.delete(existingPeerId)
+            broadcastToRoom(existing.roomId, JSON.stringify({
+              type: 'peer-left',
+              peerId: existingPeerId
+            }))
+          }
+
           announcedDevices.set(deviceInfo.peerId, {
             ...deviceInfo,
             wsId: peer.id,

@@ -10,11 +10,40 @@ const peer = ref<Peer | null>(null)
 const connections = ref<Map<string, DataConnection>>(new Map())
 const connectionStates = ref<Map<string, ConnectionState>>(new Map())
 const localPeerId = ref<string>('')
+const peerError = ref<string | null>(null)
 const shouldReconnect = ref(true)
+
+const PEER_INIT_MAX_ATTEMPTS = 3
+const PEER_INIT_RETRY_DELAY_MS = 1500
+
+type PeerJsError = Error & { type?: string }
+
+// PeerJS conditions that a fresh attempt can plausibly recover from. Anything
+// else (including a plain Error with no `type`) is treated as terminal so we
+// surface it instead of retrying forever.
+const RETRYABLE_PEER_ERRORS = new Set([
+  'unavailable-id',
+  'network',
+  'server-error',
+  'socket-error',
+  'socket-closed'
+])
+
+let initRetryTimer: ReturnType<typeof setTimeout> | null = null
+
+// The `peer` ref hands back a reactive proxy, so it cannot be identity-compared
+// against the instance a handler closed over. Track the raw current instance
+// here so superseded peers can tell they are no longer in charge.
+let currentPeerInstance: Peer | null = null
 
 // Callbacks fired synchronously whenever a new DataConnection is established
 // (both outgoing-opened and incoming). Register via onConnection().
 const connectionCallbacks: Array<(conn: DataConnection) => void> = []
+
+// Callbacks fired every time the peer opens against the broker — including
+// after a retry or a reconnect, when the broker may hand us a different ID.
+// Register via onPeerOpen().
+const peerOpenCallbacks: Array<(peerId: string) => void> = []
 
 const setConnectionState = (peerId: string, state: ConnectionState): void => {
   connectionStates.value.set(peerId, state)
@@ -46,12 +75,52 @@ const handleConnection = (conn: DataConnection) => {
   })
 }
 
-const initPeer = (deviceId?: string): Promise<string> => {
+const clearInitRetry = () => {
+  if (!initRetryTimer) return
+  clearTimeout(initRetryTimer)
+  initRetryTimer = null
+}
+
+const attemptPeerInit = (deviceId: string | undefined, attempt: number): Promise<string> => {
   return new Promise((resolve, reject) => {
-    shouldReconnect.value = true
+    // Once the broker has opened the peer, `error` events describe a single
+    // failed operation (typically 'peer-unavailable' from a dial), not a
+    // failed initialization. They must never settle this promise.
+    let isOpen = false
+
+    const fail = (error: PeerJsError) => {
+      peerError.value = error.message || `Peer error: ${error.type ?? 'unknown'}`
+      reject(error)
+    }
+
+    const retry = (error: PeerJsError, nextDeviceId: string | undefined) => {
+      // Tear the half-open peer down so the broker releases the ID before we
+      // ask for it again.
+      try {
+        peer.value?.destroy()
+      } catch {}
+      peer.value = null
+      currentPeerInstance = null
+
+      if (attempt >= PEER_INIT_MAX_ATTEMPTS) {
+        fail(error)
+        return
+      }
+
+      console.warn(`[WebRTC] Peer init failed (${error.type ?? 'unknown'}), retrying attempt ${attempt + 1}/${PEER_INIT_MAX_ATTEMPTS}`)
+      clearInitRetry()
+      initRetryTimer = setTimeout(() => {
+        initRetryTimer = null
+        if (!shouldReconnect.value) {
+          reject(error)
+          return
+        }
+        attemptPeerInit(nextDeviceId, attempt + 1).then(resolve, reject)
+      }, PEER_INIT_RETRY_DELAY_MS)
+    }
 
     try {
-      peer.value = new Peer(deviceId as string, {
+      const instance = new Peer(deviceId as string, {
         config: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
@@ -60,14 +129,20 @@ const initPeer = (deviceId?: string): Promise<string> => {
         },
         debug: 2
       })
+      peer.value = instance
+      currentPeerInstance = instance
 
-      peer.value.on('open', (id) => {
+      instance.on('open', (id) => {
         console.log('[WebRTC] Peer initialized with ID:', id)
+        isOpen = true
         localPeerId.value = id
+        peerError.value = null
+        // Fires on reconnects too, so discovery can re-announce the ID.
+        peerOpenCallbacks.forEach(cb => cb(id))
         resolve(id)
       })
 
-      peer.value.on('connection', (conn: DataConnection) => {
+      instance.on('connection', (conn: DataConnection) => {
         console.log('[WebRTC] Incoming connection from:', conn.peer)
         setConnectionState(conn.peer, 'connecting')
         // Wait for the connection to open before registering handlers
@@ -76,25 +151,61 @@ const initPeer = (deviceId?: string): Promise<string> => {
         })
       })
 
-      peer.value.on('error', (error) => {
+      instance.on('error', (error: PeerJsError) => {
         console.error('[WebRTC] Peer error:', error)
-        reject(error)
+
+        if (isOpen) {
+          // e.g. 'peer-unavailable' when dialling a device that has gone away.
+          // connectToPeer() surfaces that on its own connection promise.
+          return
+        }
+
+        if (error.type === 'unavailable-id') {
+          // The broker still holds the ID we persisted in a previous session
+          // (refresh, second tab, or a mobile tab whose socket was not reaped
+          // yet). Retry with the same ID first — it is usually released within
+          // seconds — then fall back to a broker-generated ID on the last
+          // attempt so this device is never permanently undiscoverable.
+          const isLastRetry = attempt + 1 >= PEER_INIT_MAX_ATTEMPTS
+          retry(error, isLastRetry ? undefined : deviceId)
+          return
+        }
+
+        if (error.type && RETRYABLE_PEER_ERRORS.has(error.type)) {
+          retry(error, deviceId)
+          return
+        }
+
+        fail(error)
       })
 
-      peer.value.on('disconnected', () => {
+      instance.on('disconnected', () => {
         console.log('[WebRTC] Peer disconnected')
-        if (shouldReconnect.value) {
+        // A retry may have already replaced this instance; only the current
+        // one should try to come back.
+        if (shouldReconnect.value && currentPeerInstance === instance) {
           console.log('[WebRTC] Attempting to reconnect peer...')
-          peer.value?.reconnect()
+          instance.reconnect()
         } else {
           console.log('[WebRTC] Reconnect disabled, staying disconnected')
         }
       })
     } catch (error) {
       console.error('[WebRTC] Failed to initialize peer:', error)
-      reject(error)
+      fail(error as PeerJsError)
     }
   })
+}
+
+const initPeer = (deviceId?: string): Promise<string> => {
+  shouldReconnect.value = true
+  peerError.value = null
+  clearInitRetry()
+  return attemptPeerInit(deviceId, 1)
+}
+
+const onPeerOpen = (callback: (peerId: string) => void) => {
+  peerOpenCallbacks.push(callback)
 }
 
 const connectToPeer = (peerId: string): Promise<DataConnection> => {
@@ -172,15 +283,19 @@ const onConnection = (callback: (conn: DataConnection) => void) => {
 const destroy = () => {
   console.log('[WebRTC] Destroying peer - disabling reconnect')
   shouldReconnect.value = false
+  clearInitRetry()
 
   connections.value.forEach(conn => conn.close())
   connections.value.clear()
   connectionStates.value.clear()
   peer.value?.destroy()
   peer.value = null
+  currentPeerInstance = null
   localPeerId.value = ''
+  peerError.value = null
   // Clear callbacks so they don't accumulate across re-mounts
   connectionCallbacks.length = 0
+  peerOpenCallbacks.length = 0
 }
 
 export const useWebRTC = () => {
@@ -189,12 +304,14 @@ export const useWebRTC = () => {
     connections,
     connectionStates,
     localPeerId,
+    peerError,
     initPeer,
     connectToPeer,
     sendData,
     closeConnection,
     getConnectionState,
     onConnection,
+    onPeerOpen,
     destroy
   }
 }
