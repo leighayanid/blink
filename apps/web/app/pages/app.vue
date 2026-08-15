@@ -163,6 +163,21 @@
               <p class="break-all text-lg font-semibold text-app-text dark:text-app-text-dark">{{ currentIncomingFile.metadata.name }}</p>
               <p class="mt-2 text-sm text-app-muted dark:text-app-muted-dark">{{ formatBytes(currentIncomingFile.metadata.size) }}</p>
             </div>
+
+            <div
+              v-if="currentIncomingIsDangerous"
+              class="mt-4 flex items-start gap-3 rounded-app border border-app-warning/40 bg-app-warning/10 p-4"
+            >
+              <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-5 shrink-0 text-app-warning" />
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-app-text dark:text-app-text-dark">
+                  .{{ currentIncomingExtension }} files can run code on your device
+                </p>
+                <p class="mt-1 text-sm text-app-muted dark:text-app-muted-dark">
+                  Only accept this if you trust the sender and expected this file.
+                </p>
+              </div>
+            </div>
           </div>
           <div class="flex flex-col gap-3 sm:flex-row">
             <UButton
@@ -198,7 +213,8 @@ import type { Device, FileMetadata } from '@blink/types'
 import type { DataConnection } from 'peerjs'
 import { useDeviceDiscovery } from '../composables/useDeviceDiscovery'
 import { useWebRTC } from '../composables/useWebRTC'
-import { useFileTransfer, type FileTransferBatchFile, type FileTransferBatchInfo, type IncomingFilePrompt } from '../composables/useFileTransfer'
+import { useFileTransfer, isDangerousFileName, getFileExtension, type FileTransferBatchFile, type FileTransferBatchInfo, type IncomingFilePrompt } from '../composables/useFileTransfer'
+import { useTrustedPeers, normalizePairCode } from '../composables/useTrustedPeers'
 import { useTheme } from '../composables/useTheme'
 import { useTransfersStore } from '../stores/transfers'
 
@@ -209,19 +225,26 @@ const transfersStore = useTransfersStore()
 const { toggleTheme } = useTheme()
 const toast = useToast()
 
+const {
+  localPairCode,
+  isPaired,
+  isVerified,
+  isPairing,
+  isLockedOut,
+  forgetPeer,
+  regeneratePairCode,
+  requestPairing,
+  attachConnection,
+  onTrustEvent,
+  reset: resetTrust
+} = useTrustedPeers()
+
 const selectedDevice = ref<Device | null>(null)
 const connectedPeers = ref<Set<string>>(new Set())
 const targetPeerForSend = ref<string | null>(null)
 const activeMobileTab = ref<'discover' | 'transfer'>('transfer')
-const trustedPeerIds = useStorage<string[]>('blink-trusted-peer-ids', [])
 const autoAcceptTrustedFiles = useStorage<boolean>('blink-auto-accept-trusted-files', false)
-const localPairCode = useStorage<string>('blink-local-pair-code', generatePairCode())
 const pairCodeInputs = ref<Record<string, string>>({})
-const pairingPeers = ref<Set<string>>(new Set())
-
-if (!/^\d{6}$/.test(localPairCode.value)) {
-  localPairCode.value = generatePairCode()
-}
 
 type IncomingFileQueueItem = {
   transferId: string
@@ -230,19 +253,33 @@ type IncomingFileQueueItem = {
   batch?: FileTransferBatchInfo
 }
 
+/**
+ * What "Accept all" actually granted: the exact transfers listed in the batch
+ * at the moment the user agreed. The sender controls `batch.index`, so a
+ * count-based window can be held open indefinitely by never advancing it.
+ */
+type AcceptedBatch = {
+  transferIds: Set<string>
+  timeoutId: ReturnType<typeof setTimeout>
+}
+
+const MAX_QUEUED_INCOMING_PROMPTS = 32
+
 const incomingFileQueue = ref<IncomingFileQueueItem[]>([])
 const incomingFileResolvers = new Map<string, (accepted: boolean) => void>()
-const acceptedIncomingBatches = new Map<string, ReturnType<typeof setTimeout>>()
+const acceptedIncomingBatches = new Map<string, AcceptedBatch>()
 const completedIncomingBatchFiles = new Map<string, Set<string>>()
-const pendingPairRequests = new Map<string, { peerId: string; timeoutId: ReturnType<typeof setTimeout> }>()
-const pairingMessageListeners = new WeakSet<DataConnection>()
-const PAIR_REQUEST_TIMEOUT_MS = 30000
 const ACCEPTED_BATCH_WINDOW_MS = 15 * 60 * 1000
 
 const currentIncomingFile = computed(() => incomingFileQueue.value[0] ?? null)
 const isIncomingFileModalOpen = computed(() => currentIncomingFile.value !== null)
-const trustedPeerSet = computed(() => new Set(trustedPeerIds.value))
 const hasMultipleIncomingFiles = computed(() => (currentIncomingFile.value?.batch?.count ?? 1) > 1)
+const currentIncomingIsDangerous = computed(() =>
+  currentIncomingFile.value ? isDangerousFileName(currentIncomingFile.value.metadata.name) : false
+)
+const currentIncomingExtension = computed(() =>
+  currentIncomingFile.value ? getFileExtension(currentIncomingFile.value.metadata.name) : ''
+)
 const incomingFileRequestLabel = computed(() => {
   const batch = currentIncomingFile.value?.batch
   if (!batch || batch.count <= 1) return 'a file'
@@ -265,12 +302,6 @@ const connectingDevices = computed(() =>
 
 const hasConnectingDevices = computed(() => connectingDevices.value.length > 0)
 
-function generatePairCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-const normalizePairCode = (value: string): string => value.replace(/\D/g, '').slice(0, 6)
-
 const formatBytes = (bytes: number): string => {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
 
@@ -285,81 +316,78 @@ const getDeviceNameByPeerId = (peerId: string): string => {
   return device?.name || peerId
 }
 
-const isTrustedPeer = (peerId?: string | null): boolean => {
-  return !!peerId && trustedPeerSet.value.has(peerId)
-}
-
-const addTrustedPeer = (peerId: string) => {
-  if (trustedPeerSet.value.has(peerId)) return
-  trustedPeerIds.value = [...trustedPeerIds.value, peerId]
-}
-
 const untrustPeer = (peerId: string) => {
-  if (!trustedPeerSet.value.has(peerId)) return
+  if (!isPaired(peerId)) return
 
-  trustedPeerIds.value = trustedPeerIds.value.filter(id => id !== peerId)
+  forgetPeer(peerId)
   toast.add({
     title: `Untrusted ${getDeviceNameByPeerId(peerId)}`,
     color: 'warning'
   })
 }
 
-const setPairingPeerPending = (peerId: string, pending: boolean) => {
-  const next = new Set(pairingPeers.value)
-  if (pending) next.add(peerId)
-  else next.delete(peerId)
-  pairingPeers.value = next
-}
-
-const isPairingPeer = (peerId?: string | null): boolean => {
-  return !!peerId && pairingPeers.value.has(peerId)
-}
+const isPairingPeer = (peerId?: string | null): boolean => isPairing(peerId)
 
 const updatePairCodeInput = (peerId: string, value: string) => {
   pairCodeInputs.value[peerId] = normalizePairCode(value)
-}
-
-const regeneratePairCode = () => {
-  localPairCode.value = generatePairCode()
 }
 
 const getIncomingBatchKey = (peerId: string, batch?: FileTransferBatchInfo): string | null => {
   return batch ? `${peerId}:${batch.id}` : null
 }
 
-const rememberAcceptedIncomingBatch = (peerId: string, batch?: FileTransferBatchInfo) => {
+const rememberAcceptedIncomingBatch = (
+  peerId: string,
+  batch: FileTransferBatchInfo | undefined,
+  transferIds: string[]
+) => {
   const key = getIncomingBatchKey(peerId, batch)
   if (!key) return
 
   const existing = acceptedIncomingBatches.get(key)
-  if (existing) clearTimeout(existing)
+  if (existing) clearTimeout(existing.timeoutId)
 
   const timeoutId = setTimeout(() => {
     acceptedIncomingBatches.delete(key)
   }, ACCEPTED_BATCH_WINDOW_MS)
-  acceptedIncomingBatches.set(key, timeoutId)
+  acceptedIncomingBatches.set(key, { transferIds: new Set(transferIds), timeoutId })
 }
 
 const forgetAcceptedIncomingBatch = (peerId: string, batch?: FileTransferBatchInfo) => {
   const key = getIncomingBatchKey(peerId, batch)
   if (!key) return
 
-  const timeoutId = acceptedIncomingBatches.get(key)
-  if (timeoutId) clearTimeout(timeoutId)
+  const accepted = acceptedIncomingBatches.get(key)
+  if (accepted) clearTimeout(accepted.timeoutId)
   acceptedIncomingBatches.delete(key)
 }
 
 const clearAcceptedIncomingBatches = () => {
-  for (const timeoutId of acceptedIncomingBatches.values()) {
-    clearTimeout(timeoutId)
+  for (const accepted of acceptedIncomingBatches.values()) {
+    clearTimeout(accepted.timeoutId)
   }
   acceptedIncomingBatches.clear()
   completedIncomingBatchFiles.clear()
 }
 
-const isAcceptedIncomingBatch = (peerId: string, batch?: FileTransferBatchInfo): boolean => {
+/**
+ * Consume a one-shot grant for this exact transfer. Anything the user did not
+ * see listed when they pressed "Accept all" still has to be prompted for.
+ */
+const claimAcceptedBatchFile = (
+  peerId: string,
+  transferId: string,
+  batch?: FileTransferBatchInfo
+): boolean => {
   const key = getIncomingBatchKey(peerId, batch)
-  return !!key && acceptedIncomingBatches.has(key)
+  if (!key) return false
+
+  const accepted = acceptedIncomingBatches.get(key)
+  if (!accepted?.transferIds.has(transferId)) return false
+
+  accepted.transferIds.delete(transferId)
+  if (accepted.transferIds.size === 0) forgetAcceptedIncomingBatch(peerId, batch)
+  return true
 }
 
 const queueRemainingBatchFiles = (peerId: string, batch?: FileTransferBatchInfo) => {
@@ -384,6 +412,12 @@ const queueRemainingBatchFiles = (peerId: string, batch?: FileTransferBatchInfo)
 }
 
 const enqueueIncomingFilePrompt = ({ transferId, metadata, connection, batch }: IncomingFilePrompt): Promise<boolean> => {
+  // A peer that can open unlimited prompts can bury the UI under modals.
+  if (incomingFileQueue.value.length >= MAX_QUEUED_INCOMING_PROMPTS) {
+    console.warn('[App] Dropping incoming file prompt, queue is full:', transferId)
+    return Promise.resolve(false)
+  }
+
   return new Promise((resolve) => {
     incomingFileQueue.value.push({
       transferId,
@@ -396,19 +430,18 @@ const enqueueIncomingFilePrompt = ({ transferId, metadata, connection, batch }: 
 }
 
 const handleIncomingFilePrompt = (incoming: IncomingFilePrompt): Promise<boolean> | boolean => {
-  if (autoAcceptTrustedFiles.value && isTrustedPeer(incoming.connection.peer)) {
+  // Auto-accept requires a peer that proved possession of the paired secret on
+  // this connection — being able to present a trusted peerId is not enough.
+  if (autoAcceptTrustedFiles.value && isVerified(incoming.connection.peer)) {
     toast.add({
       title: `Auto-accepted ${incoming.metadata.name}`,
-      description: `Trusted device: ${getDeviceNameByPeerId(incoming.connection.peer)}`,
+      description: `Verified device: ${getDeviceNameByPeerId(incoming.connection.peer)}`,
       color: 'success'
     })
     return true
   }
 
-  if (isAcceptedIncomingBatch(incoming.connection.peer, incoming.batch)) {
-    if (incoming.batch && incoming.batch.index >= incoming.batch.count - 1) {
-      forgetAcceptedIncomingBatch(incoming.connection.peer, incoming.batch)
-    }
+  if (claimAcceptedBatchFile(incoming.connection.peer, incoming.transferId, incoming.batch)) {
     return true
   }
 
@@ -463,7 +496,15 @@ const acceptIncomingBatch = () => {
     return
   }
 
-  rememberAcceptedIncomingBatch(current.peerId, current.batch)
+  // Grant exactly the transfers the user was shown — the declared file list if
+  // the sender provided one, otherwise only what is already queued.
+  const grantedTransferIds = current.batch?.files?.length
+    ? current.batch.files.map(file => file.transferId)
+    : incomingFileQueue.value
+        .filter(request => getIncomingBatchKey(request.peerId, request.batch) === batchKey)
+        .map(request => request.transferId)
+
+  rememberAcceptedIncomingBatch(current.peerId, current.batch, grantedTransferIds)
   queueRemainingBatchFiles(current.peerId, current.batch)
 
   const remainingQueue: IncomingFileQueueItem[] = []
@@ -473,6 +514,8 @@ const acceptIncomingBatch = () => {
       continue
     }
 
+    // Spend the grant now so a resent transferId cannot reuse it later.
+    claimAcceptedBatchFile(request.peerId, request.transferId, request.batch)
     const resolve = incomingFileResolvers.get(request.transferId)
     incomingFileResolvers.delete(request.transferId)
     resolve?.(true)
@@ -495,26 +538,9 @@ const rejectAllIncomingPrompts = () => {
   incomingFileResolvers.clear()
 }
 
-const clearPendingPairRequest = (requestId: string) => {
-  const pending = pendingPairRequests.get(requestId)
-  if (!pending) return
-
-  clearTimeout(pending.timeoutId)
-  setPairingPeerPending(pending.peerId, false)
-  pendingPairRequests.delete(requestId)
-}
-
-const clearAllPendingPairRequests = () => {
-  for (const [requestId, pending] of pendingPairRequests.entries()) {
-    clearTimeout(pending.timeoutId)
-    setPairingPeerPending(pending.peerId, false)
-    pendingPairRequests.delete(requestId)
-  }
-}
-
 const pairWithPeer = (peerId: string) => {
-  if (isTrustedPeer(peerId)) {
-    toast.add({ title: `${getDeviceNameByPeerId(peerId)} is already verified`, color: 'info' })
+  if (isPaired(peerId)) {
+    toast.add({ title: `${getDeviceNameByPeerId(peerId)} is already paired`, color: 'info' })
     return
   }
 
@@ -524,119 +550,16 @@ const pairWithPeer = (peerId: string) => {
     return
   }
 
-  const targetCode = normalizePairCode(pairCodeInputs.value[peerId] || '')
-  if (targetCode.length !== 6) {
-    toast.add({ title: 'Enter the 6-digit code from the other device', color: 'warning' })
-    return
-  }
-
-  const requestId = `pair-${crypto.randomUUID()}`
-  const timeoutId = setTimeout(() => {
-    clearPendingPairRequest(requestId)
+  if (requestPairing(connection, pairCodeInputs.value[peerId] || '')) {
     toast.add({
-      title: `Pairing timed out for ${getDeviceNameByPeerId(peerId)}`,
-      color: 'warning'
+      title: `Sent a pairing request to ${getDeviceNameByPeerId(peerId)}`,
+      color: 'info'
     })
-  }, PAIR_REQUEST_TIMEOUT_MS)
-
-  pendingPairRequests.set(requestId, { peerId, timeoutId })
-  setPairingPeerPending(peerId, true)
-
-  connection.send(JSON.stringify({
-    type: 'pair-request',
-    requestId,
-    targetCode,
-    requesterCode: localPairCode.value
-  }))
-
-  toast.add({
-    title: `Sent a pairing request to ${getDeviceNameByPeerId(peerId)}`,
-    color: 'info'
-  })
+  }
 }
 
-const setupPairingHandlers = (connection: DataConnection) => {
-  if (pairingMessageListeners.has(connection)) return
-  pairingMessageListeners.add(connection)
-
-  connection.on('data', (data: unknown) => {
-    if (typeof data !== 'string') return
-
-    let message: Record<string, unknown>
-    try {
-      message = JSON.parse(data)
-    } catch {
-      return
-    }
-
-    if (message.type === 'pair-request') {
-      const requestId = typeof message.requestId === 'string' ? message.requestId : ''
-      const targetCode = typeof message.targetCode === 'string' ? normalizePairCode(message.targetCode) : ''
-      const requesterCode = typeof message.requesterCode === 'string' ? normalizePairCode(message.requesterCode) : ''
-      if (!requestId || requesterCode.length !== 6) return
-
-      if (targetCode !== localPairCode.value) {
-        connection.send(JSON.stringify({
-          type: 'pair-reject',
-          requestId,
-          reason: 'Invalid pairing code'
-        }))
-        return
-      }
-
-      addTrustedPeer(connection.peer)
-      connection.send(JSON.stringify({
-        type: 'pair-approve',
-        requestId,
-        requesterCode
-      }))
-
-      toast.add({
-        title: `${getDeviceNameByPeerId(connection.peer)} is verified`,
-        color: 'success'
-      })
-      return
-    }
-
-    if (message.type === 'pair-approve') {
-      const requestId = typeof message.requestId === 'string' ? message.requestId : ''
-      const requesterCode = typeof message.requesterCode === 'string' ? normalizePairCode(message.requesterCode) : ''
-      const pending = pendingPairRequests.get(requestId)
-      if (!requestId || !pending || pending.peerId !== connection.peer) return
-
-      clearPendingPairRequest(requestId)
-
-      if (requesterCode !== localPairCode.value) {
-        toast.add({
-          title: `Could not verify ${getDeviceNameByPeerId(connection.peer)}`,
-          color: 'error'
-        })
-        return
-      }
-
-      addTrustedPeer(connection.peer)
-      pairCodeInputs.value[connection.peer] = ''
-      toast.add({
-        title: `${getDeviceNameByPeerId(connection.peer)} is verified`,
-        color: 'success'
-      })
-      return
-    }
-
-    if (message.type === 'pair-reject') {
-      const requestId = typeof message.requestId === 'string' ? message.requestId : ''
-      const reason = typeof message.reason === 'string' ? message.reason : 'Pairing was rejected'
-      const pending = pendingPairRequests.get(requestId)
-      if (!requestId || !pending || pending.peerId !== connection.peer) return
-
-      clearPendingPairRequest(requestId)
-      toast.add({
-        title: `Could not verify ${getDeviceNameByPeerId(connection.peer)}`,
-        description: reason,
-        color: 'warning'
-      })
-    }
-  })
+const setupConnectionHandlers = (connection: DataConnection) => {
+  attachConnection(connection)
 
   connection.on('close', () => {
     connectedPeers.value.delete(connection.peer)
@@ -644,14 +567,32 @@ const setupPairingHandlers = (connection: DataConnection) => {
       const remaining = Array.from(connectedPeers.value)[0]
       targetPeerForSend.value = remaining || null
     }
-
-    for (const requestId of Array.from(pendingPairRequests.keys())) {
-      if (pendingPairRequests.get(requestId)?.peerId === connection.peer) {
-        clearPendingPairRequest(requestId)
-      }
-    }
   })
 }
+
+onTrustEvent((event) => {
+  const name = getDeviceNameByPeerId(event.peerId)
+
+  switch (event.type) {
+    case 'paired':
+      pairCodeInputs.value[event.peerId] = ''
+      toast.add({ title: `${name} is paired`, color: 'success' })
+      break
+    case 'verified':
+      toast.add({ title: `${name} verified`, color: 'success' })
+      break
+    case 'pair-failed':
+      toast.add({ title: `Could not verify ${name}`, description: event.reason, color: 'warning' })
+      break
+    case 'locked-out':
+      toast.add({
+        title: `Pairing locked for ${name}`,
+        description: 'Too many failed attempts. Try again later.',
+        color: 'error'
+      })
+      break
+  }
+})
 
 onMounted(async () => {
   initDevice()
@@ -661,7 +602,7 @@ onMounted(async () => {
     if (!targetPeerForSend.value) {
       targetPeerForSend.value = conn.peer
     }
-    setupPairingHandlers(conn)
+    setupConnectionHandlers(conn)
 
     receiveFile(conn, {
       onIncomingFile: handleIncomingFilePrompt,
@@ -770,7 +711,7 @@ const handleFilesSelected = async (files: File[], targetPeerId?: string) => {
 onUnmounted(() => {
   rejectAllIncomingPrompts()
   clearAcceptedIncomingBatches()
-  clearAllPendingPairRequests()
+  resetTrust()
   disconnect()
   destroy()
 })

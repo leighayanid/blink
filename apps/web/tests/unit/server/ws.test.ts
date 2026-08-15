@@ -350,6 +350,190 @@ describe('WebSocket signaling handler', () => {
   })
 
   // ---------------------------------------------------------------------------
+  // hardening — each of these reproduces a bypass that previously worked
+  // ---------------------------------------------------------------------------
+  describe('peerId ownership', () => {
+    const sent = (peer: ReturnType<typeof makePeer>) =>
+      peer.send.mock.calls.map((c: [string]) => JSON.parse(c[0]))
+
+    it('refuses a peerId that another live socket already announced', () => {
+      const victim = makePeer('own-victim')
+      const attacker = makePeer('own-attacker')
+      const bystander = makePeer('own-bystander')
+      handler.open(victim)
+      handler.open(attacker)
+      handler.open(bystander)
+
+      handler.message(victim, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'v', name: 'Victim', platform: 'macOS', peerId: 'victim-peer', timestamp: 1 }
+      }))
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      handler.message(attacker, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'a', name: 'Victim', platform: 'macOS', peerId: 'victim-peer', timestamp: 2 }
+      }))
+      warnSpy.mockRestore()
+
+      victim.send.mockClear()
+      attacker.send.mockClear()
+      handler.message(bystander, makeMessage({
+        type: 'signal',
+        targetPeer: 'victim-peer',
+        signal: { sdp: 'secret' }
+      }))
+
+      // The signal must still reach its rightful owner
+      expect(sent(victim).some((m: any) => m.type === 'signal')).toBe(true)
+      expect(sent(attacker).some((m: any) => m.type === 'signal')).toBe(false)
+    })
+
+    it('allows reclaiming a peerId whose previous owner has disconnected', () => {
+      const first = makePeer('reclaim-first')
+      const second = makePeer('reclaim-second')
+      handler.open(first)
+      handler.open(second)
+
+      handler.message(first, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'd', name: 'Device', platform: 'Linux', peerId: 'shared-peer', timestamp: 1 }
+      }))
+      handler.close(first)
+
+      second.send.mockClear()
+      handler.message(second, makeMessage({
+        type: 'announce',
+        deviceInfo: { id: 'd', name: 'Device', platform: 'Linux', peerId: 'shared-peer', timestamp: 2 }
+      }))
+
+      expect(sent(second).some((m: any) => m.type === 'peer-joined' && m.deviceInfo.peerId === 'shared-peer')).toBe(true)
+      expect(sent(second).some((m: any) => m.type === 'error')).toBe(false)
+    })
+  })
+
+  describe('rate limiting', () => {
+    it('does not let reconnecting refill the per-IP message budget', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      let blockedOnConnect = false
+
+      for (let socket = 0; socket < 10; socket++) {
+        const peer = makePeer(`flood-${socket}`)
+        handler.open(peer)
+
+        const messages = peer.send.mock.calls.map((c: [string]) => JSON.parse(c[0]))
+        if (!messages.some((m: any) => m.type === 'init')) {
+          blockedOnConnect = messages.some(
+            (m: any) => m.type === 'error' && m.reason === 'Temporarily blocked for abuse'
+          )
+          break
+        }
+
+        // Burn this socket's whole allowance, then throw it away and reconnect —
+        // the bypass that made the old per-socket limiter decorative.
+        for (let i = 0; i < 130; i++) {
+          handler.message(peer, makeMessage({ type: 'heartbeat' }))
+        }
+        handler.close(peer)
+      }
+
+      warnSpy.mockRestore()
+      expect(blockedOnConnect).toBe(true)
+    })
+
+    it('throttles announce separately from ordinary messages', () => {
+      const peer = makePeer('announce-flood')
+      handler.open(peer)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      let broadcasts = 0
+      for (let i = 0; i < 20; i++) {
+        peer.send.mockClear()
+        handler.message(peer, makeMessage({
+          type: 'announce',
+          deviceInfo: { id: 'a', name: 'A', platform: 'Linux', peerId: `peer-${i}`, timestamp: 1 }
+        }))
+        if (peer.send.mock.calls.some((c: [string]) => JSON.parse(c[0]).type === 'peer-joined')) broadcasts++
+      }
+
+      warnSpy.mockRestore()
+      // Far below the 120/min general message budget
+      expect(broadcasts).toBeLessThanOrEqual(5)
+    })
+
+    it('measures the message size cap in UTF-8 bytes, not UTF-16 units', () => {
+      const peer = makePeer('size-peer')
+      handler.open(peer)
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // 15096 UTF-16 units but 30096 UTF-8 bytes — under a naive length check,
+      // comfortably over the 16 KB cap.
+      const payload = JSON.stringify({
+        type: 'announce',
+        deviceInfo: { id: 'x', name: 'A', platform: 'é'.repeat(15000), peerId: 'px', timestamp: 1 }
+      })
+      expect(payload.length).toBeLessThan(16 * 1024)
+
+      handler.message(peer, { text: () => payload })
+      handler.message(peer, { text: () => payload })
+      handler.message(peer, { text: () => payload })
+
+      warnSpy.mockRestore()
+      expect(peer.close).toHaveBeenCalled()
+    })
+  })
+
+  describe('client IP resolution', () => {
+    it('ignores the client-supplied end of X-Forwarded-For', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      let accepted = 0
+
+      for (let i = 0; i < 60; i++) {
+        const peer = makePeer(`xff-${i}`)
+        // Attacker picks the leftmost entry; the real proxy appends its view.
+        peer.request.headers['x-forwarded-for'] = `9.9.9.${i}, 203.0.113.7`
+        handler.open(peer)
+        if (peer.send.mock.calls.some((c: [string]) => JSON.parse(c[0]).type === 'init')) accepted++
+      }
+
+      warnSpy.mockRestore()
+      // All 60 resolve to the same real client, so the per-IP caps apply
+      expect(accepted).toBeLessThanOrEqual(20)
+    })
+  })
+
+  describe('origin checks', () => {
+    const withOrigin = (id: string, origin?: string, host = 'blink.app') => {
+      const peer = makePeer(id)
+      peer.request.headers = { 'x-forwarded-for': '198.51.100.4', host } as any
+      if (origin) (peer.request.headers as any).origin = origin
+      return peer
+    }
+
+    it('rejects a handshake from a foreign origin', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const peer = withOrigin('origin-bad', 'https://evil.example')
+      handler.open(peer)
+      warnSpy.mockRestore()
+
+      expect(peer.close).toHaveBeenCalled()
+      expect(peer.send).toHaveBeenCalledWith(expect.stringContaining('Origin not allowed'))
+    })
+
+    it('accepts a same-origin handshake', () => {
+      const peer = withOrigin('origin-good', 'https://blink.app')
+      handler.open(peer)
+      expect(peer.send).toHaveBeenCalledWith(expect.stringContaining('"type":"init"'))
+    })
+
+    it('accepts a non-browser client that sends no Origin', () => {
+      const peer = withOrigin('origin-none')
+      handler.open(peer)
+      expect(peer.send).toHaveBeenCalledWith(expect.stringContaining('"type":"init"'))
+    })
+  })
+
+  // ---------------------------------------------------------------------------
   // close
   // ---------------------------------------------------------------------------
   describe('close', () => {

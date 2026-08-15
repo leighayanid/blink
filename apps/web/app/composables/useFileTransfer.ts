@@ -12,12 +12,28 @@ const DANGEROUS_EXTENSIONS = new Set([
   'apk', 'ipa'
 ])
 
+/** Chunks are buffered in memory until the file completes, so these are RAM budgets. */
+const MAX_FILE_BYTES = 2 * 1024 * 1024 * 1024
+const MAX_BUFFERED_BYTES_PER_CONNECTION = 2 * 1024 * 1024 * 1024
+const MAX_CONCURRENT_RECEIVES = 16
+
+export const getFileExtension = (fileName: string): string =>
+  fileName.split('.').pop()?.toLowerCase() ?? ''
+
+/**
+ * Whether a name has an extension the OS may execute or a browser may render
+ * with script. Advisory only — the receiver still decides.
+ */
+export const isDangerousFileName = (fileName: string): boolean =>
+  DANGEROUS_EXTENSIONS.has(getFileExtension(fileName))
+
 interface ReceiveOperation {
   id: string
   chunks: ArrayBuffer[]
   metadata: FileMetadata | null
   batch?: FileTransferBatchInfo
   receivedChunks: number
+  receivedBytes: number
   totalChunks: number
   /** transferId of the metadata frame we're waiting for a binary chunk for */
   pendingBinaryTransferId: string | null
@@ -261,6 +277,23 @@ export const useFileTransfer = () => {
     const receiveMap = new Map<string, ReceiveOperation>()
     // transferId of the most recent 'file-chunk' descriptor — next binary belongs to it
     let pendingTransferId: string | null = null
+    let bufferedBytes = 0
+
+    const abortReceive = (op: ReceiveOperation, reason: string) => {
+      console.warn(`[FileTransfer] Aborting ${op.id}: ${reason}`)
+      bufferedBytes -= op.receivedBytes
+      op.chunks.length = 0
+      receiveMap.delete(op.id)
+      store.updateTransfer(op.id, { status: 'failed', endTime: Date.now() })
+
+      try {
+        connection.send(JSON.stringify({
+          type: 'file-reject',
+          transferId: op.id,
+          reason
+        }))
+      } catch {}
+    }
 
     const pushChunk = async (chunkData: ArrayBuffer) => {
       const id = pendingTransferId
@@ -270,15 +303,29 @@ export const useFileTransfer = () => {
       const op = receiveMap.get(id)
       if (!op) return
 
+      // The sender declared a size up front; it does not get to exceed it.
+      // Without this a peer can announce 1 KB and stream until the tab dies.
+      const declaredSize = op.metadata?.size ?? 0
+      if (op.receivedBytes + chunkData.byteLength > declaredSize) {
+        abortReceive(op, 'Sender exceeded the declared file size')
+        return
+      }
+
+      if (bufferedBytes + chunkData.byteLength > MAX_BUFFERED_BYTES_PER_CONNECTION) {
+        abortReceive(op, 'Too much unfinished data buffered from this peer')
+        return
+      }
+
       op.chunks.push(chunkData)
       op.receivedChunks++
+      op.receivedBytes += chunkData.byteLength
+      bufferedBytes += chunkData.byteLength
 
       let progress = 0
       if (op.totalChunks > 0) {
         progress = (op.receivedChunks / op.totalChunks) * 100
-      } else if (op.metadata?.size) {
-        const receivedBytes = op.chunks.reduce((acc, c) => acc + c.byteLength, 0)
-        progress = Math.min(100, (receivedBytes / op.metadata.size) * 100)
+      } else if (declaredSize > 0) {
+        progress = Math.min(100, (op.receivedBytes / declaredSize) * 100)
       }
 
       store.updateTransfer(id, { progress })
@@ -300,6 +347,31 @@ export const useFileTransfer = () => {
               || typeof message.metadata?.name !== 'string'
               || typeof message.metadata?.size !== 'number'
             ) {
+              return
+            }
+
+            if (
+              !Number.isFinite(message.metadata.size)
+              || message.metadata.size < 0
+              || message.metadata.size > MAX_FILE_BYTES
+            ) {
+              console.warn('[FileTransfer] Rejecting file with implausible size:', message.metadata.size)
+              connection.send(JSON.stringify({
+                type: 'file-reject',
+                transferId: message.transferId,
+                reason: 'File too large'
+              }))
+              return
+            }
+
+            // Bound how many prompts/buffers one peer can open at once.
+            if (!receiveMap.has(message.transferId) && receiveMap.size >= MAX_CONCURRENT_RECEIVES) {
+              console.warn('[FileTransfer] Too many concurrent transfers from', connection.peer)
+              connection.send(JSON.stringify({
+                type: 'file-reject',
+                transferId: message.transferId,
+                reason: 'Too many concurrent transfers'
+              }))
               return
             }
 
@@ -376,6 +448,7 @@ export const useFileTransfer = () => {
               metadata,
               batch,
               receivedChunks: 0,
+              receivedBytes: 0,
               totalChunks: 0,
               pendingBinaryTransferId: null
             }
@@ -410,6 +483,8 @@ export const useFileTransfer = () => {
             if (typeof message.transferId !== 'string') return
             const op = receiveMap.get(message.transferId)
             if (!op) return
+
+            bufferedBytes -= op.receivedBytes
 
             const blob = new Blob(op.chunks, {
               type: op.metadata?.type || 'application/octet-stream'
@@ -455,10 +530,10 @@ export const useFileTransfer = () => {
 
   const downloadFile = (blob: Blob, fileName: string) => {
     // Warn for potentially dangerous file types instead of blocking outright,
-    // as the OS file-open dialog is the last line of defence.
-    const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
-    if (DANGEROUS_EXTENSIONS.has(ext)) {
-      console.warn(`[FileTransfer] Received file with potentially dangerous extension: .${ext}`)
+    // as the OS file-open dialog is the last line of defence. The receiver is
+    // also warned in the accept prompt, before any bytes are transferred.
+    if (isDangerousFileName(fileName)) {
+      console.warn(`[FileTransfer] Received file with potentially dangerous extension: .${getFileExtension(fileName)}`)
     }
 
     const url = URL.createObjectURL(blob)

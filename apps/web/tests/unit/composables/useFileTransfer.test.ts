@@ -488,4 +488,121 @@ describe('useFileTransfer', () => {
       expect(completed).toHaveLength(0)
     })
   })
+
+  // ---------------------------------------------------------------------------
+  // Receiver-side abuse limits
+  //
+  // Chunks accumulate in memory until the file completes, so an unbounded
+  // sender can exhaust the tab.
+  // ---------------------------------------------------------------------------
+  describe('receive limits', () => {
+    const sentMessages = (conn: any) =>
+      conn.send.mock.calls
+        .filter((call: [unknown]) => typeof call[0] === 'string')
+        .map((call: [string]) => {
+          try {
+            return JSON.parse(call[0])
+          } catch {
+            return {}
+          }
+        })
+
+    it('aborts a sender that streams more than its declared size', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile, transfers } = useFileTransfer()
+      const conn = createMockConnection()
+      receiveFile(conn)
+
+      const tid = 'overrun'
+      conn._emit('data', JSON.stringify({
+        type: 'file-meta',
+        transferId: tid,
+        metadata: { name: 'small.bin', size: 8, type: 'application/octet-stream', lastModified: 0 }
+      }))
+
+      conn._emit('data', JSON.stringify({ type: 'file-chunk', transferId: tid, chunkIndex: 0, totalChunks: 1 }))
+      conn._emit('data', new Uint8Array(4096).buffer)
+      await new Promise(r => setTimeout(r, 0))
+
+      const failed = [...transfers.value].find((t: any) => t.id === tid)
+      expect(failed?.status).toBe('failed')
+      expect(sentMessages(conn).some((m: any) => m.type === 'file-reject')).toBe(true)
+    })
+
+    it('does not download anything for an aborted transfer', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile } = useFileTransfer()
+      const conn = createMockConnection()
+      receiveFile(conn)
+
+      const tid = 'overrun-2'
+      conn._emit('data', JSON.stringify({
+        type: 'file-meta',
+        transferId: tid,
+        metadata: { name: 'x.bin', size: 2, type: 'application/octet-stream', lastModified: 0 }
+      }))
+      conn._emit('data', JSON.stringify({ type: 'file-chunk', transferId: tid, chunkIndex: 0, totalChunks: 1 }))
+      conn._emit('data', new Uint8Array(1024).buffer)
+      await new Promise(r => setTimeout(r, 0))
+
+      conn._emit('data', JSON.stringify({ type: 'file-complete', transferId: tid }))
+      await new Promise(r => setTimeout(r, 0))
+
+      expect(mockAnchor.click).not.toHaveBeenCalled()
+    })
+
+    it('rejects an implausible declared size instead of registering it', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile, transfers } = useFileTransfer()
+      const conn = createMockConnection()
+      receiveFile(conn)
+
+      conn._emit('data', JSON.stringify({
+        type: 'file-meta',
+        transferId: 'huge',
+        metadata: { name: 'huge.bin', size: Number.MAX_SAFE_INTEGER, type: '', lastModified: 0 }
+      }))
+
+      expect(transfers.value.find((t: any) => t.id === 'huge')).toBeUndefined()
+      expect(sentMessages(conn).some((m: any) => m.type === 'file-reject' && m.reason === 'File too large')).toBe(true)
+    })
+
+    it('caps how many transfers one peer can open at once', async () => {
+      const { useFileTransfer } = await import('../../../app/composables/useFileTransfer')
+      const { receiveFile, transfers } = useFileTransfer()
+      const conn = createMockConnection()
+      receiveFile(conn)
+
+      for (let i = 0; i < 40; i++) {
+        conn._emit('data', JSON.stringify({
+          type: 'file-meta',
+          transferId: `flood-${i}`,
+          metadata: { name: `f${i}.bin`, size: 16, type: '', lastModified: 0 }
+        }))
+      }
+
+      const registered = transfers.value.filter((t: any) => String(t.id).startsWith('flood-'))
+      expect(registered.length).toBeLessThanOrEqual(16)
+      expect(sentMessages(conn).some((m: any) => m.reason === 'Too many concurrent transfers')).toBe(true)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Dangerous file classification
+  // ---------------------------------------------------------------------------
+  describe('isDangerousFileName', () => {
+    it('flags executable and script-bearing extensions', async () => {
+      const { isDangerousFileName } = await import('../../../app/composables/useFileTransfer')
+      expect(isDangerousFileName('setup.exe')).toBe(true)
+      expect(isDangerousFileName('page.HTML')).toBe(true)
+      expect(isDangerousFileName('icon.svg')).toBe(true)
+    })
+
+    it('does not flag ordinary documents', async () => {
+      const { isDangerousFileName } = await import('../../../app/composables/useFileTransfer')
+      expect(isDangerousFileName('report.pdf')).toBe(false)
+      expect(isDangerousFileName('photo.jpg')).toBe(false)
+      expect(isDangerousFileName('notes')).toBe(false)
+    })
+  })
 })
